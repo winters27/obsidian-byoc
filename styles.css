@@ -1,0 +1,376 @@
+﻿/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+   BYOC Ã¢â‚¬â€ Bring Your Own Cloud
+   Plugin Stylesheet Ã¢â‚¬â€ Frosted Glass / Acrylic Design Language
+   Scoped to .byoc-settings to prevent bleed into other plugins or Obsidian core
+   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+
+
+/* â”€â”€â”€â”€ 1. Visibility toggles Ã¢â‚¬â€ functional only, no visual treatment â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.settings-percentage-custom-hide,
+.settings-encryption-method-hide,
+.s3-hide, .dropbox-hide, .onedrive-hide, .onedrivefull-hide,
+.webdav-hide, .webdis-hide, .googledrive-hide, .box-hide,
+.pcloud-hide, .yandexdisk-hide, .koofr-hide, .azureblobstorage-hide,
+.pro-hide,
+.dropbox-auth-button-hide, .dropbox-revoke-auth-button-hide,
+.onedrive-auth-button-hide, .onedrive-revoke-auth-button-hide,
+.onedrivefull-auth-button-hide, .onedrivefull-revoke-auth-button-hide,
+.onedrivefull-allow-to-use-hide,
+.googledrive-auth-button-hide, .googledrive-revoke-auth-button-hide,
+.googledrive-allow-to-use-hide,
+.box-auth-button-hide, .box-revoke-auth-button-hide, .box-allow-to-use-hide,
+.pcloud-auth-button-hide, .pcloud-revoke-auth-button-hide, .pcloud-allow-to-use-hide,
+.yandexdisk-auth-button-hide, .yandexdisk-revoke-auth-button-hide, .yandexdisk-allow-to-use-hide,
+.koofr-auth-button-hide, .koofr-revoke-auth-button-hide, .koofr-allow-to-use-hide,
+.azureblobstorage-allow-to-use-hide,
+.pro-auth-button-hide, .pro-revoke-auth-button-hide {
+  display: none;
+}
+
+
+/* â”€â”€â”€â”€ 2. Settings panel root â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.byoc-settings {
+  --byoc-radius: 8px;
+  --byoc-radius-sm: 5px;
+  --byoc-transition: 160ms ease;
+  --byoc-accent: var(--interactive-accent);
+  --byoc-accent-hover: var(--interactive-accent-hover);
+  --byoc-surface: rgba(var(--mono-100-rgb, 128, 128, 128), 0.05);
+  --byoc-border: var(--background-modifier-border);
+  --byoc-warn-bg: rgba(var(--color-yellow-rgb, 230, 175, 45), 0.1);
+  --byoc-warn-border: rgba(var(--color-yellow-rgb, 230, 175, 45), 0.4);
+  --byoc-warn-text: var(--text-warning, var(--text-muted));
+}
+
+
+/* â”€â”€â”€â”€ 3. Page heading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.byoc-settings > h1 {
+  font-size: 1.35em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-normal);
+  padding-bottom: 0.5em;
+  margin-bottom: 0.25em;
+  border-bottom: 2px solid var(--byoc-accent);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.byoc-settings > h1::before {
+  content: "☁";
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+
+/* â”€â”€â”€â”€ 4. Auth section card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*    .settings-auth-related wraps the Authorize / Revoke setting items      */
+
+.byoc-settings .settings-auth-related {
+  margin-top: 1rem;
+  padding: 1rem 1rem 0.5rem;
+  border-radius: var(--byoc-radius);
+  border: 1px solid var(--byoc-border);
+  background: var(--byoc-surface);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Accent left strip */
+.byoc-settings .settings-auth-related::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--byoc-accent);
+  border-radius: var(--byoc-radius) 0 0 var(--byoc-radius);
+  opacity: 0.8;
+}
+
+
+/* â”€â”€â”€â”€ 5. Disclaimer callout boxes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*    Replaces the plain font-weight:bold with a proper callout treatment     */
+
+.byoc-settings .s3-disclaimer,
+.byoc-settings .dropbox-disclaimer,
+.byoc-settings .onedrive-disclaimer,
+.byoc-settings .onedrivefull-disclaimer,
+.byoc-settings .webdav-disclaimer,
+.byoc-settings .webdis-disclaimer,
+.byoc-settings .googledrive-disclaimer,
+.byoc-settings .box-disclaimer,
+.byoc-settings .pcloud-disclaimer,
+.byoc-settings .yandexdisk-disclaimer,
+.byoc-settings .koofr-disclaimer,
+.byoc-settings .azureblobstorage-disclaimer,
+.byoc-settings .pro-disclaimer,
+.byoc-settings .password-disclaimer,
+.byoc-settings .s3-disclaimer,
+.byoc-settings .password-second-confirm,
+.byoc-settings .encryptionmethod-second-confirm {
+  font-weight: 500;
+  font-size: 0.82em;
+  color: var(--byoc-warn-text);
+  background: var(--byoc-warn-bg);
+  border: 1px solid var(--byoc-warn-border);
+  border-radius: var(--byoc-radius-sm);
+  padding: 0.45em 0.65em 0.45em 2em;
+  margin: 0.25em 0;
+  line-height: 1.5;
+  position: relative;
+}
+
+.byoc-settings .s3-disclaimer::before,
+.byoc-settings .dropbox-disclaimer::before,
+.byoc-settings .onedrive-disclaimer::before,
+.byoc-settings .onedrivefull-disclaimer::before,
+.byoc-settings .webdav-disclaimer::before,
+.byoc-settings .webdis-disclaimer::before,
+.byoc-settings .googledrive-disclaimer::before,
+.byoc-settings .box-disclaimer::before,
+.byoc-settings .pcloud-disclaimer::before,
+.byoc-settings .yandexdisk-disclaimer::before,
+.byoc-settings .koofr-disclaimer::before,
+.byoc-settings .azureblobstorage-disclaimer::before,
+.byoc-settings .pro-disclaimer::before,
+.byoc-settings .password-disclaimer::before,
+.byoc-settings .password-second-confirm::before,
+.byoc-settings .encryptionmethod-second-confirm::before {
+  content: "âš ";
+  position: absolute;
+  left: 0.6em;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9em;
+  opacity: 0.75;
+}
+
+
+/* â”€â”€â”€â”€ 6. Monospace textareas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.webdav-customheaders-textarea,
+.ignorepaths-textarea,
+.onlyallowpaths-textarea {
+  font-family: var(--font-monospace);
+  font-size: 0.85em;
+  border-radius: var(--byoc-radius-sm);
+  background: var(--background-secondary);
+  border-color: var(--byoc-border);
+  transition: border-color var(--byoc-transition);
+  resize: vertical;
+  min-height: 5em;
+}
+
+.webdav-customheaders-textarea:focus,
+.ignorepaths-textarea:focus,
+.onlyallowpaths-textarea:focus {
+  border-color: var(--byoc-accent);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 100, 130, 255), 0.15);
+}
+
+
+/* â”€â”€â”€â”€ 7. QR code export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.qrcode-img {
+  width: 260px;
+  height: 260px;
+  border-radius: var(--byoc-radius);
+  border: 1px solid var(--byoc-border);
+  display: block;
+  margin: 0.75em auto;
+}
+
+
+/* â”€â”€â”€â”€ 8. HTTP server warning (log to http) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.logtohttpserver-warning {
+  color: var(--text-error);
+  font-weight: 600;
+  font-size: 0.82em;
+  padding: 0.3em 0.5em;
+  border-radius: var(--byoc-radius-sm);
+  background: rgba(var(--color-red-rgb, 220, 60, 60), 0.08);
+  border: 1px solid rgba(var(--color-red-rgb, 220, 60, 60), 0.25);
+}
+
+
+/* â”€â”€â”€â”€ 9. Grid control wrapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+.setting-need-wrapping .setting-item-control {
+  display: grid;
+}
+
+
+/* â”€â”€â”€â”€ 10. Auth modal content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/*     Targets the contentEl inside BYOC's auth modals                       */
+
+.byoc-auth-modal .modal-title {
+  font-size: 1.1em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.byoc-auth-modal .modal-content {
+  gap: 0.75em;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Step description paragraphs inside auth modals */
+.byoc-auth-modal p {
+  font-size: 0.9em;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Auth link button inside modal */
+.byoc-auth-modal a {
+  display: block;
+  text-align: center;
+  margin-top: 0.25em;
+  padding: 0.5em 0;
+  color: var(--byoc-accent);
+  font-weight: 500;
+  text-underline-offset: 2px;
+  transition: opacity var(--byoc-transition);
+}
+
+.byoc-auth-modal a:hover {
+  opacity: 0.8;
+}
+
+/* ──── 12. Auth modal buttons ──── */
+.byoc-auth-modal button {
+  background-color: var(--byoc-accent);
+  color: var(--text-on-accent, #ffffff);
+  padding: 0.7em 1.2em;
+  margin: 1em 0;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  border-radius: var(--byoc-radius-sm);
+  font-size: 0.85em;
+  transition:
+    background var(--byoc-transition),
+    transform var(--byoc-transition);
+}
+
+.byoc-auth-modal button:active {
+  transform: scale(0.98);
+}
+
+.byoc-settings .setting-item.setting-item-heading {
+  border-top: 1px solid var(--byoc-border);
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+}
+
+.byoc-settings .setting-item.setting-item-heading .setting-item-name {
+  font-weight: 600;
+  color: var(--text-accent, var(--interactive-accent));
+  text-transform: uppercase;
+  font-size: 0.78em;
+  letter-spacing: 0.06em;
+}
+
+/* ──── 13. Service Chooser Dropdown Card ──── */
+.byoc-provider-chooser {
+  margin: 1.5rem 0;
+  padding: 0.5rem 1rem;
+  background: rgba(var(--mono-100-rgb, 128, 128, 128), 0.08);
+  border: 1px solid var(--byoc-border);
+  border-radius: var(--byoc-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.byoc-provider-chooser .setting-item {
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0;
+}
+
+.byoc-provider-chooser .setting-item-name {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* ──── 14. Active Provider Sub-header ──── */
+h2.byoc-provider-heading {
+  margin-top: 2rem !important;
+  padding-bottom: 0.5em;
+  font-size: 1.2em;
+  color: var(--byoc-accent);
+  border-bottom: 1px solid var(--byoc-border);
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+h2.byoc-provider-heading svg {
+  width: 1.25em;
+  height: 1.25em;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ──── 15. General Section Headers ──── */
+h2.byoc-section-heading {
+  margin-top: 2.5rem !important;
+  padding-bottom: 0.5em;
+  font-size: 1.15em;
+  color: var(--text-normal);
+  border-bottom: 1px solid var(--byoc-border);
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  opacity: 0.9;
+}
+h2.byoc-section-heading::before {
+  content: "♦";
+  color: var(--text-muted);
+  font-size: 0.7em;
+  opacity: 0.6;
+}
+
+/* ──── 16. Setting Item Hover ──── */
+.byoc-settings .setting-item {
+  border-radius: var(--byoc-radius-sm);
+  transition: background var(--byoc-transition);
+}
+
+.byoc-settings .setting-item:hover {
+  background: rgba(var(--mono-100-rgb, 128, 128, 128), 0.04);
+}
+
+
+/* Added BYOC Intro Card */
+.byoc-intro-card {
+  background: rgba(100, 130, 255, 0.05);
+  border-left: 3px solid var(--byoc-accent);
+  padding: 1rem 1.2rem;
+  border-radius: var(--byoc-radius-sm);
+  margin-bottom: 2rem;
+  color: var(--text-normal);
+  font-size: 0.95em;
+}
+
+.byoc-auth-modal .modal-title svg {
+  width: 1.5em;
+  height: 1.5em;
+  vertical-align: middle;
+  margin-right: 8px;
+}

@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "module": "ESNext",
+    "target": "es6",
+    "strict": true,
+    "allowJs": true,
+    "noImplicitAny": true,
+    "moduleResolution": "node",
+    // "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmitOnError": false,
+    "lib": ["dom", "es5", "scripthost", "es2015", "webworker"]
+  },
+  "include": ["src/global.d.ts", "src/**/*.ts"],
+  "exclude": ["tests/**", "pro/**", "node_modules/**"]
+}
