@@ -383,3 +383,124 @@ h2.byoc-section-heading::before {
 .byoc-status-bar:hover {
   opacity: 0.7;
 }
+
+/* ── Mobile Sync Button ──────────────────────────────────────────────────────
+   Two visual modes depending on where the button was injected:
+
+   Mode 1 (.byoc-mobile-sync): Injected INTO Obsidian's mobile toolbar.
+     - Transparent background, matches native toolbar button style.
+     - Sits naturally next to the settings button at bottom-right.
+
+   Mode 2 (.byoc-mobile-sync--fab): Fallback when toolbar selector misses.
+     - Circular floating action button, fixed above the toolbar.
+     - Accent-colored so it's always discoverable.
+
+   Uses Obsidian CSS variables for full light/dark theme compatibility.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Shared base ── */
+.byoc-mobile-sync {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  background: transparent;
+  color: var(--icon-color);
+  transition:
+    background 120ms ease,
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.byoc-mobile-sync svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* ── Mode 1: Toolbar-native style ── */
+/* Matches Obsidian's .mobile-toolbar-option sizing + behaviour exactly */
+.byoc-mobile-sync:not(.byoc-mobile-sync--fab) {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-m, 6px);
+  opacity: 0.92;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.12),
+    0 0px 1px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  margin-right: 6px; /* gap between our button and the settings button */
+}
+
+.byoc-mobile-sync:not(.byoc-mobile-sync--fab):active {
+  background: var(--background-modifier-hover);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .byoc-mobile-sync:not(.byoc-mobile-sync--fab):hover {
+    background: var(--background-modifier-hover);
+    opacity: 1;
+  }
+}
+
+/* ── Mode 2: Floating fallback FAB ── */
+.byoc-mobile-sync--fab {
+  position: fixed;
+  bottom: 76px; /* clears the ~68px Obsidian mobile nav bar + 8px buffer */
+  right: 16px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent, #fff);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.28),
+    0 1px 4px rgba(0, 0, 0, 0.16);
+  z-index: 999;
+  opacity: 1;
+}
+
+.byoc-mobile-sync--fab svg {
+  width: 22px;
+  height: 22px;
+}
+
+.byoc-mobile-sync--fab:active {
+  transform: scale(0.90);
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.24),
+    0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+@media (hover: hover) {
+  .byoc-mobile-sync--fab:hover {
+    background: var(--interactive-accent-hover);
+  }
+}
+
+/* ── Spinning state (both modes) ── */
+.byoc-mobile-sync--syncing {
+  opacity: 0.6;
+  cursor: default;
+  pointer-events: none; /* hard-blocks re-tap; JS isSyncing guard is belt+suspenders */
+}
+
+.byoc-mobile-sync--syncing svg {
+  animation: byoc-sync-spin 0.9s linear infinite;
+}
+
+@keyframes byoc-sync-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

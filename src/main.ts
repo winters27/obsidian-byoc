@@ -786,6 +786,8 @@ export default class BYOCPlugin extends Plugin {
     // BYOC: All users use v3 sync algorithm — no consent modal shown
     this.enableAutoSyncIfSet();
     this.enableInitSyncIfSet();
+    this.enableSyncOnMobileResume();    // mobile: auto-sync on app resume + cold-start
+    this.enableMobileSyncFab();         // mobile: sync button in bottom toolbar
     this.toggleSyncOnSaveIfSet();
 
     const { oldVersion } = await upsertPluginVersionByVault(this.db, this.vaultRandomID, this.manifest.version);
@@ -949,6 +951,141 @@ export default class BYOCPlugin extends Plugin {
         window.setTimeout(() => this.syncRun("auto_once_init"), this.settings.initRunAfterMilliseconds);
       });
     }
+  }
+
+  /**
+   * Attempt to find Obsidian's mobile toolbar and place the sync button
+   * immediately to the LEFT of the settings button.
+   *
+   * The options container (.mobile-toolbar-options-list / -container) wraps
+   * the settings button — appending INSIDE it would stack both buttons on top
+   * of each other. Instead we insert BEFORE that container in its parent
+   * toolbar row, making our button a left sibling of settings.
+   */
+  private _tryInjectSyncButton(btn: HTMLElement): boolean {
+    const optionsEl =
+      document.querySelector(".mobile-toolbar-options-list") ??
+      document.querySelector(".mobile-toolbar-options-container");
+
+    if (!optionsEl) return false;
+
+    const parent = optionsEl.parentElement;
+    if (!parent) return false;
+
+    btn.removeClass("byoc-mobile-sync--fab");
+    parent.insertBefore(btn, optionsEl); // insert BEFORE settings container = to its left
+    console.info("[BYOC] Mobile sync button: injected into toolbar (left of settings)");
+    return true;
+  }
+
+  /**
+   * Mobile resume sync — fires sync when the app returns from background.
+   *
+   * Covers two mobile lifecycle scenarios:
+   *   1. Suspend → resume: `visibilitychange` fires (document was hidden, becomes visible).
+   *   2. Kill → cold start: document is already visible at registration time.
+   *      Handled by an onLayoutReady fallback, only if initRunAfterMilliseconds is off.
+   *
+   * Uses "manual" trigger so errors surface as notices (users opened the app intentionally).
+   * 3s debounce absorbs iOS radio re-association and WebView focus flicker.
+   */
+  enableSyncOnMobileResume() {
+    if (!Platform.isMobile) return;
+
+    console.info("[BYOC] Mobile resume sync: registering visibilitychange handler");
+
+    const RESUME_DEBOUNCE_MS = 3000;
+    let resumeTimer: number | undefined;
+
+    const triggerSync = () => {
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(() => {
+        if (!this.isSyncing) {
+          console.info("[BYOC] Mobile resume sync: triggering syncRun");
+          this.syncRun("manual");
+        }
+      }, RESUME_DEBOUNCE_MS);
+    };
+
+    // Scenario 1: suspend → resume
+    const handler = () => {
+      if (document.visibilityState !== "visible") return;
+      triggerSync();
+    };
+    document.addEventListener("visibilitychange", handler);
+
+    // Scenario 2: kill → cold start (only if user hasn't configured initRunAfterMilliseconds)
+    if (!(this.settings.initRunAfterMilliseconds > 0)) {
+      this.app.workspace.onLayoutReady(() => {
+        if (!this.isSyncing) {
+          console.info("[BYOC] Mobile cold-start sync: triggering initial syncRun");
+          window.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
+        }
+      });
+    }
+
+    this.register(() => {
+      document.removeEventListener("visibilitychange", handler);
+      window.clearTimeout(resumeTimer);
+    });
+  }
+
+  /**
+   * Mobile Sync Button — injected into Obsidian's bottom toolbar next to the
+   * settings button. Falls back to a fixed floating button (FAB) when the
+   * toolbar selector doesn't match, with a single retry on the next leaf change.
+   *
+   * Toolbar injection strategy:
+   *   1. Wait 300ms after onLayoutReady (mobile toolbar renders async)
+   *   2. Try .mobile-toolbar-options-list → .mobile-toolbar-options-container
+   *   3. If not found: mount FAB fallback + register active-leaf-change retry
+   *   4. On leaf change: re-attempt injection; promote FAB → toolbar if found
+   *
+   * The isSyncing guard and CSS pointer-events:none both block concurrent taps
+   * (belt-and-suspenders — either alone would suffice).
+   */
+  enableMobileSyncFab() {
+    if (!Platform.isMobile) return;
+
+    const btn = document.createElement("button");
+    btn.addClass("byoc-mobile-sync");
+    btn.setAttribute("aria-label", "Sync vault now");
+    btn.title = "Sync vault now";
+    setIcon(btn, iconNameSyncWait);
+
+    btn.addEventListener("click", async () => {
+      if (this.isSyncing) return;
+      btn.addClass("byoc-mobile-sync--syncing");
+      setIcon(btn, iconNameSyncRunning);
+      try {
+        await this.syncRun("manual");
+      } finally {
+        btn.removeClass("byoc-mobile-sync--syncing");
+        setIcon(btn, iconNameSyncWait);
+      }
+    });
+
+    this.app.workspace.onLayoutReady(() => {
+      // 300ms delay: mobile toolbar renders after the workspace frame settles
+      window.setTimeout(() => {
+        if (this._tryInjectSyncButton(btn)) return;
+
+        // Toolbar not ready — mount FAB fallback immediately so user has a button
+        console.info("[BYOC] Mobile sync button: toolbar not found, using FAB fallback (will retry on leaf change)");
+        btn.addClass("byoc-mobile-sync--fab");
+        document.body.appendChild(btn);
+
+        // Register a single-retry listener: promote FAB → toolbar on next leaf change
+        const retryRef = this.app.workspace.on("active-leaf-change", () => {
+          if (this._tryInjectSyncButton(btn)) {
+            this.app.workspace.offref(retryRef);
+          }
+        });
+        this.registerEvent(retryRef);
+      }, 300);
+    });
+
+    this.register(() => btn.remove());
   }
 
   async _checkCurrFileModified(caller: "SYNC" | "FILE_CHANGES") {
