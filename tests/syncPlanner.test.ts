@@ -61,6 +61,35 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
     );
   });
 
+  it("mtime changed but size identical → still detects change (same-size edit)", () => {
+    // Validates that toggling a checkbox (same byte count) triggers sync
+    assert.equal(
+      determineSyncDecision(
+        node(
+          { sizeRaw: 10, mtimeCli: T + D },
+          { sizeRaw: 10, mtimeSvr: T },
+          { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }
+        ),
+        "smart_conflict"
+      ),
+      "local_is_modified_then_push"
+    );
+  });
+
+  it("remote mtime changed but size identical → detects change", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(
+          { sizeRaw: 10, mtimeCli: T },
+          { sizeRaw: 10, mtimeSvr: T + D },
+          { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }
+        ),
+        "smart_conflict"
+      ),
+      "remote_is_modified_then_pull"
+    );
+  });
+
   // ── Modifications ────────────────────────────────────────────────────────
   it("local modified, remote unchanged → push", () => {
     assert.equal(

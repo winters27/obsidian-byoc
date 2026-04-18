@@ -215,11 +215,23 @@ export async function syncer(
       try {
         if (decision === "local_is_created_then_push" || decision === "local_is_modified_then_push") {
           const res = await copyFileOrFolder(node.key, fsLocal, remoteFsTarget);
-          successfulCommits.push({ ...node.local!, keyRaw: node.key, mtimeSvr: res.entity.mtimeSvr });
+          successfulCommits.push({
+            ...res.entity,
+            keyRaw: node.key,
+            mtimeCli: node.local!.mtimeCli,
+            sizeRaw: node.local!.sizeRaw, // Keep the baseline's primary size anchored to the local plaintext size
+            sizeEnc: res.entity.sizeRaw,  // Preserve the remote ciphertext size
+          });
         }
         else if (decision === "remote_is_created_then_pull" || decision === "remote_is_modified_then_pull") {
           const res = await copyFileOrFolder(node.key, remoteFsTarget, fsLocal);
-          successfulCommits.push({ ...node.remote!, keyRaw: node.key, mtimeCli: res.entity.mtimeCli });
+          successfulCommits.push({
+            ...res.entity,
+            keyRaw: node.key,
+            mtimeSvr: node.remote!.mtimeSvr,
+            sizeRaw: res.entity.sizeRaw,  // Anchored to local plaintext size
+            sizeEnc: node.remote!.sizeEnc ?? node.remote!.sizeRaw, // Preserve remote ciphertext size
+          });
         }
         else if (decision === "remote_is_deleted_thus_also_delete_local") {
           await fsLocal.rm(node.key);
@@ -245,15 +257,33 @@ export async function syncer(
           }
           // Pull remote over the actual local file — now safe because local is backed up.
           const res = await copyFileOrFolder(node.key, remoteFsTarget, fsLocal);
-          successfulCommits.push({ ...node.remote!, keyRaw: node.key, mtimeCli: res.entity.mtimeCli });
+          successfulCommits.push({
+            ...res.entity,
+            keyRaw: node.key,
+            mtimeSvr: node.remote!.mtimeSvr,
+            sizeRaw: res.entity.sizeRaw,
+            sizeEnc: node.remote!.sizeEnc ?? node.remote!.sizeRaw,
+          });
         }
         else if (decision?.includes("keep_local")) {
           const res = await copyFileOrFolder(node.key, fsLocal, remoteFsTarget);
-          successfulCommits.push({ ...node.local!, keyRaw: node.key, mtimeSvr: res.entity.mtimeSvr });
+          successfulCommits.push({
+            ...res.entity,
+            keyRaw: node.key,
+            mtimeCli: node.local!.mtimeCli,
+            sizeRaw: node.local!.sizeRaw,
+            sizeEnc: res.entity.sizeRaw,
+          });
         }
         else if (decision?.includes("keep_remote")) {
           const res = await copyFileOrFolder(node.key, remoteFsTarget, fsLocal);
-          successfulCommits.push({ ...node.remote!, keyRaw: node.key, mtimeCli: res.entity.mtimeCli });
+          successfulCommits.push({
+            ...res.entity,
+            keyRaw: node.key,
+            mtimeSvr: node.remote!.mtimeSvr,
+            sizeRaw: res.entity.sizeRaw,
+            sizeEnc: node.remote!.sizeEnc ?? node.remote!.sizeRaw,
+          });
         }
       } catch (e) {
         // If an operation fails, bypass pushing to successfulCommits.

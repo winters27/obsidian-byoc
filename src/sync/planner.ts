@@ -122,10 +122,11 @@ export const determineSyncDecision = (
       mtimeChanged(local.mtimeCli, prevSync.mtimeCli) ||
       local.sizeRaw !== prevSync.sizeRaw;
 
+    const remoteBaselineSize = remote.sizeEnc !== undefined ? (prevSync.sizeEnc ?? prevSync.sizeRaw) : prevSync.sizeRaw;
     const remoteChanged =
       mtimeChanged(remote.mtimeSvr, prevSync.mtimeSvr) ||
       mtimeChanged(remote.mtimeCli, prevSync.mtimeCli) ||
-      remote.sizeRaw !== prevSync.sizeRaw;
+      remote.sizeRaw !== remoteBaselineSize;
 
     if (!localChanged && !remoteChanged) return "equal";
     if (localChanged && !remoteChanged) return "local_is_modified_then_push";
