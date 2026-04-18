@@ -655,6 +655,8 @@ async _getAccessToken() {
     throw new Error("Method not implemented.");
   }
 
+  supportsRename(): boolean { return true; }
+
   allowEmptyFile(): boolean {
     return true;
   }

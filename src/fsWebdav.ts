@@ -909,6 +909,8 @@ export class FakeFsWebdav extends FakeFs {
     await this.client.moveFile(remoteFileName1, remoteFileName2);
   }
 
+  supportsRename(): boolean { return true; }
+
   async rm(key: string): Promise<void> {
     if (key === "/") {
       return;

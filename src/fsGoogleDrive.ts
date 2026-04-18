@@ -579,6 +579,8 @@ export class FakeFsGoogleDrive extends FakeFs {
     await this.saveFunc();
   }
 
+  supportsRename(): boolean { return true; }
+
   allowEmptyFile(): boolean {
     return true;
   }

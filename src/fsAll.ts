@@ -16,6 +16,8 @@ export abstract class FakeFs {
   ): Promise<Entity>;
   abstract readFile(key: string): Promise<ArrayBuffer>;
   abstract rename(key1: string, key2: string): Promise<void>;
+  /** Returns true if this provider supports atomic rename without copy+delete. */
+  abstract supportsRename(): boolean;
   abstract rm(key: string): Promise<void>;
   abstract checkConnect(callbackFunc?: any): Promise<boolean>;
   async checkConnectCommonOps(callbackFunc?: any) {

@@ -683,6 +683,8 @@ export class FakeFsOnedriveFull extends FakeFs {
     return "https://account.live.com/consent/Manage";
   }
 
+  supportsRename(): boolean { return true; }
+
   allowEmptyFile(): boolean {
     return false;
   }

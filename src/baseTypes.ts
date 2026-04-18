@@ -350,7 +350,10 @@ export type DecisionTypeForMixedEntity =
   | "folder_to_skip"
   | "folder_to_be_deleted_on_both"
   | "folder_to_be_deleted_on_remote"
-  | "folder_to_be_deleted_on_local";
+  | "folder_to_be_deleted_on_local"
+  // ── Rename detections (post-planner pass) ─────────────────────────────────
+  | "rename_local_to_remote"   // Local rename: update remote to match
+  | "rename_remote_to_local";  // Remote rename: update local to match
 
 /**
  * Uniform representation of a file/folder entity.
@@ -391,6 +394,9 @@ export interface MixedEntity {
   decisionBranch?: number;
   decision?: DecisionTypeForMixedEntity;
   conflictAction?: ConflictActionType;
+
+  /** For rename decisions: the original (old) path the file was renamed FROM. */
+  renameFrom?: string;
 
   change?: boolean;
   sideNotes?: any;

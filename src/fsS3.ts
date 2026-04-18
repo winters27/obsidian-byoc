@@ -764,6 +764,8 @@ export class FakeFsS3 extends FakeFs {
     throw Error(`rename not implemented for s3`);
   }
 
+  supportsRename(): boolean { return false; }
+
   async rm(key: string): Promise<void> {
     if (key === "/") {
       return;

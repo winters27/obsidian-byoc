@@ -1079,6 +1079,8 @@ export class FakeFsOnedrive extends FakeFs {
     });
   }
 
+  supportsRename(): boolean { return true; }
+
   async rm(key: string): Promise<void> {
     if (key === "" || key === "/") {
       return;

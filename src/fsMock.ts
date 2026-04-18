@@ -58,6 +58,8 @@ export class FakeFsMock extends FakeFs {
     throw new Error("Method not implemented.");
   }
 
+  supportsRename(): boolean { return true; }
+
   allowEmptyFile(): boolean {
     throw new Error("Method not implemented.");
   }

@@ -283,6 +283,8 @@ export class FakeFsAzureBlobStorage extends FakeFs {
     await this.rm(key1);
   }
 
+  supportsRename(): boolean { return false; }
+
   async rm(key: string): Promise<void> {
     const url = this.blobUrl(key);
     const resp = await fetch(url, { method: "DELETE" });

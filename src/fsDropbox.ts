@@ -713,6 +713,8 @@ export class FakeFsDropbox extends FakeFs {
     }
   }
 
+  supportsRename(): boolean { return true; }
+
   async rm(key: string): Promise<void> {
     if (key === "/") {
       return;
