@@ -155,18 +155,39 @@ export async function syncer(
     // M1: Enforce folder-before-file creation order, file-before-folder delete order.
     const syncActions = sortSyncActions(unsortedActions);
 
-    // M2: Skip protection check if no valid local files are being tracked
-    const validLocalCount = Array.from(nodes.values()).filter(n => n.local !== undefined).length;
+    // M2: Protection — count operations that destroy or overwrite local content.
+    const allFileCount = nodes.size;
     
-    if (validLocalCount > 0) {
-      let deleteModifyCount = 0;
+    if (allFileCount > 0) {
+      let destructiveCount = 0;
       for (const action of syncActions) {
-        if (action.decision?.includes("delete")) {
-          deleteModifyCount++;
+        const d = action.decision;
+        if (!d || d === "equal" || d === "only_history") continue;
+    
+        // Deletes (either side) are always destructive
+        if (d.includes("delete")) {
+          destructiveCount++;
+          continue;
+        }
+    
+        // Pulls that OVERWRITE an existing local file
+        if (d === "remote_is_modified_then_pull" && action.local !== undefined) {
+          destructiveCount++;
+          continue;
+        }
+    
+        // Conflict resolutions that overwrite local with remote content
+        if ((d.includes("keep_remote") || d.includes("smart_conflict")) && action.local !== undefined) {
+          destructiveCount++;
+          continue;
         }
       }
-
-      const protectErr = getProtectError(settings.protectModifyPercentage || 50, deleteModifyCount, validLocalCount);
+    
+      const protectErr = getProtectError(
+        settings.protectModifyPercentage || 50,
+        destructiveCount,
+        allFileCount
+      );
       if (protectErr !== "") {
         throw Error(`Protection Triggered: ${protectErr}`);
       }
