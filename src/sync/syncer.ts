@@ -7,6 +7,7 @@ import type { BYOCPluginSettings, SyncTriggerSourceType, Entity, MixedEntity } f
 import { determineSyncDecision } from "./planner";
 import { generateConflictFileName } from "./conflict";
 import { copyFileOrFolder } from "../copyLogic";
+import { shouldSyncPath } from "./pathFilter";
 
 // ─── Folder-aware sorter ───────────────────────────────────────────────────────
 // Correct execution order to prevent parent-before-child violations:
@@ -134,6 +135,17 @@ export async function syncer(
       }
     }
 
+    // Phase 1.5: Path Filtering
+    const ignorePaths = settings.ignorePaths ?? [];
+    const onlyAllowPaths = settings.onlyAllowPaths ?? [];
+    if (ignorePaths.length > 0 || onlyAllowPaths.length > 0) {
+      for (const [key] of nodes) {
+        if (!shouldSyncPath(key, ignorePaths, onlyAllowPaths)) {
+          nodes.delete(key);
+        }
+      }
+    }
+
     // Phase 2: Planner
     const unsortedActions = Array.from(nodes.values()).map(node => {
       node.decision = determineSyncDecision(node, settings.conflictAction || "smart_conflict");
@@ -143,16 +155,18 @@ export async function syncer(
     // M1: Enforce folder-before-file creation order, file-before-folder delete order.
     const syncActions = sortSyncActions(unsortedActions);
 
-    // M2: Skip protection check on empty vault (avoids division by zero/NaN).
-    if (localWalk.length > 0) {
+    // M2: Skip protection check if no valid local files are being tracked
+    const validLocalCount = Array.from(nodes.values()).filter(n => n.local !== undefined).length;
+    
+    if (validLocalCount > 0) {
       let deleteModifyCount = 0;
       for (const action of syncActions) {
-        if (action.decision?.includes("delete") || action.decision?.includes("pull")) {
+        if (action.decision?.includes("delete")) {
           deleteModifyCount++;
         }
       }
 
-      const protectErr = getProtectError(settings.protectModifyPercentage || 50, deleteModifyCount, localWalk.length);
+      const protectErr = getProtectError(settings.protectModifyPercentage || 50, deleteModifyCount, validLocalCount);
       if (protectErr !== "") {
         throw Error(`Protection Triggered: ${protectErr}`);
       }

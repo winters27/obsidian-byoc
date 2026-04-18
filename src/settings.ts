@@ -1,4 +1,4 @@
-﻿import { SVG_DROPBOX, SVG_ONEDRIVE, SVG_PCLOUD, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
+import { SVG_DROPBOX, SVG_ONEDRIVE, SVG_PCLOUD, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
 import { Eye, EyeOff, createElement } from "lucide";
 import {
   type App,
@@ -1785,6 +1785,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_autorun_desc"))
       .addDropdown((dropdown) => {
         dropdown.addOption("-1", t("settings_autorun_notset"));
+        dropdown.addOption(`${1000 * 30}`, "Every 30 seconds");
         dropdown.addOption(`${1000 * 60 * 1}`, t("settings_autorun_1min"));
         dropdown.addOption(`${1000 * 60 * 5}`, t("settings_autorun_5min"));
         dropdown.addOption(`${1000 * 60 * 10}`, t("settings_autorun_10min"));
@@ -1849,14 +1850,13 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_synconsave_desc"))
       .addDropdown((dropdown) => {
         dropdown.addOption("-1", t("settings_synconsave_disable"));
-        dropdown.addOption("1000", t("settings_synconsave_enable"));
-        // for backward compatibility, we need to use a number representing seconds
-        let syncOnSaveEnabled = false;
-        if ((this.plugin.settings.syncOnSaveAfterMilliseconds ?? -1) > 0) {
-          syncOnSaveEnabled = true;
-        }
+        dropdown.addOption("3000", "3 seconds");
+        dropdown.addOption("5000", "5 seconds (Recommended)");
+        dropdown.addOption("10000", "10 seconds");
+        dropdown.addOption("30000", "30 seconds");
+
         dropdown
-          .setValue(`${syncOnSaveEnabled ? "1000" : "-1"}`)
+          .setValue(`${(this.plugin.settings.syncOnSaveAfterMilliseconds ?? -1) > 0 ? this.plugin.settings.syncOnSaveAfterMilliseconds : "-1"}`)
           .onChange(async (val: string) => {
             this.plugin.settings.syncOnSaveAfterMilliseconds =
               Number.parseInt(val);
@@ -1940,6 +1940,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         textArea.inputEl.cols = 30;
 
         textArea.inputEl.addClass("ignorepaths-textarea");
+        textArea.setPlaceholder("*.pdf\n.obsidian/plugins/foo/**\nsecret-folder/");
       });
 
     new Setting(basicDiv)
@@ -1961,6 +1962,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         textArea.inputEl.cols = 30;
 
         textArea.inputEl.addClass("onlyallowpaths-textarea");
+        textArea.setPlaceholder("notes/**\npublic/**/*.md");
       });
 
     //////////////////////////////////////////////////
@@ -2224,41 +2226,7 @@ export class BYOCSettingTab extends PluginSettingTab {
           });
       });
 
-    if (Platform.isMobile) {
-      new Setting(advDiv)
-        .setName(t("settings_enablemobilestatusbar"))
-        .setDesc(t("settings_enablemobilestatusbar_desc"))
-        .addDropdown(async (dropdown) => {
-          dropdown
-            .addOption("enable", t("enable"))
-            .addOption("disable", t("disable"));
 
-          dropdown
-            .setValue(
-              `${
-                this.plugin.settings.enableMobileStatusBar
-                  ? "enable"
-                  : "disable"
-              }`
-            )
-            .onChange(async (val) => {
-              if (val === "enable") {
-                this.plugin.settings.enableMobileStatusBar = true;
-                this.plugin.appContainerObserver =
-                  changeMobileStatusBar("enable");
-              } else {
-                this.plugin.settings.enableMobileStatusBar = false;
-                changeMobileStatusBar(
-                  "disable",
-                  this.plugin.appContainerObserver
-                );
-                this.plugin.appContainerObserver?.disconnect();
-                this.plugin.appContainerObserver = undefined;
-              }
-              await this.plugin.saveSettings();
-            });
-        });
-    }
 
     //////////////////////////////////////////////////
     // below for import and export functions
