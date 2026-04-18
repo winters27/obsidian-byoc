@@ -1,7 +1,7 @@
 // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
 import AggregateError from "aggregate-error";
 import cloneDeep from "lodash/cloneDeep";
-import throttle from "lodash/throttle";
+import debounce from "lodash/debounce";
 import { FileText, RefreshCcw, RotateCcw, createElement } from "lucide";
 import {
   Events,
@@ -107,7 +107,7 @@ import {
   upsertLastSuccessSyncTimeByVault,
   upsertPluginVersionByVault,
 } from "./localdb";
-import { changeMobileStatusBar } from "./misc";
+import { delay } from "./misc";
 import { DEFAULT_PROFILER_CONFIG, Profiler } from "./profiler";
 import { BYOCSettingTab } from "./settings";
 
@@ -151,7 +151,7 @@ const DEFAULT_SETTINGS: BYOCPluginSettings = {
   protectModifyPercentage: 50,
   syncDirection: "bidirectional",
   obfuscateSettingFile: true,
-  enableMobileStatusBar: false,
+
   encryptionMethod: "unknown",
   profiler: DEFAULT_PROFILER_CONFIG,
   migrationVersion: 0,
@@ -742,13 +742,10 @@ export default class BYOCPlugin extends Plugin {
       async () => this.syncRun("manual")
     );
 
-    this.enableMobileStatusBarIfSet();
-
-    if (
-      (!Platform.isMobile || (Platform.isMobile && this.settings.enableMobileStatusBar)) &&
-      this.settings.enableStatusBarInfo === true
-    ) {
+    if (!Platform.isMobile && this.settings.enableStatusBarInfo === true) {
       const statusBarItem = this.addStatusBarItem();
+      statusBarItem.addClass("byoc-status-bar");
+      statusBarItem.addEventListener("click", () => this.syncRun("manual"));
       this.statusBarElement = statusBarItem.createEl("span");
       this.statusBarElement.setAttribute("data-tooltip-position", "top");
 
@@ -854,7 +851,12 @@ export default class BYOCPlugin extends Plugin {
     if (this.settings.ignorePaths === undefined) this.settings.ignorePaths = [];
     if (this.settings.onlyAllowPaths === undefined) this.settings.onlyAllowPaths = [];
     if (this.settings.enableStatusBarInfo === undefined) this.settings.enableStatusBarInfo = true;
-    if (this.settings.syncOnSaveAfterMilliseconds === undefined) this.settings.syncOnSaveAfterMilliseconds = -1;
+    if (this.settings.syncOnSaveAfterMilliseconds === undefined) {
+      this.settings.syncOnSaveAfterMilliseconds = -1;
+    } else if (this.settings.syncOnSaveAfterMilliseconds === 1000) {
+      // Migrate legacy binary toggle users to 5 seconds
+      this.settings.syncOnSaveAfterMilliseconds = 5000;
+    }
     if (this.settings.deleteToWhere === undefined) this.settings.deleteToWhere = "system";
     if (this.settings.syncBookmarks === undefined) this.settings.syncBookmarks = false;
     this.settings.logToDB = false; // deprecated
@@ -865,7 +867,6 @@ export default class BYOCPlugin extends Plugin {
     if (this.settings.protectModifyPercentage === undefined) this.settings.protectModifyPercentage = 50;
     if (this.settings.syncDirection === undefined) this.settings.syncDirection = "bidirectional";
     if (this.settings.obfuscateSettingFile === undefined) this.settings.obfuscateSettingFile = true;
-    if (this.settings.enableMobileStatusBar === undefined) this.settings.enableMobileStatusBar = false;
 
     if (this.settings.encryptionMethod === undefined || this.settings.encryptionMethod === "unknown") {
       this.settings.encryptionMethod = (!this.settings.password) ? "rclone-base64" : "openssl-base64";
@@ -952,12 +953,20 @@ export default class BYOCPlugin extends Plugin {
 
   async _checkCurrFileModified(caller: "SYNC" | "FILE_CHANGES") {
     const currentFile = this.app.workspace.getActiveFile();
-    if (currentFile) {
+    if (caller === "FILE_CHANGES") {
+      // For vault events (create/delete/rename/modify), always trigger sync
+      // regardless of active file state. Deletion events remove the active file,
+      // so we can't rely on getActiveFile() here.
+      if (this.isSyncing) { this.hasPendingSyncOnSave = true; return; }
+      this.hasPendingSyncOnSave = false;
+      await this.syncRun("auto_sync_on_save");
+    } else if (caller === "SYNC" && currentFile) {
+      // Post-sync check: only re-sync if the active file was modified after last sync.
       const lastModified = currentFile.stat.mtime;
       const lastSuccessSyncMillis = await getLastSuccessSyncTimeByVault(this.db, this.vaultRandomID);
-      if (caller === "SYNC" || (caller === "FILE_CHANGES" && lastModified > (lastSuccessSyncMillis ?? 1))) {
+      if (lastModified > (lastSuccessSyncMillis ?? 1)) {
         if (this.isSyncing) { this.hasPendingSyncOnSave = true; return; }
-        else if (this.hasPendingSyncOnSave || caller === "FILE_CHANGES") {
+        if (this.hasPendingSyncOnSave) {
           this.hasPendingSyncOnSave = false;
           await this.syncRun("auto_sync_on_save");
         }
@@ -966,33 +975,42 @@ export default class BYOCPlugin extends Plugin {
   }
 
   _syncOnSaveEvent1 = () => { this._checkCurrFileModified("SYNC"); };
-  _syncOnSaveEvent2 = throttle(async () => { await this._checkCurrFileModified("FILE_CHANGES"); }, 1000 * 3, { leading: false, trailing: true });
+  
+  _debouncedSyncImpl?: ReturnType<typeof debounce>;
+  _syncOnSaveRegistered = false;
+  
+  _syncOnSaveEvent2 = async (...args: any[]) => {
+    this._debouncedSyncImpl?.(...args);
+  };
 
   toggleSyncOnSaveIfSet() {
+    this._debouncedSyncImpl?.cancel();
+
     if (this.settings.syncOnSaveAfterMilliseconds != null && this.settings.syncOnSaveAfterMilliseconds > 0) {
-      this.app.workspace.onLayoutReady(() => {
-        this.registerEvent(this.syncEvent?.on("SYNC_DONE", this._syncOnSaveEvent1)!);
-        this.registerEvent(this.app.vault.on("modify", this._syncOnSaveEvent2));
-        this.registerEvent(this.app.vault.on("create", this._syncOnSaveEvent2));
-        this.registerEvent(this.app.vault.on("delete", this._syncOnSaveEvent2));
-        this.registerEvent(this.app.vault.on("rename", this._syncOnSaveEvent2));
-      });
+      this._debouncedSyncImpl = debounce(
+        async () => { await this._checkCurrFileModified("FILE_CHANGES"); },
+        this.settings.syncOnSaveAfterMilliseconds,
+        { leading: false, trailing: true }
+      );
+
+      if (!this._syncOnSaveRegistered) {
+        this._syncOnSaveRegistered = true;
+        this.app.workspace.onLayoutReady(() => {
+          this.registerEvent(this.syncEvent?.on("SYNC_DONE", this._syncOnSaveEvent1)!);
+          this.registerEvent(this.app.vault.on("modify", this._syncOnSaveEvent2));
+          this.registerEvent(this.app.vault.on("create", this._syncOnSaveEvent2));
+          this.registerEvent(this.app.vault.on("delete", this._syncOnSaveEvent2));
+          this.registerEvent(this.app.vault.on("rename", this._syncOnSaveEvent2));
+        });
+      }
     } else {
-      this.syncEvent?.off("SYNC_DONE", this._syncOnSaveEvent1);
-      this.app.vault.off("modify", this._syncOnSaveEvent2);
-      this.app.vault.off("create", this._syncOnSaveEvent2);
-      this.app.vault.off("delete", this._syncOnSaveEvent2);
-      this.app.vault.off("rename", this._syncOnSaveEvent2);
+      this._debouncedSyncImpl = undefined;
+      // We intentionally do not unregister events here.
+      // They pipe into the undefined wrapper as a no-op.
     }
   }
 
-  enableMobileStatusBarIfSet() {
-    this.app.workspace.onLayoutReady(() => {
-      if (Platform.isMobile && this.settings.enableMobileStatusBar) {
-        this.appContainerObserver = changeMobileStatusBar("enable");
-      }
-    });
-  }
+
 
   enableCheckingFileStat() {
     this.app.workspace.onLayoutReady(() => {
@@ -1029,11 +1047,8 @@ export default class BYOCPlugin extends Plugin {
     decision: string,
     triggerSource: SyncTriggerSourceType
   ) {
-    const L = `${totalCount}`.length;
-    const iStr = `${i}`.padStart(L, "0");
-    const prefix = getStatusBarShortMsgFromSyncSource(t, s);
-    const shortMsg = prefix + `Syncing ${iStr}/${totalCount}`;
-    const longMsg = prefix + `Syncing progress=${iStr}/${totalCount},decision=${decision},path=${pathName},source=${triggerSource}`;
+    const shortMsg = `BYOC ⟳ ${i}/${totalCount}`;
+    const longMsg = `Syncing ${i}/${totalCount}: ${pathName} (${decision})`;
     this.currSyncMsg = longMsg;
     if (this.statusBarElement !== undefined) {
       this.statusBarElement.setText(shortMsg);
@@ -1050,39 +1065,39 @@ export default class BYOCPlugin extends Plugin {
     if (this.statusBarElement === undefined) return;
     const t = (x: TransItemType, vars?: any) => this.i18n.t(x, vars);
 
-    let lastSyncMsg = t("statusbar_lastsync_never");
-    let lastSyncLabelMsg = t("statusbar_lastsync_never_label");
+    if (syncStatus === "syncing") {
+      this.statusBarElement.setText("BYOC ⟳");
+      this.statusBarElement.setAttribute("aria-label", "Syncing now…");
+      return;
+    }
 
     const inputTs = Math.max(lastSuccessSyncMillis ?? -999, lastFailedSyncMillis ?? -999);
     const isSuccess = (lastSuccessSyncMillis ?? -999) >= (lastFailedSyncMillis ?? -999);
 
-    if (syncStatus === "syncing") {
-      lastSyncMsg = getStatusBarShortMsgFromSyncSource(t, s!) + t("statusbar_syncing");
-    } else if (inputTs > 0) {
-      const prefix = isSuccess ? t("statusbar_sync_status_prefix_success") : t("statusbar_sync_status_prefix_failed");
-      const deltaTime = Date.now() - inputTs;
-      const years = Math.floor(deltaTime / 31556952000);
-      const months = Math.floor(deltaTime / 2629746000);
-      const weeks = Math.floor(deltaTime / 604800000);
-      const days = Math.floor(deltaTime / 86400000);
-      const hours = Math.floor(deltaTime / 3600000);
-      const minutes = Math.floor(deltaTime / 60000);
-      const seconds = Math.floor(deltaTime / 1000);
-      let timeText = years > 0 ? t("statusbar_time_years", { time: years }) :
-        months > 0 ? t("statusbar_time_months", { time: months }) :
-        weeks > 0 ? t("statusbar_time_weeks", { time: weeks }) :
-        days > 0 ? t("statusbar_time_days", { time: days }) :
-        hours > 0 ? t("statusbar_time_hours", { time: hours }) :
-        minutes > 0 ? t("statusbar_time_minutes", { time: minutes }) :
-        seconds > 30 ? t("statusbar_time_lessminute") :
-        t("statusbar_time_now");
-      const dateText = new Date(inputTs).toLocaleTimeString(navigator.language, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      lastSyncMsg = prefix + timeText;
-      lastSyncLabelMsg = prefix + t("statusbar_lastsync_label", { date: dateText });
+    if (inputTs <= 0) {
+      this.statusBarElement.setText("BYOC —");
+      this.statusBarElement.setAttribute("aria-label", "Never synced. Click to sync now.");
+      return;
     }
 
-    this.statusBarElement.setText(lastSyncMsg);
-    this.statusBarElement.setAttribute("aria-label", lastSyncLabelMsg);
+    const icon = isSuccess ? "✓" : "✗";
+    const delta = Date.now() - inputTs;
+    const ago =
+      delta < 60_000 ? "now" :
+      delta < 3_600_000 ? `${Math.floor(delta / 60_000)}m` :
+      delta < 86_400_000 ? `${Math.floor(delta / 3_600_000)}h` :
+      `${Math.floor(delta / 86_400_000)}d`;
+
+    const shortMsg = `BYOC ${icon} ${ago}`;
+    const dateText = new Date(inputTs).toLocaleTimeString(navigator.language, {
+      weekday: "long", year: "numeric", month: "long", day: "numeric"
+    });
+    const statusWord = isSuccess ? "Succeeded" : "Failed";
+    // We use the language placeholder string for the date to preserve internationalization.
+    const longMsg = `Last sync ${statusWord}: ` + t("statusbar_lastsync_label", { date: dateText }) + ". Click to sync now.";
+
+    this.statusBarElement.setText(shortMsg);
+    this.statusBarElement.setAttribute("aria-label", longMsg);
   }
 
   async tryToAddIgnoreFile() {
