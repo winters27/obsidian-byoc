@@ -9,6 +9,15 @@ const mtimeChanged = (current?: number, baseline?: number): boolean => {
   return Math.abs(current - baseline) > MTIME_TOLERANCE_MS;
 };
 
+// For deletion branches, use a relaxed tolerance to absorb cross-platform
+// mtime drift (FAT32, cloud normalization, Obsidian metadata touches).
+const DELETION_MTIME_TOLERANCE_MS = 30_000; // 30 seconds
+
+const mtimeChangedRelaxed = (current?: number, baseline?: number): boolean => {
+  if (current === undefined || baseline === undefined) return false;
+  return Math.abs(current - baseline) > DELETION_MTIME_TOLERANCE_MS;
+};
+
 const newerSide = (
   local?: number,
   remote?: number
@@ -80,12 +89,14 @@ export const determineSyncDecision = (
 
   // ── Local missing, prev exists → local was deleted ───────────────────────
   if (!hasLocal && hasRemote && hasPrev) {
-    const remoteChanged =
-      mtimeChanged(remote.mtimeSvr, prevSync.mtimeSvr) ||
-      mtimeChanged(remote.mtimeCli, prevSync.mtimeCli) ||
-      remote.sizeRaw !== prevSync.sizeRaw;
+    // Use relaxed mtime tolerance for deletion branches to prevent
+    // mtime drift from overriding confirmed deletions (#985, #991).
+    const remoteContentChanged =
+      remote.sizeRaw !== prevSync.sizeRaw ||
+      mtimeChangedRelaxed(remote.mtimeSvr, prevSync.mtimeSvr) ||
+      mtimeChangedRelaxed(remote.mtimeCli, prevSync.mtimeCli);
 
-    if (remoteChanged) {
+    if (remoteContentChanged) {
       // Remote was modified after our last sync — treat as conflict
       return resolveModifiedConflict(conflictAction, local, remote);
     }
@@ -94,11 +105,11 @@ export const determineSyncDecision = (
 
   // ── Remote missing, prev exists → remote was deleted ─────────────────────
   if (hasLocal && !hasRemote && hasPrev) {
-    const localChanged =
-      mtimeChanged(local.mtimeCli, prevSync.mtimeCli) ||
-      local.sizeRaw !== prevSync.sizeRaw;
+    const localContentChanged =
+      local.sizeRaw !== prevSync.sizeRaw ||
+      mtimeChangedRelaxed(local.mtimeCli, prevSync.mtimeCli);
 
-    if (localChanged) {
+    if (localContentChanged) {
       // Local was modified after our last sync — treat as conflict
       return resolveModifiedConflict(conflictAction, local, remote);
     }
