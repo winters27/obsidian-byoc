@@ -267,7 +267,7 @@ export interface BYOCPluginSettings {
   syncDirection?: SyncDirectionType;
 
   obfuscateSettingFile?: boolean;
-  enableMobileStatusBar?: boolean;
+
   encryptionMethod?: CipherMethodType;
 
   profiler?: ProfilerConfig;

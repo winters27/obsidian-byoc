@@ -193,4 +193,89 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
       "conflict_modified_then_keep_remote"
     );
   });
+
+  // ── Deletion with mtime drift (#985, #991) ─────────────────────────────
+  const SMALL_DRIFT = 5_000;    // 5s — within 30s relaxed tolerance
+  const LARGE_DRIFT = 60_000;   // 60s — exceeds relaxed tolerance
+
+  it("remote deleted, local mtime drifted within tolerance → delete local (not conflict)", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T + SMALL_DRIFT }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "remote_is_deleted_thus_also_delete_local"
+    );
+  });
+
+  it("remote deleted, local mtime drifted beyond tolerance → conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T + LARGE_DRIFT }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_modified_then_smart_conflict"
+    );
+  });
+
+  it("remote deleted, local size changed → conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 20, mtimeCli: T }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_modified_then_smart_conflict"
+    );
+  });
+
+  it("local deleted, remote mtime drifted within tolerance → delete remote (not conflict)", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(undefined, { sizeRaw: 10, mtimeSvr: T + SMALL_DRIFT }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "local_is_deleted_thus_also_delete_remote"
+    );
+  });
+
+  it("local deleted, remote mtime drifted beyond tolerance → conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(undefined, { sizeRaw: 10, mtimeSvr: T + LARGE_DRIFT }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_modified_then_smart_conflict"
+    );
+  });
+
+  it("local deleted, remote size changed → conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(undefined, { sizeRaw: 20, mtimeSvr: T }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_modified_then_smart_conflict"
+    );
+  });
+
+  it("remote deleted, local truly unchanged → delete local", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T + S }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "remote_is_deleted_thus_also_delete_local"
+    );
+  });
+
+  it("local deleted, remote truly unchanged → delete remote", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(undefined, { sizeRaw: 10, mtimeSvr: T + S, mtimeCli: T + S }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "local_is_deleted_thus_also_delete_remote"
+    );
+  });
 });
+
