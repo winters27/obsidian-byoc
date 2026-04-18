@@ -196,7 +196,20 @@ export class FakeFsEncrypt extends FakeFs {
           continue;
         }
 
-        const key = await this._decryptName(innerEntity.keyRaw);
+        // Bug Fix #2: Gracefully skip entries that cannot be decrypted.
+        // A malformed or wrong-password-encrypted name (e.g., "Data P must be
+        // a multiple of 16 long") must not abort the entire sync walk.
+        let key: string;
+        try {
+          key = await this._decryptName(innerEntity.keyRaw);
+        } catch (e) {
+          console.warn(
+            `[BYOC] Skipping undecryptable remote entry: ${innerEntity.keyRaw}`,
+            e
+          );
+          continue;
+        }
+
         const size = key.endsWith("/") ? 0 : undefined;
         res.push({
           key: key,
@@ -387,6 +400,8 @@ export class FakeFsEncrypt extends FakeFs {
     }
     return await this.innerFs.rename(key1Enc, key2Enc);
   }
+
+  supportsRename(): boolean { return this.innerFs.supportsRename(); }
 
   async rm(key: string): Promise<void> {
     if (!this.hasCacheMap) {

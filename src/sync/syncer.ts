@@ -3,7 +3,13 @@ import type { FakeFsEncrypt } from "../fsEncrypt";
 import type { FakeFsLocal } from "../fsLocal";
 import type { InternalDBs } from "../localdb";
 import type { Profiler } from "../profiler";
-import type { BYOCPluginSettings, SyncTriggerSourceType, Entity, MixedEntity } from "../baseTypes";
+import type {
+  BYOCPluginSettings,
+  DecisionTypeForMixedEntity,
+  Entity,
+  MixedEntity,
+  SyncTriggerSourceType,
+} from "../baseTypes";
 import { determineSyncDecision } from "./planner";
 import { generateConflictFileName } from "./conflict";
 import { copyFileOrFolder } from "../copyLogic";
@@ -57,6 +63,133 @@ function sortSyncActions(actions: MixedEntity[]): MixedEntity[] {
   foldersToDelete.sort((a, b) => folderDepth(b.key) - folderDepth(a.key));
 
   return [...foldersToCreate, ...files, ...foldersToDelete, ...rest];
+}
+
+// ─── Rename Detection ─────────────────────────────────────────────────────────
+// Conservative bidirectional rename matching using composite-key grouping.
+// A rename match requires ALL of the following:
+//   1. sizeRaw > 0 (excludes empty files)
+//   2. !key.endsWith("/") (excludes folders)
+//   3. sizeRaw matches exactly (byte-for-byte)
+//   4. mtimeCli within RENAME_MTIME_TOLERANCE_MS (2s — OS preserves on rename)
+//   5. Exactly 1 delete + 1 create in the composite group (no ambiguity)
+//   6. Provider supports rename (supportsRename() === true)
+
+const RENAME_MTIME_TOLERANCE_MS = 2000;
+
+function matchRenames(
+  actions: MixedEntity[],
+  opts: {
+    deleteDecision: string;
+    createDecision: string;
+    renameDecision: DecisionTypeForMixedEntity;
+    getDeleteMeta: (n: MixedEntity) => { sizeRaw: number; mtimeCli: number };
+    getCreateMeta: (n: MixedEntity) => { sizeRaw: number; mtimeCli: number };
+  }
+): void {
+  // Build composite-key groups: ${sizeRaw}:${floor(mtimeCli / tolerance)}
+  const groups = new Map<string, { deletes: number[]; creates: number[] }>();
+
+  const compositeKey = (size: number, mtime: number): string =>
+    `${size}:${Math.floor(mtime / RENAME_MTIME_TOLERANCE_MS)}`;
+
+  for (let i = 0; i < actions.length; i++) {
+    const node = actions[i];
+    if (node.key.endsWith("/")) continue; // Exclude folders
+
+    if (node.decision === opts.deleteDecision && node.prevSync) {
+      const meta = opts.getDeleteMeta(node);
+      if (meta.sizeRaw <= 0) continue; // Exclude empty files
+      const key = compositeKey(meta.sizeRaw, meta.mtimeCli);
+      if (!groups.has(key)) groups.set(key, { deletes: [], creates: [] });
+      groups.get(key)!.deletes.push(i);
+    } else if (node.decision === opts.createDecision) {
+      const meta = opts.getCreateMeta(node);
+      if (meta.sizeRaw <= 0) continue; // Exclude empty files
+      const key = compositeKey(meta.sizeRaw, meta.mtimeCli);
+      if (!groups.has(key)) groups.set(key, { deletes: [], creates: [] });
+      groups.get(key)!.creates.push(i);
+    }
+  }
+
+  // Only match groups with exactly 1:1 (no ambiguity tolerated)
+  const indicesToRemove = new Set<number>();
+  const renames: MixedEntity[] = [];
+
+  for (const [, group] of groups) {
+    if (group.deletes.length !== 1 || group.creates.length !== 1) continue;
+
+    const delIdx = group.deletes[0];
+    const crtIdx = group.creates[0];
+    const delNode = actions[delIdx];
+    const crtNode = actions[crtIdx];
+
+    indicesToRemove.add(delIdx);
+    indicesToRemove.add(crtIdx);
+
+    renames.push({
+      key: crtNode.key,           // New path
+      renameFrom: delNode.key,    // Old path
+      decision: opts.renameDecision,
+      prevSync: delNode.prevSync,
+      local: crtNode.local,
+      remote: crtNode.remote,
+    });
+  }
+
+  // Remove matched pairs in reverse index order to preserve indices during splice
+  const sortedIndices = [...indicesToRemove].sort((a, b) => b - a);
+  for (const idx of sortedIndices) {
+    actions.splice(idx, 1);
+  }
+
+  // Append rename actions (they'll fall into the files bucket in sortSyncActions)
+  actions.push(...renames);
+}
+
+function detectRenames(
+  actions: MixedEntity[],
+  canRename: boolean
+): MixedEntity[] {
+  if (!canRename) return actions;
+
+  const result = [...actions];
+
+  // === Local-side renames ===
+  // User renamed locally: shows up as local_is_deleted + local_is_created
+  matchRenames(result, {
+    deleteDecision: "local_is_deleted_thus_also_delete_remote",
+    createDecision: "local_is_created_then_push",
+    renameDecision: "rename_local_to_remote",
+    getDeleteMeta: (n) => ({
+      sizeRaw: n.prevSync!.sizeRaw,
+      mtimeCli: n.prevSync!.mtimeCli ?? 0,
+    }),
+    getCreateMeta: (n) => ({
+      sizeRaw: n.local!.sizeRaw,
+      mtimeCli: n.local!.mtimeCli ?? 0,
+    }),
+  });
+
+  // === Remote-side renames ===
+  // Another device renamed remotely: shows up as remote_is_deleted + remote_is_created
+  // Uses mtimeCli (client-set timestamp, preserved by most providers on move).
+  // S3 is excluded upstream via supportsRename() since copy+delete destroys mtimeCli.
+  matchRenames(result, {
+    deleteDecision: "remote_is_deleted_thus_also_delete_local",
+    createDecision: "remote_is_created_then_pull",
+    renameDecision: "rename_remote_to_local",
+    getDeleteMeta: (n) => ({
+      sizeRaw: n.prevSync!.sizeRaw,
+      mtimeCli: n.prevSync!.mtimeCli ?? 0,
+    }),
+    getCreateMeta: (n) => ({
+      sizeRaw: n.remote!.sizeRaw,
+      mtimeCli: n.remote!.mtimeCli ?? 0,
+    }),
+  });
+
+  return result;
 }
 
 /**
@@ -153,9 +286,16 @@ export async function syncer(
     });
 
     // M1: Enforce folder-before-file creation order, file-before-folder delete order.
-    const syncActions = sortSyncActions(unsortedActions);
+    let syncActions = sortSyncActions(unsortedActions);
+
+    // M1.5: Rename Detection — converts delete+create pairs into single rename ops.
+    // Must run AFTER sortSyncActions (which establishes the decision classification)
+    // and BEFORE the protection check (renames are not destructive).
+    const canRename = remoteFsTarget.supportsRename();
+    syncActions = detectRenames(syncActions, canRename);
 
     // M2: Protection — count operations that destroy or overwrite local content.
+    // Rename decisions are explicitly skipped — a rename is a path change, not destruction.
     const allFileCount = nodes.size;
     
     if (allFileCount > 0) {
@@ -163,26 +303,29 @@ export async function syncer(
       for (const action of syncActions) {
         const d = action.decision;
         if (!d || d === "equal" || d === "only_history") continue;
-    
+
+        // Skip rename decisions — non-destructive path changes
+        if (d === "rename_local_to_remote" || d === "rename_remote_to_local") continue;
+
         // Deletes (either side) are always destructive
         if (d.includes("delete")) {
           destructiveCount++;
           continue;
         }
-    
+
         // Pulls that OVERWRITE an existing local file
         if (d === "remote_is_modified_then_pull" && action.local !== undefined) {
           destructiveCount++;
           continue;
         }
-    
+
         // Conflict resolutions that overwrite local with remote content
         if ((d.includes("keep_remote") || d.includes("smart_conflict")) && action.local !== undefined) {
           destructiveCount++;
           continue;
         }
       }
-    
+
       const protectErr = getProtectError(
         settings.protectModifyPercentage || 50,
         destructiveCount,
@@ -197,14 +340,13 @@ export async function syncer(
     await statusBarFunc(triggerSource, 7, true); // Exchanging data
 
     const successfulCommits: Entity[] = [];
+    let hadErrors = false;
     let counter = 0;
 
     for (const node of syncActions) {
       const decision = node.decision;
       if (decision === "equal" || decision === "only_history") {
         // M3: Commit the freshest known entity, not the stale prevSync snapshot.
-        // Using stale prevSync would cause false-change detection on next sync
-        // if provider clocks have drifted slightly.
         const commitEntity = node.local ?? node.remote ?? node.prevSync;
         if (commitEntity) successfulCommits.push(commitEntity);
         continue;
@@ -219,8 +361,8 @@ export async function syncer(
             ...res.entity,
             keyRaw: node.key,
             mtimeCli: node.local!.mtimeCli,
-            sizeRaw: node.local!.sizeRaw, // Keep the baseline's primary size anchored to the local plaintext size
-            sizeEnc: res.entity.sizeRaw,  // Preserve the remote ciphertext size
+            sizeRaw: node.local!.sizeRaw, // baseline anchored to plaintext size
+            sizeEnc: res.entity.sizeRaw,  // ciphertext size
           });
         }
         else if (decision === "remote_is_created_then_pull" || decision === "remote_is_modified_then_pull") {
@@ -229,8 +371,8 @@ export async function syncer(
             ...res.entity,
             keyRaw: node.key,
             mtimeSvr: node.remote!.mtimeSvr,
-            sizeRaw: res.entity.sizeRaw,  // Anchored to local plaintext size
-            sizeEnc: node.remote!.sizeEnc ?? node.remote!.sizeRaw, // Preserve remote ciphertext size
+            sizeRaw: res.entity.sizeRaw,
+            sizeEnc: node.remote!.sizeEnc ?? node.remote!.sizeRaw,
           });
         }
         else if (decision === "remote_is_deleted_thus_also_delete_local") {
@@ -241,11 +383,36 @@ export async function syncer(
           await remoteFsTarget.rm(node.key);
           // Omit from successfulCommits — clears baseline
         }
+        // ── Rename handlers ──────────────────────────────────────────────────
+        else if (decision === "rename_local_to_remote" && node.renameFrom) {
+          // User renamed a file locally — move it on the remote to match.
+          await remoteFsTarget.rename(node.renameFrom, node.key);
+          // stat() the new path to capture the fresh mtimeSvr from the provider.
+          const freshEntity = await remoteFsTarget.stat(node.key);
+          successfulCommits.push({
+            ...freshEntity,
+            keyRaw: node.key,
+            mtimeCli: node.prevSync?.mtimeCli ?? node.local?.mtimeCli,
+            sizeRaw: node.prevSync?.sizeRaw ?? node.local?.sizeRaw ?? freshEntity.sizeRaw,
+            sizeEnc: node.prevSync?.sizeEnc ?? freshEntity.sizeRaw,
+          });
+        }
+        else if (decision === "rename_remote_to_local" && node.renameFrom) {
+          // A remote device renamed a file — update local path to match.
+          await fsLocal.rename(node.renameFrom, node.key);
+          const freshEntity = await fsLocal.stat(node.key);
+          successfulCommits.push({
+            ...freshEntity,
+            keyRaw: node.key,
+            mtimeSvr: node.prevSync?.mtimeSvr ?? node.remote?.mtimeSvr,
+            sizeRaw: freshEntity.sizeRaw,
+            sizeEnc: node.prevSync?.sizeEnc,
+          });
+        }
+        // ─────────────────────────────────────────────────────────────────────
         else if (decision?.includes("conflict") && decision?.includes("smart_conflict")) {
-          // Smart conflict: preserve local as a timestamped backup, then pull remote.
           const cName = generateConflictFileName(node.key);
           if (!node.key.endsWith("/")) {
-            // Read the current local content and write it to the conflict-named path.
             const localContent = await fsLocal.readFile(node.key);
             const localStat = await fsLocal.stat(node.key);
             await fsLocal.writeFile(
@@ -255,7 +422,6 @@ export async function syncer(
               localStat.ctimeCli ?? localStat.mtimeCli ?? Date.now()
             );
           }
-          // Pull remote over the actual local file — now safe because local is backed up.
           const res = await copyFileOrFolder(node.key, remoteFsTarget, fsLocal);
           successfulCommits.push({
             ...res.entity,
@@ -286,15 +452,41 @@ export async function syncer(
           });
         }
       } catch (e) {
-        // If an operation fails, bypass pushing to successfulCommits.
+        // Bug Fix #3: Track individual execution errors.
         // The file stays in broken state — next sync will retry it.
+        hadErrors = true;
         console.error(`BYOC Engine failed handling file ${node.key}:`, e);
       }
     }
 
     // Phase 4: Committing Baseline
-    // Atomically save mtimes of all successfully synced files for 3-way diff next run.
-    await db.prevSyncRecordsTbl.setItem(profileID, successfulCommits);
+    // Bug Fix #3: Gate baseline commit on sync completeness.
+    //
+    // isInitialSync: no prevSync records — this is the very first sync.
+    // On initial sync + errors: do NOT commit ANY baseline. The next sync
+    // will retry from scratch as a fresh initial sync, preventing a partial
+    // baseline from triggering destructive deletes on subsequent runs.
+    //
+    // On subsequent syncs + errors: merge successful commits with the old
+    // baseline for failed files (preserving their retry-ability).
+    const isInitialSync = prevSyncItems.length === 0;
+
+    if (isInitialSync && hadErrors) {
+      console.warn("[BYOC] Initial sync incomplete — not committing partial baseline. Retry will start fresh.");
+      // Intentionally do NOT write to prevSyncRecordsTbl
+    } else if (!hadErrors) {
+      // Clean run — commit the full successful set
+      await db.prevSyncRecordsTbl.setItem(profileID, successfulCommits);
+    } else {
+      // Partial failure on a subsequent sync — merge: successful commits
+      // take priority; failed files retain their previous baseline entry.
+      const committedKeys = new Set(successfulCommits.map(e => e.keyRaw));
+      const merged = [
+        ...successfulCommits,
+        ...prevSyncItems.filter(e => !committedKeys.has(e.keyRaw))
+      ];
+      await db.prevSyncRecordsTbl.setItem(profileID, merged);
+    }
 
     await notifyFunc(triggerSource, 8); // finish
     await statusBarFunc(triggerSource, 8, true);
