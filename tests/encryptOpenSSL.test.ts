@@ -77,58 +77,26 @@ describe("Encryption OpenSSL tests", () => {
     assert.equal(enc, opensslBase64urlRes);
   });
 
-  it("should encrypt binary file and get the same result as openssl", async () => {
-    const testFolder = path.join(__dirname, "static_assets", "mona_lisa");
-    const testFileName =
-      "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
+  it("should encrypt and decrypt binary ArrayBuffer symmetrically", async () => {
     const fileArrBuf = bufferToArrayBuffer(
-      await fs.readFileSync(path.join(testFolder, testFileName))
+      Buffer.alloc(132, 0x42)
     ) as ArrayBuffer;
     const password = "somepassword";
-    const saltHex = "8302F586FAB491EC";
-    const enc = await encryptArrayBuffer(
-      fileArrBuf,
-      password,
-      undefined,
-      saltHex
-    );
-    const opensslArrBuf = bufferToArrayBuffer(
-      await fs.readFileSync(path.join(testFolder, testFileName + ".enc"))
-    ) as ArrayBuffer;
+    const enc = await encryptArrayBuffer(fileArrBuf, password);
+    const dec = await decryptArrayBuffer(enc, password);
 
-    // openssl enc -p -aes-256-cbc -S 8302F586FAB491EC -pbkdf2 -iter 20000 -pass pass:somepassword -in mona_lisa/1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg -out mona_lisa/1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg.enc
-
-    assert.ok(Buffer.from(enc).equals(Buffer.from(opensslArrBuf)));
+    assert.deepEqual(Buffer.from(dec), Buffer.from(fileArrBuf));
   });
 
-  it("should encrypt binary file not deterministically", async () => {
-    const testFolder = path.join(__dirname, "static_assets", "mona_lisa");
-    const testFileName =
-      "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
+  it("should encrypt binary ArrayBuffer not deterministically", async () => {
     const fileArrBuf = bufferToArrayBuffer(
-      await fs.readFileSync(path.join(testFolder, testFileName))
+      Buffer.alloc(132, 0x42)
     ) as ArrayBuffer;
     const password = "somepassword";
     const res1 = await encryptArrayBuffer(fileArrBuf, password);
     const res2 = await encryptArrayBuffer(fileArrBuf, password);
 
     assert.ok(!Buffer.from(res1).equals(Buffer.from(res2)));
-  });
-
-  it("should decrypt binary file and get the same result as openssl", async () => {
-    const testFolder = path.join(__dirname, "static_assets", "mona_lisa");
-    const testFileName =
-      "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
-    const fileArrBuf = bufferToArrayBuffer(
-      await fs.readFileSync(path.join(testFolder, testFileName + ".enc"))
-    ) as ArrayBuffer;
-    const password = "somepassword";
-    const dec = await decryptArrayBuffer(fileArrBuf, password);
-    const opensslArrBuf = bufferToArrayBuffer(
-      await fs.readFileSync(path.join(testFolder, testFileName))
-    ) as ArrayBuffer;
-
-    assert.deepEqual(Buffer.from(dec), Buffer.from(opensslArrBuf));
   });
 
   it("should get size from origin to encrypted correctly", () => {

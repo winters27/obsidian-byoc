@@ -1,7 +1,7 @@
 {
   "id": "byoc",
   "name": "Bring Your Own Cloud",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "0.15.0",
   "description": "A cloud and device synchronization tool for Obsidian.",
   "author": "winters27",
