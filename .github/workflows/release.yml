@@ -66,14 +66,16 @@ jobs:
       - run: npm install
       - run: npm test
       - run: npm run build
+      - name: Extract Manifest Props
+        id: manifest
+        run: |
+          echo "tag_name=$(node -p "require('./manifest.json').version")" >> $GITHUB_ENV
+          echo "plugin_id=$(node -p "require('./manifest.json').id")" >> $GITHUB_ENV
       - name: Bundle Plugin Zip
         run: |
-          mkdir obsidian-byoc
-          cp main.js manifest.json styles.css obsidian-byoc/
-          zip -r obsidian-byoc.zip obsidian-byoc/
-      - name: Get version
-        id: version
-        run: echo "tag_name=$(node -p "require('./manifest.json').version")" >> $GITHUB_ENV
+          mkdir ${{ env.plugin_id }}
+          cp main.js manifest.json styles.css ${{ env.plugin_id }}/
+          zip -r ${{ env.plugin_id }}.zip ${{ env.plugin_id }}/
       - name: Create Release And Upload
         uses: softprops/action-gh-release@v2
         with:
@@ -83,7 +85,7 @@ jobs:
             main.js
             manifest.json
             styles.css
-            obsidian-byoc.zip
+            ${{ env.plugin_id }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false

@@ -1,6 +1,6 @@
 {
-  "id": "obsidian-byoc",
-  "name": "Bring Your Own Cloud (BYOC)",
+  "id": "byoc",
+  "name": "Bring Your Own Cloud",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "A cloud and device synchronization tool for Obsidian.",

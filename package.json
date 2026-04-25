@@ -1,12 +1,12 @@
 {
-  "name": "obsidian-byoc",
+  "name": "byoc",
   "version": "1.0.0",
   "description": "A clean, self-hosted, un-paywalled synchronization tool for Obsidian.",
   "scripts": {
     "dev2": "node esbuild.config.mjs --watch",
     "build2": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "build": "webpack --mode production",
-    "postbuild": "node -e \"const fs=require('fs'); const dest='C:/Users/Brandon/Documents/Obsidian Vault/.obsidian/plugins/bring-your-own-cloud'; fs.mkdirSync(dest,{recursive:true}); ['main.js','manifest.json','styles.css'].forEach(f=>{ try{fs.copyFileSync(f,dest+'/'+f); console.log('Deployed '+f+' → '+dest);}catch(e){console.warn('Skip '+f+':',e.message)} });\"",
+    "postbuild": "node -e \"const fs=require('fs'); const dest='C:/Users/Brandon/Documents/Obsidian Vault/.obsidian/plugins/byoc'; fs.mkdirSync(dest,{recursive:true}); ['main.js','manifest.json','styles.css'].forEach(f=>{ try{fs.copyFileSync(f,dest+'/'+f); console.log('Deployed '+f+' → '+dest);}catch(e){console.warn('Skip '+f+':',e.message)} });\"",
     "deploy": "npm run build",
     "dev": "webpack --mode development --watch",
     "format": "npx @biomejs/biome check --write .",
