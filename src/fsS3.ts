@@ -209,7 +209,7 @@ const getObjectBodyToArrayBuffer = async (
       const chunks: Uint8Array[] = [];
       b.on("data", (chunk) => chunks.push(chunk));
       b.on("error", reject);
-      b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks))));
+      b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks)) as ArrayBuffer));
     })) as ArrayBuffer;
   } else if (b instanceof ReadableStream) {
     return await new Response(b, {}).arrayBuffer();

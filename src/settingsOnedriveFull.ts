@@ -43,7 +43,7 @@ class OnedrivefullAuthModal extends Modal {
     const { contentEl } = this;
     const t = this.t;
 
-    t("modal_onedrivefullauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_onedrivefullauth_tutorial").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
 
     try {
       const { authUrl, verifier } = await getAuthUrlAndVerifier(
@@ -94,7 +94,7 @@ class OnedrivefullRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_onedrivefullrevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_onedrivefullrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
     const consentUrl = "https://microsoft.com/consent";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,

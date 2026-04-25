@@ -747,7 +747,7 @@ export class FakeFsOnedrive extends FakeFs {
       const res = await requestUrl({
         url: theUrl,
         method: "PUT",
-        body: bufferToArrayBuffer(payload.subarray(rangeStart, rangeEnd)),
+        body: payload.slice(rangeStart, rangeEnd).buffer as ArrayBuffer,
         contentType: DEFAULT_CONTENT_TYPE,
         headers: {
           // no "Content-Length" allowed here
@@ -759,7 +759,7 @@ export class FakeFsOnedrive extends FakeFs {
     } else {
       const res = await retryFetch(theUrl, {
         method: "PUT",
-        body: payload.subarray(rangeStart, rangeEnd),
+        body: payload.slice(rangeStart, rangeEnd).buffer as ArrayBuffer,
         headers: {
           "Content-Length": `${rangeEnd - rangeStart}`,
           "Content-Range": `bytes ${rangeStart}-${rangeEnd - 1}/${size}`,

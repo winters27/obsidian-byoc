@@ -30,3 +30,13 @@ tests_coverage/
 upstream_tracker.md
 upstream_issues.md
 issues*.json
+
+# Ignore internal docs/markdown
+**/*.md
+!README.md
+
+# Ignore log and debug artifacts
+*.log
+*.txtx
+*.txt
+!tests/static_assets/**/*.txt

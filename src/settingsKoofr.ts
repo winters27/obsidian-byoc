@@ -77,7 +77,7 @@ class KoofrRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_koofrrevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_koofrrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
     const consentUrl = "https://app.koofr.net/app/admin/linked-apps";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,

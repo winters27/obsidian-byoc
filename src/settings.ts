@@ -57,8 +57,8 @@ import {
   upsertLastSuccessSyncTimeByVault,
 } from "./localdb";
 import type RemotelySavePlugin from "./main"; // unavoidable
+// @ts-ignore
 import {
-  changeMobileStatusBar,
   checkHasSpecialCharForDir,
   stringToFragment,
 } from "./misc";
@@ -98,11 +98,11 @@ class PasswordModal extends Modal {
       });
 
     [
-      t("modal_password_attn1"),
-      t("modal_password_attn2"),
-      t("modal_password_attn3"),
-      t("modal_password_attn4"),
-      t("modal_password_attn5"),
+      t("modal_password_attn1" as TransItemType),
+      t("modal_password_attn2" as TransItemType),
+      t("modal_password_attn3" as TransItemType),
+      t("modal_password_attn4" as TransItemType),
+      t("modal_password_attn5" as TransItemType),
     ].forEach((val, idx) => {
       if (idx < 3) {
         contentEl.createEl("p", {
@@ -366,288 +366,6 @@ class ChangeS3RemotePrefixModal extends Modal {
   }
 }
 
-class SyncConfigDirModal extends Modal {
-  constructor(
-    app: App,
-    plugin: RemotelySavePlugin,
-    authDiv: HTMLDivElement,
-    revokeAuthDiv: HTMLDivElement,
-    revokeAuthSetting: Setting
-  ) {
-    super(app);
-    this.plugin = plugin;
-    this.authDiv = authDiv;
-    this.revokeAuthDiv = revokeAuthDiv;
-    this.revokeAuthSetting = revokeAuthSetting;
-  }
-
-  async onOpen() {
-    this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_DROPBOX} <span style="vertical-align: middle;">Connect Dropbox Account</span>`;
-    const { contentEl } = this;
-
-    const t = (x: TransItemType, vars?: any) => {
-      return this.plugin.i18n.t(x, vars);
-    };
-
-    let needManualPatse = false;
-    const userAgent = window.navigator.userAgent.toLocaleLowerCase() || "";
-    // some users report that,
-    // the Linux would open another instance Obsidian if jumping back,
-    // so fallback to manual paste on Linux
-    if (
-      Platform.isDesktopApp &&
-      !Platform.isMacOS &&
-      (/linux/.test(userAgent) ||
-        /ubuntu/.test(userAgent) ||
-        /debian/.test(userAgent) ||
-        /fedora/.test(userAgent) ||
-        /centos/.test(userAgent))
-    ) {
-      needManualPatse = true;
-    }
-
-    const { authUrl, verifier } = await getAuthUrlAndVerifierDropbox(
-      this.plugin.settings.dropbox.clientID,
-      needManualPatse
-    );
-
-    if (needManualPatse) {
-      t("modal_dropboxauth_manualsteps")
-        .split("\n")
-        .forEach((val) => {
-          contentEl.createEl("p", {
-            text: val,
-          });
-        });
-    } else {
-      this.plugin.oauth2Info.verifier = verifier;
-
-      t("modal_dropboxauth_autosteps")
-        .split("\n")
-        .forEach((val) => {
-          contentEl.createEl("p", {
-            text: val,
-          });
-        });
-    }
-
-    const div2 = contentEl.createDiv();
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
-
-
-    contentEl.createEl("p").createEl("a", {
-      href: authUrl,
-      text: authUrl,
-    });
-
-    if (needManualPatse) {
-      let authCode = "";
-      new Setting(contentEl)
-        .setName(t("modal_dropboxauth_maualinput"))
-        .setDesc(t("modal_dropboxauth_maualinput_desc"))
-        .addText((text) =>
-          text
-            .setPlaceholder("")
-            .setValue("")
-            .onChange((val) => {
-              authCode = val.trim();
-            })
-        )
-        .addButton(async (button) => {
-          button.setButtonText(t("submit"));
-          button.onClick(async () => {
-            new Notice(t("modal_dropboxauth_maualinput_notice"));
-            try {
-              const authRes = await sendAuthReqDropbox(
-                this.plugin.settings.dropbox.clientID,
-                verifier,
-                authCode,
-                async (e: any) => {
-                  new Notice(t("protocol_dropbox_connect_fail"));
-                  new Notice(`${e}`);
-                  throw e;
-                }
-              );
-              const self = this;
-              setConfigBySuccessfullAuthInplace(
-                this.plugin.settings.dropbox,
-                authRes!,
-                () => self.plugin.saveSettings()
-              );
-              const client = getClient(
-                this.plugin.settings,
-                this.app.vault.getName(),
-                () => this.plugin.saveSettings()
-              );
-              const username = await client.getUserDisplayName();
-              this.plugin.settings.dropbox.username = username;
-              await this.plugin.saveSettings();
-              new Notice(
-                t("modal_dropboxauth_maualinput_conn_succ", {
-                  username: username,
-                })
-              );
-              this.authDiv.toggleClass(
-                "dropbox-auth-button-hide",
-                this.plugin.settings.dropbox.username !== ""
-              );
-              this.revokeAuthDiv.toggleClass(
-                "dropbox-revoke-auth-button-hide",
-                this.plugin.settings.dropbox.username === ""
-              );
-              this.revokeAuthSetting.setDesc(
-                t("modal_dropboxauth_maualinput_conn_succ_revoke", {
-                  username: this.plugin.settings.dropbox.username,
-                })
-              );
-              this.close();
-            } catch (err) {
-              console.error(err);
-              new Notice(t("modal_dropboxauth_maualinput_conn_fail"));
-            }
-          });
-        });
-    }
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
-
-export class OnedriveAuthModal extends Modal {
-  readonly plugin: RemotelySavePlugin;
-  readonly authDiv: HTMLDivElement;
-  readonly revokeAuthDiv: HTMLDivElement;
-  readonly revokeAuthSetting: Setting;
-  constructor(
-    app: App,
-    plugin: RemotelySavePlugin,
-    authDiv: HTMLDivElement,
-    revokeAuthDiv: HTMLDivElement,
-    revokeAuthSetting: Setting
-  ) {
-    super(app);
-    this.plugin = plugin;
-    this.authDiv = authDiv;
-    this.revokeAuthDiv = revokeAuthDiv;
-    this.revokeAuthSetting = revokeAuthSetting;
-  }
-
-  async onOpen() {
-    this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Connect OneDrive Account</span>`;
-    const { contentEl } = this;
-
-    const { authUrl, verifier } = await getAuthUrlAndVerifierOnedrive(
-      this.plugin.settings.onedrive.clientID,
-      this.plugin.settings.onedrive.authority
-    );
-    this.plugin.oauth2Info.verifier = verifier;
-
-    const t = (x: TransItemType, vars?: any) => {
-      return this.plugin.i18n.t(x, vars);
-    };
-
-    t("modal_onedriveauth_shortdesc")
-      .split("\n")
-      .forEach((val) => {
-        contentEl.createEl("p", {
-          text: val,
-        });
-      });
-    if (Platform.isLinux) {
-      t("modal_onedriveauth_shortdesc_linux")
-        .split("\n")
-        .forEach((val) => {
-          contentEl.createEl("p", {
-            text: stringToFragment(val),
-          });
-        });
-    }
-    const div2 = contentEl.createDiv();
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
-
-export class OnedriveRevokeAuthModal extends Modal {
-  readonly plugin: RemotelySavePlugin;
-  readonly authDiv: HTMLDivElement;
-  readonly revokeAuthDiv: HTMLDivElement;
-  constructor(
-    app: App,
-    plugin: RemotelySavePlugin,
-    authDiv: HTMLDivElement,
-    revokeAuthDiv: HTMLDivElement
-  ) {
-    super(app);
-    this.plugin = plugin;
-    this.authDiv = authDiv;
-    this.revokeAuthDiv = revokeAuthDiv;
-  }
-
-  async onOpen() {
-    this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Revoke OneDrive Account</span>`;
-    const { contentEl } = this;
-    const t = (x: TransItemType, vars?: any) => {
-      return this.plugin.i18n.t(x, vars);
-    };
-
-    contentEl.createEl("p", {
-      text: t("modal_onedriverevokeauth_step1"),
-    });
-    const consentUrl = "https://microsoft.com/consent";
-    contentEl.createEl("p").createEl("a", {
-      href: consentUrl,
-      text: consentUrl,
-    });
-
-    contentEl.createEl("p", {
-      text: t("modal_onedriverevokeauth_step2"),
-    });
-
-    new Setting(contentEl)
-      .setName(t("modal_onedriverevokeauth_clean"))
-      .setDesc(t("modal_onedriverevokeauth_clean_desc"))
-      .addButton(async (button) => {
-        button.setButtonText(t("modal_onedriverevokeauth_clean_button"));
-        button.onClick(async () => {
-          try {
-            this.plugin.settings.onedrive = JSON.parse(
-              JSON.stringify(DEFAULT_ONEDRIVE_CONFIG)
-            );
-            await this.plugin.saveSettings();
-            this.authDiv.toggleClass(
-              "onedrive-auth-button-hide",
-              this.plugin.settings.onedrive.username !== ""
-            );
-            this.revokeAuthDiv.toggleClass(
-              "onedrive-revoke-auth-button-hide",
-              this.plugin.settings.onedrive.username === ""
-            );
-            new Notice(t("modal_onedriverevokeauth_clean_notice"));
-            this.close();
-          } catch (err) {
-            console.error(err);
-            new Notice(t("modal_onedriverevokeauth_clean_fail"));
-          }
-        });
-      });
-  }
-
-  onClose() {
-    const { contentEl } = this;
-    contentEl.empty();
-  }
-}
 
 class SyncConfigDirModal extends Modal {
   plugin: RemotelySavePlugin;
@@ -703,7 +421,7 @@ class SyncConfigDirModal extends Modal {
   }
 }
 
-class ExportSettingsQrCodeModal extends Modal {
+export class ExportSettingsQrCodeModal extends Modal {
   plugin: RemotelySavePlugin;
   exportType: QRExportType;
   constructor(app: App, plugin: RemotelySavePlugin, exportType: QRExportType) {

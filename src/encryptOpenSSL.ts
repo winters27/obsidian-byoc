@@ -15,22 +15,22 @@ const getKeyIVFromPassword = async (
 ) => {
   const k1 = await window.crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(password),
+    new TextEncoder().encode(password).buffer as ArrayBuffer,
     { name: "PBKDF2" },
     false,
     ["deriveKey", "deriveBits"]
   );
 
-  const k2 = await window.crypto.subtle.deriveBits(
+  const k2 = (await window.crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
-      salt: salt,
+      salt: salt as any,
       iterations: rounds,
       hash: "SHA-256",
     },
     k1,
     256 + 128
-  );
+  )) as ArrayBuffer;
 
   return k2;
 };
@@ -112,7 +112,7 @@ export const encryptStringToBase32 = async (
   saltHex = ""
 ) => {
   const enc = await encryptArrayBuffer(
-    bufferToArrayBuffer(new TextEncoder().encode(text)),
+    bufferToArrayBuffer(new TextEncoder().encode(text)) as ArrayBuffer,
     password,
     rounds,
     saltHex
@@ -127,7 +127,7 @@ export const decryptBase32ToString = async (
 ) => {
   return new TextDecoder().decode(
     await decryptArrayBuffer(
-      bufferToArrayBuffer(base32.parse(text, { loose: true })),
+      bufferToArrayBuffer(base32.parse(text, { loose: true })) as ArrayBuffer,
       password,
       rounds
     )
@@ -141,7 +141,7 @@ export const encryptStringToBase64url = async (
   saltHex = ""
 ) => {
   const enc = await encryptArrayBuffer(
-    bufferToArrayBuffer(new TextEncoder().encode(text)),
+    bufferToArrayBuffer(new TextEncoder().encode(text)) as ArrayBuffer,
     password,
     rounds,
     saltHex
@@ -156,7 +156,7 @@ export const decryptBase64urlToString = async (
 ) => {
   return new TextDecoder().decode(
     await decryptArrayBuffer(
-      bufferToArrayBuffer(base64url.parse(text, { loose: true })),
+      bufferToArrayBuffer(base64url.parse(text, { loose: true })) as ArrayBuffer,
       password,
       rounds
     )

@@ -347,7 +347,7 @@ export class FakeFsPCloud extends FakeFs {
     if (this.vaultFolderExists) {
       return;
     } else {
-      const root = (await this.client.listfolder(0, {
+      const root = (await this._sdk.listfolder(0, {
         recursive: false,
       })) as Folder;
 
@@ -365,7 +365,7 @@ export class FakeFsPCloud extends FakeFs {
         this.vaultFolderExists = true;
       } else {
         // not found, let's create it!
-        const f: Folder = await this.client.createfolder(this.remoteBaseDir, 0);
+        const f: Folder = await this._sdk.createfolder(this.remoteBaseDir, 0);
         // console.debug(f);
         this.baseDirID = f.folderid;
         this.vaultFolderExists = true;
@@ -408,7 +408,7 @@ async _getAccessToken() {
 
   async walk(): Promise<Entity[]> {
     await this._init();
-    const rsp = (await this.client.listfolder(this.baseDirID, {
+    const rsp = (await this._sdk.listfolder(this.baseDirID, {
       recursive: true,
     })) as Folder;
 
@@ -421,7 +421,7 @@ async _getAccessToken() {
 
   async walkPartial(): Promise<Entity[]> {
     await this._init();
-    const rsp = (await this.client.listfolder(this.baseDirID, {
+    const rsp = (await this._sdk.listfolder(this.baseDirID, {
       recursive: false,
     })) as Folder;
     const { entities, key2Entity } = fromNestedFolderToEntityListAndCache(rsp);
@@ -487,7 +487,7 @@ async _getAccessToken() {
     let folderItselfWithoutSlash = folderLevels[folderLevels.length - 1];
     folderItselfWithoutSlash = folderItselfWithoutSlash.split("/").pop()!;
 
-    const f = await this.client.createfolder(
+    const f = await this._sdk.createfolder(
       folderItselfWithoutSlash,
       parentID
     );
@@ -639,9 +639,9 @@ async _getAccessToken() {
     }
 
     if (key.endsWith("/")) {
-      await this.client.deletefolder(fileID);
+      await this._sdk.deletefolder(fileID);
     } else {
-      await this.client.deletefile(fileID);
+      await this._sdk.deletefile(fileID);
     }
   }
 

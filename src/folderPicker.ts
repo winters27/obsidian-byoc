@@ -249,7 +249,7 @@ export class RemoteFolderPickerModal extends Modal {
         // Provider returned "already exists" — race condition or hidden
         // folder we couldn't enumerate. Treat it as success and use the
         // name; the next sync will resolve to whatever's there.
-        const msg = String(err?.message ?? err).toLowerCase();
+        const msg = String((err as any)?.message ?? err).toLowerCase();
         if (
           msg.includes("already exists") ||
           msg.includes("already_exists") ||
@@ -260,7 +260,7 @@ export class RemoteFolderPickerModal extends Modal {
           return;
         }
         console.error("[BYOC] createFolderAtRoot failed:", err);
-        new Notice(`Could not create folder: ${err?.message ?? err}`);
+        new Notice(`Could not create folder: ${(err as any)?.message ?? err}`);
         this.busy = false;
         btn.disabled = false;
         btn.textContent = "Create & use";

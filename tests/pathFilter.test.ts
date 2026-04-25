@@ -1,36 +1,36 @@
-import { describe, it, assert } from "vitest";
+import { strict as assert } from "assert";
 import { shouldSyncPath } from "../src/sync/pathFilter";
 
 describe("shouldSyncPath", () => {
   it("allows everything when both lists are empty", () => {
-    assert.isTrue(shouldSyncPath("notes/foo.md", [], []));
+    assert.equal(shouldSyncPath("notes/foo.md", [], []), true);
   });
 
   it("blocks a file matching ignorePaths", () => {
-    assert.isFalse(shouldSyncPath("big.pdf", ["*.pdf"], []));
+    assert.equal(shouldSyncPath("big.pdf", ["*.pdf"], []), false);
   });
 
   it("allows a file not matching ignorePaths", () => {
-    assert.isTrue(shouldSyncPath("notes/foo.md", ["*.pdf"], []));
+    assert.equal(shouldSyncPath("notes/foo.md", ["*.pdf"], []), true);
   });
 
   it("allows a file matching onlyAllowPaths", () => {
-    assert.isTrue(shouldSyncPath("notes/foo.md", [], ["notes/**"]));
+    assert.equal(shouldSyncPath("notes/foo.md", [], ["notes/**"]), true);
   });
 
   it("blocks a file not matching onlyAllowPaths", () => {
-    assert.isFalse(shouldSyncPath("images/bar.png", [], ["notes/**"]));
+    assert.equal(shouldSyncPath("images/bar.png", [], ["notes/**"]), false);
   });
 
   it("ignorePaths takes precedence over onlyAllowPaths", () => {
-    assert.isFalse(shouldSyncPath("notes/secret.md", ["**/secret.*"], ["notes/**"]));
+    assert.equal(shouldSyncPath("notes/secret.md", ["**/secret.*"], ["notes/**"]), false);
   });
 
   it("supports dot-files in globs", () => {
-    assert.isTrue(shouldSyncPath(".obsidian/snippets/custom.css", [], [".obsidian/snippets/**"]));
+    assert.equal(shouldSyncPath(".obsidian/snippets/custom.css", [], [".obsidian/snippets/**"]), true);
   });
 
   it("blocks dot-files when ignored", () => {
-    assert.isFalse(shouldSyncPath(".obsidian/plugins/foo/data.json", [".obsidian/plugins/*/data.json"], []));
+    assert.equal(shouldSyncPath(".obsidian/plugins/foo/data.json", [".obsidian/plugins/*/data.json"], []), false);
   });
 });

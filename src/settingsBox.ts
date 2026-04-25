@@ -77,7 +77,7 @@ class BoxRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_boxrevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_boxrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
     const consentUrl = "https://app.box.com/account/security";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,

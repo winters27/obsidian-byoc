@@ -77,7 +77,7 @@ class YandexDiskRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_yandexdiskrevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_yandexdiskrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
     const consentUrl = "https://id.yandex.com/security/apps";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,

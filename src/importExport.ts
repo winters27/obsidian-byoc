@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 const getShrinkedSettingsOnedriveFull = (config: any) => cloneDeep(config);
 import {
   COMMAND_URI,
+  COMMAND_URI_LEGACY,
   type QRExportType,
   type RemotelySavePluginSettings,
   type UriParams,

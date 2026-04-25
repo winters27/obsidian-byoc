@@ -56,7 +56,7 @@ describe("Encryption OpenSSL tests", () => {
       await fs.readFileSync(
         path.join(__dirname, "static_assets", "sometext.txt")
       )
-    ).toString("utf-8");
+    ).toString("utf-8").replace(/\r\n/g, "\n");
     const password = "somepassword";
     const saltHex = "8302F586FAB491EC";
     const enc = await encryptStringToBase64url(
@@ -83,7 +83,7 @@ describe("Encryption OpenSSL tests", () => {
       "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
     const fileArrBuf = bufferToArrayBuffer(
       await fs.readFileSync(path.join(testFolder, testFileName))
-    );
+    ) as ArrayBuffer;
     const password = "somepassword";
     const saltHex = "8302F586FAB491EC";
     const enc = await encryptArrayBuffer(
@@ -94,7 +94,7 @@ describe("Encryption OpenSSL tests", () => {
     );
     const opensslArrBuf = bufferToArrayBuffer(
       await fs.readFileSync(path.join(testFolder, testFileName + ".enc"))
-    );
+    ) as ArrayBuffer;
 
     // openssl enc -p -aes-256-cbc -S 8302F586FAB491EC -pbkdf2 -iter 20000 -pass pass:somepassword -in mona_lisa/1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg -out mona_lisa/1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg.enc
 
@@ -107,7 +107,7 @@ describe("Encryption OpenSSL tests", () => {
       "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
     const fileArrBuf = bufferToArrayBuffer(
       await fs.readFileSync(path.join(testFolder, testFileName))
-    );
+    ) as ArrayBuffer;
     const password = "somepassword";
     const res1 = await encryptArrayBuffer(fileArrBuf, password);
     const res2 = await encryptArrayBuffer(fileArrBuf, password);
@@ -121,12 +121,12 @@ describe("Encryption OpenSSL tests", () => {
       "1374px-Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg";
     const fileArrBuf = bufferToArrayBuffer(
       await fs.readFileSync(path.join(testFolder, testFileName + ".enc"))
-    );
+    ) as ArrayBuffer;
     const password = "somepassword";
     const dec = await decryptArrayBuffer(fileArrBuf, password);
     const opensslArrBuf = bufferToArrayBuffer(
       await fs.readFileSync(path.join(testFolder, testFileName))
-    );
+    ) as ArrayBuffer;
 
     assert.deepEqual(Buffer.from(dec), Buffer.from(opensslArrBuf));
   });

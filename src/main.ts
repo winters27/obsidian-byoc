@@ -760,10 +760,8 @@ export default class BYOCPlugin extends Plugin {
         t("protocol_koofr_connecting").split("\n").forEach((val) => k.createEl("p", { text: val }));
       }
       const authRes = await sendAuthReqKoofr(
-        this.settings.koofr.api,
         inputParams.code,
-        async (e: any) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${e}`); throw e; },
-        true
+        async (e: any) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${e}`); throw e; }
       );
       const self = this;
       await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr!, authRes!, () => self.saveSettings());
@@ -1118,7 +1116,7 @@ export default class BYOCPlugin extends Plugin {
     document.addEventListener("visibilitychange", handler);
 
     // Scenario 2: kill → cold start (only if user hasn't configured initRunAfterMilliseconds)
-    if (!(this.settings.initRunAfterMilliseconds > 0)) {
+    if ((this.settings.initRunAfterMilliseconds ?? 0) <= 0) {
       this.app.workspace.onLayoutReady(() => {
         if (!this.isSyncing) {
           console.info("[BYOC] Mobile cold-start sync: triggering initial syncRun");

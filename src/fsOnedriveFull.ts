@@ -443,7 +443,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     // Upload session ranges — NO auth header
     const res = await retryFetch(url, {
       method: "PUT",
-      body: data.subarray(start, end),
+      body: data.slice(start, end).buffer as ArrayBuffer,
       headers: {
         "Content-Length": `${end - start}`,
         "Content-Range": `bytes ${start}-${end - 1}/${total}`,

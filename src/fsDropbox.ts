@@ -705,7 +705,7 @@ export class FakeFsDropbox extends FakeFs {
     } else if ((rsp.result as any).fileBinary !== undefined) {
       // we get a Buffer
       const content = (rsp.result as any).fileBinary as Buffer;
-      return bufferToArrayBuffer(content);
+      return bufferToArrayBuffer(content) as ArrayBuffer;
     } else {
       throw Error(`unknown rsp from dropbox download: ${rsp}`);
     }
