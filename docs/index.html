@@ -7,96 +7,185 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #0d0f14;
+      background: radial-gradient(circle at 50% 0%, #1e1b4b, #0d0f14 60%);
       color: #c6cdd5;
-      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4rem 2rem;
+      overflow-x: hidden;
     }
-    .card {
-      max-width: 520px;
+    
+    /* Background Ambience */
+    .bg-glow {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
       width: 100%;
-      padding: 3rem 2.5rem;
-      border-radius: 16px;
-      background: rgba(30, 34, 44, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* Hero Section */
+    .hero {
+      margin-bottom: 4rem;
+      animation: fadeUp 0.8s ease-out forwards;
+    }
+    .logo-container {
+      width: 96px; height: 96px;
+      margin: 0 auto 2rem;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .logo { width: 100%; height: 100%; object-fit: contain; }
+    
+    h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    p.subtitle {
+      font-size: 1.25rem;
+      line-height: 1.6;
+      color: #9ca3af;
+      max-width: 600px;
+      margin: 0 auto 3rem;
+    }
+
+    /* Action Buttons */
+    .actions {
+      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      padding: 0.875rem 1.75rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(99, 102, 241, 0.2));
+      color: #e0e7ff;
+      border: 1px solid rgba(147, 51, 234, 0.5);
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.15);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(99, 102, 241, 0.3));
+      box-shadow: 0 0 30px rgba(147, 51, 234, 0.25);
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.03);
+      color: #d1d5db;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    /* Frosted Feature Grid */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+      margin-top: 4rem;
+      animation: fadeUp 1s ease-out forwards;
+      opacity: 0;
+      animation-delay: 0.2s;
+    }
+    .feature-card {
+      background: rgba(30, 34, 44, 0.4);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-      text-align: center;
-    }
-    .icon {
-      width: 64px; height: 64px;
-      margin: 0 auto 1.5rem;
       border-radius: 16px;
-      background: rgba(147, 51, 234, 0.15); /* Purple accent for BYOC */
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: inset 0 0 0 1px rgba(147, 51, 234, 0.3);
+      padding: 2rem;
+      text-align: left;
+      transition: border-color 0.3s;
     }
-    .icon svg { width: 32px; height: 32px; color: #a855f7; }
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #e8ecf0;
-      margin-bottom: 1rem;
-      letter-spacing: -0.01em;
+    .feature-card:hover {
+      border-color: rgba(147, 51, 234, 0.3);
     }
-    p {
-      font-size: 0.9375rem;
-      line-height: 1.6;
-      color: #8b95a3;
-      margin-bottom: 2.5rem;
-    }
-    .links {
-      display: flex; gap: 1rem; justify-content: center;
-      flex-wrap: wrap;
-    }
-    a {
-      padding: 0.625rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s ease;
-    }
-    .primary-link {
-      background: rgba(147, 51, 234, 0.2);
-      color: #d8b4fe;
-      border: 1px solid rgba(147, 51, 234, 0.4);
-    }
-    .primary-link:hover {
-      background: rgba(147, 51, 234, 0.3);
-    }
-    .secondary-link {
-      background: rgba(255, 255, 255, 0.04);
-      color: #c6cdd5;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .secondary-link:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #e8ecf0;
+    .feature-title { font-weight: 600; color: #f3f4f6; margin-bottom: 0.75rem; font-size: 1.125rem; }
+    .feature-desc { color: #8b95a3; font-size: 0.9375rem; line-height: 1.5; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="icon">
-      <!-- Sync/Cloud generic icon derived from BYOC context -->
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-        <path d="M12 12v5"/>
-        <path d="m9 14 3-3 3 3"/>
-      </svg>
+  <div class="bg-glow"></div>
+  
+  <div class="container">
+    <div class="hero">
+      <div class="logo-container">
+        <img src="logo.png" alt="BYOC Logo" class="logo" onerror="this.style.display='none'">
+      </div>
+      
+      <h1>Bring Your <span class="gradient-text">Own Cloud</span></h1>
+      <p class="subtitle">
+        A native, open-source sync engine for Obsidian. Connect your personal storage providers directly inside your vault on both Desktop and Mobile. No middleman, zero tracking.
+      </p>
+      
+      <div class="actions">
+        <a href="https://github.com/winters27/obsidian-byoc" class="btn btn-primary">
+          View on GitHub
+        </a>
+        <a href="/privacy.html" class="btn btn-secondary">
+          Privacy Policy
+        </a>
+      </div>
     </div>
-    <h1>Bring Your Own Cloud</h1>
-    <p>A native, open-source sync engine for Obsidian. Connect your own storage providers directly inside your vault on both Desktop and Mobile. No middleman servers.</p>
-    
-    <div class="links">
-      <a href="https://github.com/winters27/obsidian-byoc" class="primary-link">GitHub Repository</a>
-      <a href="/privacy.html" class="secondary-link">Privacy Policy</a>
+
+    <div class="features">
+      <div class="feature-card">
+        <div class="feature-title">Native Integration</div>
+        <div class="feature-desc">Bypasses local filesystem loops. Runs natively on iOS, Android, macOS, and Windows.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-title">Zero Middleware</div>
+        <div class="feature-desc">Communicate directly with Google Drive, OneDrive, and Dropbox APIs. 100% private.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-title">Frosted UX</div>
+        <div class="feature-desc">Premium graphical interface baked directly into Obsidian settings. No pasting codes.</div>
+      </div>
     </div>
   </div>
 </body>
