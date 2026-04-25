@@ -4,7 +4,10 @@
 
 <h1 align="center">Bring Your Own Cloud (BYOC)</h1>
 
-<p align="center">A clean, self-hosted synchronization plugin for <a href="https://obsidian.md">Obsidian</a>.</p>
+<p align="center">
+  <a href="https://bringyourowncloud.xyz"><strong>bringyourowncloud.xyz</strong></a><br><br>
+  A clean, self-hosted synchronization plugin for <a href="https://obsidian.md">Obsidian</a>.
+</p>
 
 BYOC is a community-maintained fork of the excellent [Remotely Save](https://github.com/remotely-save/remotely-save) plugin. This version focuses on providing a clean, completely self-hosted experience while maintaining the robust sync engine created by the original developers.
 
