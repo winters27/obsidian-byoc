@@ -10,8 +10,11 @@ name: Release A New Version
 
 on:
   push:
-    tags:
-      - "*" # Push events to matching any tag format, i.e. 1.0, 20.15.10
+    branches:
+      - master
+    paths:
+      - 'manifest.json'
+  workflow_dispatch:
 
 jobs:
   build:
