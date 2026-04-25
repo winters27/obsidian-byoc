@@ -1,4 +1,4 @@
-﻿import { SVG_ONEDRIVE } from './icons';
+import { SVG_ONEDRIVE } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import {
@@ -10,6 +10,10 @@ import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
 import { stringToFragment } from "./misc";
 import { ChangeRemoteBaseDirModal } from "./settings";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
 class OnedrivefullAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
@@ -146,16 +150,6 @@ export const generateOnedriveFullSettingsPart = (
   );
   onedriveFullDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_ONEDRIVE} <span>${t("settings_onedrivefull")}</span>`;
 
-  const onedriveFullLongDescDiv = onedriveFullDiv.createEl("div", {
-    cls: "settings-long-desc",
-  });
-  onedriveFullLongDescDiv.createEl("p", {
-    text: t("settings_onedrivefull_folder", {
-      remoteBaseDir:
-        plugin.settings.onedrivefull.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const onedriveFullNotShowUpHintSetting = new Setting(onedriveFullDiv);
   onedriveFullNotShowUpHintSetting.settingEl.addClass(
     "onedrivefull-allow-to-use-hide"
@@ -171,15 +165,13 @@ export const generateOnedriveFullSettingsPart = (
     cls: "onedrivefull-revoke-auth-button-hide settings-auth-related",
   });
 
+  const savedOnedriveFullUsername = plugin.settings.onedrivefull?.username;
+
   const onedriveFullRevokeAuthSetting = new Setting(onedriveFullRevokeAuthDiv)
-    .setName(t("settings_onedrivefull_revoke"))
-    .setDesc(
-      t("protocol_onedrivefull_connect_succ_revoke", {
-        username: plugin.settings.onedrivefull.username || "",
-      })
-    )
+    .setName(savedOnedriveFullUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_onedrivefull_revoke_button"));
+      button.setWarning();
       button.onClick(async () => {
         new OnedrivefullRevokeAuthModal(
           app,
@@ -190,6 +182,9 @@ export const generateOnedriveFullSettingsPart = (
         ).open();
       });
     });
+  if (savedOnedriveFullUsername) {
+    onedriveFullRevokeAuthSetting.setDesc(savedOnedriveFullUsername);
+  }
 
   new Setting(onedriveFullAuthDiv)
     .setName(t("settings_onedrivefull_auth"))
@@ -220,30 +215,28 @@ export const generateOnedriveFullSettingsPart = (
     !isConnected
   );
 
-  let newOnedriveFullRemoteBaseDir =
-    plugin.settings.onedrivefull.remoteBaseDir || "";
-  new Setting(onedriveFullAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .setDesc(t("settings_remotebasedir_desc"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newOnedriveFullRemoteBaseDir)
-        .onChange((value) => {
-          newOnedriveFullRemoteBaseDir = value.trim();
-        })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(
-          app,
-          plugin,
-          newOnedriveFullRemoteBaseDir,
-          "onedrivefull"
-        ).open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentOnedriveFullFolder =
+    plugin.settings.onedrivefull.remoteBaseDir || app.vault.getName();
+  const onedriveFullRemoteFolderSetting = new Setting(
+    onedriveFullAllowedToUsedDiv
+  ).setName(t("settings_remotebasedir"));
+  renderFolderBreadcrumb(
+    onedriveFullRemoteFolderSetting,
+    "OneDrive",
+    currentOnedriveFullFolder
+  );
+  onedriveFullRemoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "onedrivefull",
+        providerLabel: "OneDrive",
+      })
+    );
+  });
 
   new Setting(onedriveFullAllowedToUsedDiv)
     .setName(t("settings_checkonnectivity"))

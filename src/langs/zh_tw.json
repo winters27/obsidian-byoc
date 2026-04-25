@@ -159,7 +159,7 @@
   "settings_checkonnectivity_desc": "檢查可否連線。",
   "settings_checkonnectivity_button": "檢查",
   "settings_checkonnectivity_checking": "正在檢查……",
-  "settings_remotebasedir": "修改遠端基資料夾（實驗性質）",
+  "settings_remotebasedir": "遠端資料夾",
   "settings_remotebasedir_desc": "預設設定，內容會被同步到遠端的和資料庫同名的資料夾下。您可以在此修改遠端資料夾名，或刪除輸入框文字從而重設到預設值。您需要點選“確認”。",
   "settings_remoteprefix_s3": "修改遠端字首路徑（實驗性質）",
   "settings_remoteprefix_s3_desc": "預設設定 s3 儲存在儲存桶（Bucket）的根目錄。您可以在這裡修改路徑字首，或者保持為空保持預設設定。您需要點選“確認”。",

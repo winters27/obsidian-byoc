@@ -1,4 +1,4 @@
-﻿import { SVG_YANDEX } from './icons';
+import { SVG_YANDEX } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_YANDEXDISK_CONFIG } from "./fsYandexDisk";
@@ -7,6 +7,10 @@ import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
 import { stringToFragment } from "./misc";
 import { ChangeRemoteBaseDirModal } from "./settings";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
 class YandexDiskAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
@@ -127,16 +131,6 @@ export const generateYandexDiskSettingsPart = (
   );
   yandexDiskDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_YANDEX} <span>${t("settings_yandexdisk")}</span>`;
 
-  const yandexDiskLongDescDiv = yandexDiskDiv.createEl("div", {
-    cls: "settings-long-desc",
-  });
-  yandexDiskLongDescDiv.createEl("p", {
-    text: t("settings_yandexdisk_folder", {
-      remoteBaseDir:
-        plugin.settings.yandexdisk.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const yandexDiskNotShowUpHintSetting = new Setting(yandexDiskDiv);
   yandexDiskNotShowUpHintSetting.settingEl.addClass("yandexdisk-allow-to-use-hide");
 
@@ -150,11 +144,13 @@ export const generateYandexDiskSettingsPart = (
     cls: "yandexdisk-revoke-auth-button-hide settings-auth-related",
   });
 
+  const savedYandexUsername = plugin.settings.yandexdisk?.username;
+
   const yandexDiskRevokeAuthSetting = new Setting(yandexDiskRevokeAuthDiv)
-    .setName(t("settings_yandexdisk_revoke"))
-    .setDesc(t("settings_yandexdisk_revoke_desc"))
+    .setName(savedYandexUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_yandexdisk_revoke_button"));
+      button.setWarning();
       button.onClick(async () => {
         new YandexDiskRevokeAuthModal(
           app,
@@ -165,6 +161,9 @@ export const generateYandexDiskSettingsPart = (
         ).open();
       });
     });
+  if (savedYandexUsername) {
+    yandexDiskRevokeAuthSetting.setDesc(savedYandexUsername);
+  }
 
   new Setting(yandexDiskAuthDiv)
     .setName(t("settings_yandexdisk_auth"))
@@ -192,30 +191,28 @@ export const generateYandexDiskSettingsPart = (
   yandexDiskAuthDiv.toggleClass("yandexdisk-auth-button-hide", isConnected);
   yandexDiskRevokeAuthDiv.toggleClass("yandexdisk-revoke-auth-button-hide", !isConnected);
 
-  let newYandexDiskRemoteBaseDir =
-    plugin.settings.yandexdisk.remoteBaseDir || "";
-  new Setting(yandexDiskAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .setDesc(t("settings_remotebasedir_desc"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newYandexDiskRemoteBaseDir)
-        .onChange((value) => {
-          newYandexDiskRemoteBaseDir = value.trim();
-        })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(
-          app,
-          plugin,
-          newYandexDiskRemoteBaseDir,
-          "yandexdisk"
-        ).open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentYandexFolder =
+    plugin.settings.yandexdisk.remoteBaseDir || app.vault.getName();
+  const yandexRemoteFolderSetting = new Setting(yandexDiskAllowedToUsedDiv).setName(
+    t("settings_remotebasedir")
+  );
+  renderFolderBreadcrumb(
+    yandexRemoteFolderSetting,
+    "Yandex Disk",
+    currentYandexFolder
+  );
+  yandexRemoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "yandexdisk",
+        providerLabel: "Yandex Disk",
+      })
+    );
+  });
 
   new Setting(yandexDiskAllowedToUsedDiv)
     .setName(t("settings_checkonnectivity"))

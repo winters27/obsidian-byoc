@@ -6,13 +6,11 @@ import {
   PCLOUD_CLIENT_ID,
   PCLOUD_CLIENT_SECRET,
   type PCloudConfig,
-  COMMAND_URI
+  COMMAND_URI,
+  COMMAND_CALLBACK_PCLOUD,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
 import { getFolderLevels, retryFetch } from "./misc";
-
-// NOTE: COMMAND_CALLBACK_PCLOUD is defined in baseTypes.ts.
-// The redirect URI stays as remotely-save-cb-pcloud to match the registered pCloud app whitelist.
 
 export const DEFAULT_PCLOUD_CONFIG: PCloudConfig = {
   accessToken: "",
@@ -38,9 +36,7 @@ export const generateAuthUrl = async (hasCallback: boolean) => {
   const state = nanoid();
   let authUrl = `https://my.pcloud.com/oauth2/authorize?response_type=code&client_id=${clientID}&state=${state}`;
   if (hasCallback) {
-    // HARDCODED OVERRIDE: Freeloading on the original dev's app config 
-    // since the pCloud API portal is unresponsive/locked for new app registration.
-    authUrl += `&redirect_uri=obsidian://remotely-save-cb-pcloud`;
+    authUrl += `&redirect_uri=obsidian://${COMMAND_CALLBACK_PCLOUD}`;
   }
   return {
     authUrl,
@@ -325,21 +321,28 @@ export class FakeFsPCloud extends FakeFs {
     this.client = null;
   }
 
-  async _init() {
-    // Lazy-create the SDK client on first real use.
-    if (!this.client) {
-      const token = this.pCloudConfig.accessToken;
-      if (!token) {
-        throw Error("pCloud: no access token â€” please authenticate first.");
-      }
-      // pCloud SDK reads locationid from global scope; coerce stringâ†’number
-      // because URL callback params always arrive as strings.
-      (global as any).locationid =
-        typeof this.pCloudConfig.locationid === "string"
-          ? parseInt(this.pCloudConfig.locationid as any, 10)
-          : (this.pCloudConfig.locationid ?? 1);
-      this.client = pcloudSdk.createClient(token);
+  /**
+   * Lazy-create the SDK client. Pulled out of _init so that operations
+   * targeting the cloud root (folder picker, listFoldersAtRoot, etc.) can
+   * skip the remoteBaseDir resolution that _init also performs.
+   */
+  private _initClient() {
+    if (this.client) return;
+    const token = this.pCloudConfig.accessToken;
+    if (!token) {
+      throw Error("pCloud: no access token — please authenticate first.");
     }
+    // pCloud SDK reads locationid from global scope; coerce string→number
+    // because URL callback params always arrive as strings.
+    (global as any).locationid =
+      typeof this.pCloudConfig.locationid === "string"
+        ? parseInt(this.pCloudConfig.locationid as any, 10)
+        : (this.pCloudConfig.locationid ?? 1);
+    this.client = pcloudSdk.createClient(token);
+  }
+
+  async _init() {
+    this._initClient();
 
     if (this.vaultFolderExists) {
       return;
@@ -384,6 +387,23 @@ async _getAccessToken() {
 
     // TODO: no expire date?
     // https://docs.pcloud.com/methods/intro/authentication.html
+  }
+
+  async listFoldersAtRoot(): Promise<string[]> {
+    this._initClient();
+    const root = (await this._sdk.listfolder(0, {
+      recursive: false,
+    })) as Folder;
+    if (!root.contents) return [];
+    return root.contents
+      .filter((x) => x.isfolder)
+      .map((x) => x.name)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    this._initClient();
+    await this._sdk.createfolder(name, 0);
   }
 
   async walk(): Promise<Entity[]> {

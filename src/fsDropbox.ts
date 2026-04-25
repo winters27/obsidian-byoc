@@ -450,6 +450,23 @@ export class FakeFsDropbox extends FakeFs {
     return this;
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    await this._init();
+    const res = await this.dropbox.filesListFolder({
+      path: "",
+      recursive: false,
+    });
+    return res.result.entries
+      .filter((x) => x[".tag"] === "folder")
+      .map((x) => x.name)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._init();
+    await this.dropbox.filesCreateFolderV2({ path: `/${name}` });
+  }
+
   async walk(): Promise<Entity[]> {
     return await this._walk(false);
   }

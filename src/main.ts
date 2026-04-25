@@ -29,6 +29,7 @@ import {
   COMMAND_CALLBACK_PCLOUD,
   COMMAND_CALLBACK_YANDEXDISK,
   COMMAND_CALLBACK_KOOFR,
+  COMMAND_CALLBACK_GOOGLEDRIVE,
   COMMAND_URI,
   COMMAND_URI_LEGACY,
 } from "./baseTypes";
@@ -56,6 +57,8 @@ import { DEFAULT_WEBDIS_CONFIG } from "./fsWebdis";
 // --- BYOC Local Provider Imports (no pro/) ---
 import {
   DEFAULT_GOOGLEDRIVE_CONFIG,
+  sendAuthReq as sendAuthReqGoogleDrive,
+  setConfigBySuccessfullAuthInplace as setConfigBySuccessfullAuthInplaceGoogleDrive,
 } from "./fsGoogleDrive";
 import {
   DEFAULT_BOX_CONFIG,
@@ -110,6 +113,7 @@ import {
 import { delay } from "./misc";
 import { DEFAULT_PROFILER_CONFIG, Profiler } from "./profiler";
 import { BYOCSettingTab } from "./settings";
+import { openFolderPickerForProvider } from "./folderPicker";
 
 // ─── Default Settings ─────────────────────────────────────────────────────────
 
@@ -226,8 +230,28 @@ export default class BYOCPlugin extends Plugin {
   debugServerTemp?: string;
   syncEvent?: Events;
   appContainerObserver?: MutationObserver;
+  /**
+   * Set true while the post-OAuth folder picker is open (or was dismissed
+   * without a selection). All sync triggers must bail out while this is
+   * true — running a sync against an unconfigured remoteBaseDir is the
+   * exact scenario that produces "would delete 2000 files" plans.
+   */
+  awaitingFolderSelection: boolean = false;
+  /** Reference to the BYOC settings tab so we can force a re-render when
+   *  remoteBaseDir changes from outside the panel (e.g. the post-OAuth
+   *  folder picker). Without this, the panel's text input keeps showing the
+   *  pre-pick value because it captured remoteBaseDir into a closure at
+   *  render time. */
+  settingTab?: BYOCSettingTab;
 
   async syncRun(triggerSource: SyncTriggerSourceType = "manual") {
+    if (this.awaitingFolderSelection) {
+      console.info(`[BYOC] syncRun skipped (${triggerSource}): awaiting remote folder selection`);
+      if (triggerSource === "manual") {
+        new Notice("Pick a remote folder in BYOC settings before syncing.");
+      }
+      return;
+    }
     let profiler: Profiler | undefined = undefined;
     if (this.settings.profiler?.enable ?? false) {
       profiler = new Profiler(
@@ -515,12 +539,16 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.verifier = "";
         this.oauth2Info.helperModal?.close();
         this.oauth2Info.helperModal = undefined;
-        this.oauth2Info.authDiv?.toggleClass("dropbox-auth-button-hide", this.settings.dropbox.username !== "");
         this.oauth2Info.authDiv = undefined;
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_dropbox_connect_succ_revoke", { username: this.settings.dropbox.username }));
         this.oauth2Info.revokeAuthSetting = undefined;
-        this.oauth2Info.revokeDiv?.toggleClass("dropbox-revoke-auth-button-hide", this.settings.dropbox.username === "");
         this.oauth2Info.revokeDiv = undefined;
+        self.settingTab?.display();
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: self,
+          providerKey: "dropbox",
+          providerLabel: "Dropbox",
+        });
       } else {
         new Notice(t("protocol_dropbox_connect_fail"));
         throw new Error(t("protocol_dropbox_connect_unknown", { params: JSON.stringify(inputParams) }));
@@ -551,12 +579,16 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.verifier = "";
         this.oauth2Info.helperModal?.close();
         this.oauth2Info.helperModal = undefined;
-        this.oauth2Info.authDiv?.toggleClass("onedrive-auth-button-hide", this.settings.onedrive.username !== "");
         this.oauth2Info.authDiv = undefined;
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_onedrive_connect_succ_revoke", { username: this.settings.onedrive.username }));
         this.oauth2Info.revokeAuthSetting = undefined;
-        this.oauth2Info.revokeDiv?.toggleClass("onedrive-revoke-auth-button-hide", this.settings.onedrive.username === "");
         this.oauth2Info.revokeDiv = undefined;
+        self.settingTab?.display();
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: self,
+          providerKey: "onedrive",
+          providerLabel: "OneDrive",
+        });
       } else {
         new Notice(t("protocol_onedrive_connect_fail"));
         throw new Error(t("protocol_onedrive_connect_unknown", { params: JSON.stringify(inputParams) }));
@@ -587,12 +619,16 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.verifier = "";
         this.oauth2Info.helperModal?.close();
         this.oauth2Info.helperModal = undefined;
-        this.oauth2Info.authDiv?.toggleClass("onedrivefull-auth-button-hide", this.settings.onedrivefull.username !== "");
         this.oauth2Info.authDiv = undefined;
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_onedrivefull_connect_succ_revoke", { username: this.settings.onedrivefull.username }));
         this.oauth2Info.revokeAuthSetting = undefined;
-        this.oauth2Info.revokeDiv?.toggleClass("onedrivefull-revoke-auth-button-hide", this.settings.onedrivefull.username === "");
         this.oauth2Info.revokeDiv = undefined;
+        self.settingTab?.display();
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: self,
+          providerKey: "onedrivefull",
+          providerLabel: "OneDrive",
+        });
       } else {
         new Notice(t("protocol_onedrivefull_connect_fail"));
         throw new Error(t("protocol_onedrivefull_connect_unknown", { params: JSON.stringify(inputParams) }));
@@ -615,18 +651,22 @@ export default class BYOCPlugin extends Plugin {
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
-      this.oauth2Info.authDiv?.toggleClass("box-auth-button-hide", this.settings.box?.refreshToken !== "");
       this.oauth2Info.authDiv = undefined;
       try {
         const boxClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await boxClient.getUserDisplayName();
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_box_connect_succ_revoke", { username }));
-      } catch (_) {
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_box_connect_succ_revoke", { username: "Box user" }));
-      }
+        this.settings.box!.username = username;
+        await this.saveSettings();
+      } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
-      this.oauth2Info.revokeDiv?.toggleClass("box-revoke-auth-button-hide", this.settings.box?.refreshToken === "");
       this.oauth2Info.revokeDiv = undefined;
+      self.settingTab?.display();
+      openFolderPickerForProvider({
+        app: this.app,
+        plugin: self,
+        providerKey: "box",
+        providerLabel: "Box",
+      });
     });
 
     // ─── pCloud OAuth Callback ────────────────────────────────────────────────
@@ -653,23 +693,29 @@ export default class BYOCPlugin extends Plugin {
       this.oauth2Info.helperModal = undefined;
       this.oauth2Info.authDiv?.toggleClass("pcloud-auth-button-hide", this.settings.pcloud?.accessToken !== "");
       this.oauth2Info.authDiv = undefined;
-      // Fetch display name and inject "Logged in as" row into the revoke div
+      // Fetch display name and let the settings tab re-render to show the
+      // combined "Logged in as <user>" row with the Revoke action.
       try {
         const pcloudClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await pcloudClient.getUserDisplayName();
         this.settings.pcloud!.username = username;
         await this.saveSettings();
-        // Prepend a read-only "Logged in as" row at the top of the revoke div
-        if (this.oauth2Info.revokeDiv) {
-          const loggedInSetting = new Setting(this.oauth2Info.revokeDiv);
-          loggedInSetting.setName("Logged in as").setDesc(username);
-          // Move it before the revoke button
-          this.oauth2Info.revokeDiv.prepend(loggedInSetting.settingEl);
-        }
+        self.settingTab?.display();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv?.toggleClass("pcloud-revoke-auth-button-hide", this.settings.pcloud?.accessToken === "");
       this.oauth2Info.revokeDiv = undefined;
+
+      // Open the folder picker. Helper sets awaitingFolderSelection to
+      // block syncs until a folder is confirmed — without this, the first
+      // sync after a fresh OAuth runs against an empty/wrong remote and
+      // produces a destructive "delete everything" plan.
+      openFolderPickerForProvider({
+        app: this.app,
+        plugin: self,
+        providerKey: "pcloud",
+        providerLabel: "pCloud",
+      });
     });
 
     // ─── Yandex Disk OAuth Callback ───────────────────────────────────────────
@@ -688,18 +734,22 @@ export default class BYOCPlugin extends Plugin {
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
-      this.oauth2Info.authDiv?.toggleClass("yandexdisk-auth-button-hide", this.settings.yandexdisk?.refreshToken !== "");
       this.oauth2Info.authDiv = undefined;
       try {
         const yandexClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await yandexClient.getUserDisplayName();
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_yandexdisk_connect_succ_revoke", { username }));
-      } catch (_) {
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_yandexdisk_connect_succ_revoke", { username: "Yandex user" }));
-      }
+        this.settings.yandexdisk!.username = username;
+        await this.saveSettings();
+      } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
-      this.oauth2Info.revokeDiv?.toggleClass("yandexdisk-revoke-auth-button-hide", this.settings.yandexdisk?.refreshToken === "");
       this.oauth2Info.revokeDiv = undefined;
+      self.settingTab?.display();
+      openFolderPickerForProvider({
+        app: this.app,
+        plugin: self,
+        providerKey: "yandexdisk",
+        providerLabel: "Yandex Disk",
+      });
     });
 
     // ─── Koofr OAuth Callback ─────────────────────────────────────────────────
@@ -720,18 +770,71 @@ export default class BYOCPlugin extends Plugin {
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
-      this.oauth2Info.authDiv?.toggleClass("koofr-auth-button-hide", this.settings.koofr?.refreshToken !== "");
       this.oauth2Info.authDiv = undefined;
       try {
         const koofrClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await koofrClient.getUserDisplayName();
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_koofr_connect_succ_revoke", { username }));
-      } catch (_) {
-        this.oauth2Info.revokeAuthSetting?.setDesc(t("protocol_koofr_connect_succ_revoke", { username: "Koofr user" }));
-      }
+        this.settings.koofr!.username = username;
+        await this.saveSettings();
+      } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
-      this.oauth2Info.revokeDiv?.toggleClass("koofr-revoke-auth-button-hide", this.settings.koofr?.refreshToken === "");
       this.oauth2Info.revokeDiv = undefined;
+      self.settingTab?.display();
+      openFolderPickerForProvider({
+        app: this.app,
+        plugin: self,
+        providerKey: "koofr",
+        providerLabel: "Koofr",
+      });
+    });
+
+    // ─── Google Drive OAuth Callback ──────────────────────────────────────────
+    this.registerObsidianProtocolHandler(COMMAND_CALLBACK_GOOGLEDRIVE, async (inputParams) => {
+      if (!inputParams.code) {
+        new Notice("Google Drive: missing authorization code.");
+        return;
+      }
+      if (this.oauth2Info.helperModal !== undefined) {
+        const k = this.oauth2Info.helperModal.contentEl;
+        k.empty();
+        k.createEl("p", { text: "Connecting to Google Drive…" });
+      }
+      const self = this;
+      try {
+        const authRes = await sendAuthReqGoogleDrive(
+          inputParams.code,
+          async (e: any) => { new Notice("Google Drive connection failed"); new Notice(`${e}`); throw e; }
+        );
+        if (!authRes || authRes.error) {
+          new Notice("Google Drive connection failed");
+          return;
+        }
+        await setConfigBySuccessfullAuthInplaceGoogleDrive(
+          this.settings.googledrive,
+          authRes,
+          () => self.saveSettings()
+        );
+        // Fetch display name
+        try {
+          const gdClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+          const username = await gdClient.getUserDisplayName();
+          this.settings.googledrive.username = username;
+          await this.saveSettings();
+        } catch (_) { /* username display is non-critical */ }
+        this.oauth2Info.helperModal?.close();
+        this.oauth2Info.helperModal = undefined;
+        new Notice("Google Drive connected successfully!");
+        self.settingTab?.display();
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: self,
+          providerKey: "googledrive",
+          providerLabel: "Google Drive",
+        });
+      } catch (e) {
+        console.error(e);
+        new Notice("Google Drive connection failed");
+      }
     });
 
     // ─── UI ───────────────────────────────────────────────────────────────────
@@ -779,7 +882,8 @@ export default class BYOCPlugin extends Plugin {
     this.addCommand({ id: "export-sync-plans-5", name: t("command_exportsyncplans_5"), icon: iconNameLogs, callback: async () => { await exportVaultSyncPlansToFiles(this.db, this.app.vault, this.vaultRandomID, 5, false); new Notice(t("settings_syncplans_notice")); } });
     this.addCommand({ id: "export-sync-plans-all", name: t("command_exportsyncplans_all"), icon: iconNameLogs, callback: async () => { await exportVaultSyncPlansToFiles(this.db, this.app.vault, this.vaultRandomID, -1, false); new Notice(t("settings_syncplans_notice")); } });
 
-    this.addSettingTab(new BYOCSettingTab(this.app, this));
+    this.settingTab = new BYOCSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
 
     this.enableCheckingFileStat();
 
@@ -787,7 +891,7 @@ export default class BYOCPlugin extends Plugin {
     this.enableAutoSyncIfSet();
     this.enableInitSyncIfSet();
     this.enableSyncOnMobileResume();    // mobile: auto-sync on app resume + cold-start
-    this.enableMobileSyncFab();         // mobile: sync button in bottom toolbar
+    this.enableMobileSyncButton();      // mobile: sync button in bottom toolbar
     this.toggleSyncOnSaveIfSet();
 
     const { oldVersion } = await upsertPluginVersionByVault(this.db, this.vaultRandomID, this.manifest.version);
@@ -954,27 +1058,26 @@ export default class BYOCPlugin extends Plugin {
   }
 
   /**
-   * Attempt to find Obsidian's mobile toolbar and place the sync button
-   * immediately to the LEFT of the settings button.
+   * Attempt to inject the sync button into Obsidian's mobile bottom navbar
+   * (.mobile-navbar > .mobile-navbar-actions). Placed immediately BEFORE
+   * the rightmost three-dot menu button so it lines up with the other
+   * navbar actions (back, forward, quick-switcher, new-tab, tabs, menu).
    *
-   * The options container (.mobile-toolbar-options-list / -container) wraps
-   * the settings button — appending INSIDE it would stack both buttons on top
-   * of each other. Instead we insert BEFORE that container in its parent
-   * toolbar row, making our button a left sibling of settings.
+   * If the menu button isn't present yet (rare race where the row is
+   * mid-render), we append to the actions row instead so the user still
+   * gets a button this frame; a later mutation can re-anchor if needed.
    */
   private _tryInjectSyncButton(btn: HTMLElement): boolean {
-    const optionsEl =
-      document.querySelector(".mobile-toolbar-options-list") ??
-      document.querySelector(".mobile-toolbar-options-container");
+    const actions = document.querySelector(".mobile-navbar-actions");
+    if (!actions) return false;
 
-    if (!optionsEl) return false;
-
-    const parent = optionsEl.parentElement;
-    if (!parent) return false;
-
-    btn.removeClass("byoc-mobile-sync--fab");
-    parent.insertBefore(btn, optionsEl); // insert BEFORE settings container = to its left
-    console.info("[BYOC] Mobile sync button: injected into toolbar (left of settings)");
+    const menuBtn = actions.querySelector(".mobile-navbar-action-menu");
+    if (menuBtn) {
+      actions.insertBefore(btn, menuBtn);
+    } else {
+      actions.appendChild(btn);
+    }
+    console.info("[BYOC] Mobile sync button: injected into mobile navbar");
     return true;
   }
 
@@ -1031,26 +1134,29 @@ export default class BYOCPlugin extends Plugin {
   }
 
   /**
-   * Mobile Sync Button — injected into Obsidian's bottom toolbar next to the
-   * settings button. Falls back to a fixed floating button (FAB) when the
-   * toolbar selector doesn't match, with a single retry on the next leaf change.
+   * Mobile Sync Button — injected into Obsidian's bottom toolbar, immediately
+   * to the LEFT of the settings cog. Lives in the toolbar or not at all; if
+   * the toolbar never renders, the user still has the command palette
+   * "Sync now" entry — we don't fall back to a floating overlay.
    *
-   * Toolbar injection strategy:
-   *   1. Wait 300ms after onLayoutReady (mobile toolbar renders async)
-   *   2. Try .mobile-toolbar-options-list → .mobile-toolbar-options-container
-   *   3. If not found: mount FAB fallback + register active-leaf-change retry
-   *   4. On leaf change: re-attempt injection; promote FAB → toolbar if found
+   * A MutationObserver on document.body survives both the cold-start race
+   * (toolbar mounts after layout-ready) and any later re-render where
+   * Obsidian replaces the toolbar element. The callback is cheap: once the
+   * button is in the DOM, btn.isConnected short-circuits before the
+   * querySelector runs.
    *
-   * The isSyncing guard and CSS pointer-events:none both block concurrent taps
-   * (belt-and-suspenders — either alone would suffice).
+   * The isSyncing guard and CSS pointer-events:none both block concurrent
+   * taps (belt-and-suspenders — either alone would suffice).
    */
-  enableMobileSyncFab() {
+  enableMobileSyncButton() {
     if (!Platform.isMobile) return;
 
-    const btn = document.createElement("button");
+    // Use Obsidian's native navbar-action styling (icon-only, transparent),
+    // and add our own class so we can style the spinning state.
+    const btn = document.createElement("div");
+    btn.addClass("mobile-navbar-action");
     btn.addClass("byoc-mobile-sync");
     btn.setAttribute("aria-label", "Sync vault now");
-    btn.title = "Sync vault now";
     setIcon(btn, iconNameSyncWait);
 
     btn.addEventListener("click", async () => {
@@ -1065,24 +1171,17 @@ export default class BYOCPlugin extends Plugin {
       }
     });
 
+    const tryInject = () => {
+      if (btn.isConnected) return;
+      this._tryInjectSyncButton(btn);
+    };
+
     this.app.workspace.onLayoutReady(() => {
-      // 300ms delay: mobile toolbar renders after the workspace frame settles
-      window.setTimeout(() => {
-        if (this._tryInjectSyncButton(btn)) return;
+      tryInject();
 
-        // Toolbar not ready — mount FAB fallback immediately so user has a button
-        console.info("[BYOC] Mobile sync button: toolbar not found, using FAB fallback (will retry on leaf change)");
-        btn.addClass("byoc-mobile-sync--fab");
-        document.body.appendChild(btn);
-
-        // Register a single-retry listener: promote FAB → toolbar on next leaf change
-        const retryRef = this.app.workspace.on("active-leaf-change", () => {
-          if (this._tryInjectSyncButton(btn)) {
-            this.app.workspace.offref(retryRef);
-          }
-        });
-        this.registerEvent(retryRef);
-      }, 300);
+      const observer = new MutationObserver(tryInject);
+      observer.observe(document.body, { childList: true, subtree: true });
+      this.register(() => observer.disconnect());
     });
 
     this.register(() => btn.remove());

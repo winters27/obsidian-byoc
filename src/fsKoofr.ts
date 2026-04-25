@@ -283,6 +283,25 @@ export class FakeFsKoofr extends FakeFs {
     }
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    const mountID = await this.ensureMountID();
+    const res = await this._getJson(
+      `/api/v2/mounts/${mountID}/files/list?path=${encodeURIComponent("/")}`
+    );
+    return (res.files || [])
+      .filter((item: any) => item.type === "dir")
+      .map((item: any) => item.name as string)
+      .sort((a: string, b: string) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    const mountID = await this.ensureMountID();
+    await this._postJson(
+      `/api/v2/mounts/${mountID}/files/folder?path=${encodeURIComponent("/")}`,
+      { name }
+    );
+  }
+
   async walk(): Promise<Entity[]> {
     await this.ensureBaseDir();
     const mountID = await this.ensureMountID();

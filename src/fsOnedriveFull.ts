@@ -476,6 +476,22 @@ export class FakeFsOnedriveFull extends FakeFs {
     }
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    const k = await this._getJson("/drive/root/children");
+    return (k.value as DriveItem[])
+      .filter((x: DriveItem) => "folder" in x)
+      .map((x: DriveItem) => x.name!)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._postJson("/drive/root/children", {
+      name,
+      folder: {},
+      "@microsoft.graph.conflictBehavior": "fail",
+    });
+  }
+
   async walk(): Promise<Entity[]> {
     await this._init();
 

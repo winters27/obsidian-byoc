@@ -1,4 +1,4 @@
-import { SVG_DROPBOX, SVG_ONEDRIVE, SVG_PCLOUD, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
+import { BYOC_LOGO_DATA_URI, SVG_DROPBOX, SVG_ONEDRIVE, SVG_PCLOUD, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
 import { Eye, EyeOff, createElement } from "lucide";
 import {
   type App,
@@ -22,6 +22,10 @@ import type {
 } from "./baseTypes";
 
 import cloneDeep from "lodash/cloneDeep";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 import { generateAzureBlobStorageSettingsPart } from "./settingsAzureBlobStorage";
 import { generateBoxSettingsPart } from "./settingsBox";
 // import { generateClearDupFilesSettingsPart } from "./settingsClearDupFiles";
@@ -824,6 +828,10 @@ export class BYOCSettingTab extends PluginSettingTab {
     };
 
     const introCard = containerEl.createDiv({ cls: "byoc-intro-card" });
+    introCard.createEl("img", {
+      cls: "byoc-intro-logo",
+      attr: { src: BYOC_LOGO_DATA_URI, alt: "BYOC" },
+    });
     introCard.createEl("p", { text: t("settings_shortdesc") });
 
     
@@ -1103,31 +1111,29 @@ export class BYOCSettingTab extends PluginSettingTab {
       this.plugin.settings.serviceType !== "dropbox"
     );
     dropboxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_DROPBOX} <span>${t("settings_dropbox")}</span>`;
-    dropboxDiv.createEl("p", { text: t("settings_dropbox_disclaimer"), cls: "dropbox-disclaimer" });
 
-    let newDropboxRemoteBaseDir = this.plugin.settings.dropbox.remoteBaseDir || "";
-    new Setting(dropboxDiv)
-      .setName(t("settings_remotebasedir"))
-      .setDesc(t("settings_remotebasedir_desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder(this.app.vault.getName())
-          .setValue(newDropboxRemoteBaseDir)
-          .onChange((value) => {
-            newDropboxRemoteBaseDir = value.trim();
-          })
-      )
-      .addButton((button) => {
-        button.setButtonText(t("confirm"));
-        button.onClick(() => {
-          new ChangeRemoteBaseDirModal(
-            this.app,
-            this.plugin,
-            newDropboxRemoteBaseDir,
-            "dropbox"
-          ).open();
-        });
-      });
+    // Remote folder — picker button + breadcrumb display.
+    const currentDropboxFolder =
+      this.plugin.settings.dropbox.remoteBaseDir || this.app.vault.getName();
+    const dropboxRemoteFolderSetting = new Setting(dropboxDiv).setName(
+      t("settings_remotebasedir")
+    );
+    renderFolderBreadcrumb(
+      dropboxRemoteFolderSetting,
+      "Dropbox",
+      currentDropboxFolder
+    );
+    dropboxRemoteFolderSetting.addButton((button) => {
+      button.setButtonText("Change folder").setCta();
+      button.onClick(() =>
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: this.plugin,
+          providerKey: "dropbox",
+          providerLabel: "Dropbox",
+        })
+      );
+    });
 
     new Setting(dropboxDiv)
       .setName(t("settings_checkonnectivity"))
@@ -1164,31 +1170,29 @@ export class BYOCSettingTab extends PluginSettingTab {
       this.plugin.settings.serviceType !== "onedrive"
     );
     onedriveDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_ONEDRIVE} <span>${t("settings_onedrive")}</span>`;
-    onedriveDiv.createEl("p", { text: t("settings_onedrive_disclaimer"), cls: "onedrive-disclaimer" });
 
-    let newOnedriveRemoteBaseDir = this.plugin.settings.onedrive.remoteBaseDir || "";
-    new Setting(onedriveDiv)
-      .setName(t("settings_remotebasedir"))
-      .setDesc(t("settings_remotebasedir_desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder(this.app.vault.getName())
-          .setValue(newOnedriveRemoteBaseDir)
-          .onChange((value) => {
-            newOnedriveRemoteBaseDir = value.trim();
-          })
-      )
-      .addButton((button) => {
-        button.setButtonText(t("confirm"));
-        button.onClick(() => {
-          new ChangeRemoteBaseDirModal(
-            this.app,
-            this.plugin,
-            newOnedriveRemoteBaseDir,
-            "onedrive"
-          ).open();
-        });
-      });
+    // Remote folder — picker button + breadcrumb display.
+    const currentOnedriveFolder =
+      this.plugin.settings.onedrive.remoteBaseDir || this.app.vault.getName();
+    const onedriveRemoteFolderSetting = new Setting(onedriveDiv).setName(
+      t("settings_remotebasedir")
+    );
+    renderFolderBreadcrumb(
+      onedriveRemoteFolderSetting,
+      "OneDrive",
+      currentOnedriveFolder
+    );
+    onedriveRemoteFolderSetting.addButton((button) => {
+      button.setButtonText("Change folder").setCta();
+      button.onClick(() =>
+        openFolderPickerForProvider({
+          app: this.app,
+          plugin: this.plugin,
+          providerKey: "onedrive",
+          providerLabel: "OneDrive",
+        })
+      );
+    });
 
     new Setting(onedriveDiv)
       .setName(t("settings_onedrive_emptyfile"))

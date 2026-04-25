@@ -771,6 +771,22 @@ export class FakeFsOnedrive extends FakeFs {
     }
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    const k = await this._getJson("/drive/special/approot/children");
+    return (k.value as DriveItem[])
+      .filter((x: DriveItem) => "folder" in x)
+      .map((x: DriveItem) => x.name!)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._postJson("/drive/special/approot/children", {
+      name,
+      folder: {},
+      "@microsoft.graph.conflictBehavior": "replace",
+    });
+  }
+
   /**
    * Use delta api to list all files and folders
    * https://docs.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delta?view=odsp-graph-online

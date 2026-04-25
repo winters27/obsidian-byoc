@@ -3,7 +3,7 @@
   "name": "Bring Your Own Cloud (BYOC)",
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
-  "description": "A clean, self-hosted synchronization tool for Obsidian. Community fork of Remotely Save.",
+  "description": "A cloud and device synchronization tool for Obsidian.",
   "author": "winters27",
   "authorUrl": "https://github.com/winters27",
   "isDesktopOnly": false

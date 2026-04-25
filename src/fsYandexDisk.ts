@@ -218,6 +218,22 @@ export class FakeFsYandexDisk extends FakeFs {
     }
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    const res = await this._getJson(
+      `/resources?path=${encodeURIComponent("disk:/")}&limit=1000&fields=_embedded.items.name,_embedded.items.type`
+    );
+    return (res._embedded?.items || [])
+      .filter((item: any) => item.type === "dir")
+      .map((item: any) => item.name as string)
+      .sort((a: string, b: string) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._put(
+      `/resources?path=${encodeURIComponent(`disk:/${name}`)}`
+    );
+  }
+
   async walk(): Promise<Entity[]> {
     await this.ensureBaseDir();
 

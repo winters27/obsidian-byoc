@@ -1,38 +1,34 @@
-﻿import { SVG_GDRIVE } from './icons';
+import { SVG_GDRIVE } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import {
   DEFAULT_GOOGLEDRIVE_CONFIG,
   generateAuthUrl,
-  sendAuthReq,
   setConfigBySuccessfullAuthInplace,
 } from "./fsGoogleDrive";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
-import { stringToFragment } from "./misc";
-import { ChangeRemoteBaseDirModal } from "./settings";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
-// Google uses urn:ietf:wg:oauth:2.0:oob â€” copy-paste flow, no obsidian:// callback
+// Google Drive uses a bridge page on GitHub Pages to redirect the OAuth
+// callback into Obsidian's protocol handler (obsidian://bring-your-own-cloud-cb-googledrive).
+// The auth modal just opens the auth URL — identical UX to Dropbox/pCloud.
+
 class GoogleDriveAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
-  readonly authDiv: HTMLDivElement;
-  readonly revokeAuthDiv: HTMLDivElement;
-  readonly revokeAuthSetting: Setting;
   readonly t: (x: TransItemType, vars?: any) => string;
+
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
-    authDiv: HTMLDivElement,
-    revokeAuthDiv: HTMLDivElement,
-    revokeAuthSetting: Setting,
     t: (x: TransItemType, vars?: any) => string
   ) {
     super(app);
     this.plugin = plugin;
-    this.authDiv = authDiv;
-    this.revokeAuthDiv = revokeAuthDiv;
-    this.revokeAuthSetting = revokeAuthSetting;
     this.t = t;
   }
 
@@ -40,67 +36,19 @@ class GoogleDriveAuthModal extends Modal {
     this.titleEl.innerHTML = `${SVG_GDRIVE} <span style="vertical-align: middle;">Connect Google Drive Account</span>`;
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
-    const t = this.t;
     const authUrl = generateAuthUrl();
 
-    const div2 = contentEl.createDiv();
-    t("modal_googledriveauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+    contentEl.createEl("p", {
+      text: "Click the button below to authorize with Google Drive. You will be redirected back to Obsidian automatically.",
+      cls: "setting-item-description",
+    });
 
-let authCode = "";
-    new Setting(contentEl)
-      .setName(t("modal_googledriveauth_codeinput"))
-      .setDesc(t("modal_googledriveauth_codeinput_desc"))
-      .addText((text) =>
-        text
-          .setPlaceholder(t("modal_googledriveauth_codeinput_placeholder"))
-          .onChange((val) => {
-            authCode = val.trim();
-          })
-      )
-      .addButton((button) => {
-        button.setButtonText(t("modal_googledriveauth_codeinput_confirm"));
-        button.setCta();
-        button.onClick(async () => {
-          if (!authCode) return;
-          new Notice(t("modal_googledriveauth_codeinput_notice"));
-          try {
-            const authRes = await sendAuthReq(
-              authCode,
-              "",
-              async (e: any) => {
-                new Notice(t("modal_googledriveauth_codeinput_conn_fail"));
-                new Notice(`${e}`);
-              }
-            );
-            if (!authRes || authRes.error) {
-              new Notice(t("modal_googledriveauth_codeinput_conn_fail"));
-              return;
-            }
-            const self = this;
-            await setConfigBySuccessfullAuthInplace(
-              this.plugin.settings.googledrive,
-              authRes,
-              () => self.plugin.saveSettings()
-            );
-            const isConnected =
-              this.plugin.settings.googledrive.refreshToken !== "";
-            this.authDiv.toggleClass(
-              "googledrive-auth-button-hide",
-              isConnected
-            );
-            this.revokeAuthDiv.toggleClass(
-              "googledrive-revoke-auth-button-hide",
-              !isConnected
-            );
-            new Notice(t("modal_googledriveauth_codeinput_conn_succ"));
-            this.close();
-          } catch (e) {
-            console.error(e);
-            new Notice(t("modal_googledriveauth_codeinput_conn_fail"));
-          }
-        });
-      });
+    contentEl.createEl("button", {
+      text: "Authorize with Google",
+      cls: "mod-cta",
+    }, (el) => {
+      el.onclick = () => window.open(authUrl);
+    });
   }
 
   onClose() {
@@ -110,20 +58,15 @@ let authCode = "";
 
 class GoogleDriveRevokeAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
-  readonly authDiv: HTMLDivElement;
-  readonly revokeAuthDiv: HTMLDivElement;
   readonly t: (x: TransItemType, vars?: any) => string;
+
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
-    authDiv: HTMLDivElement,
-    revokeAuthDiv: HTMLDivElement,
     t: (x: TransItemType, vars?: any) => string
   ) {
     super(app);
     this.plugin = plugin;
-    this.authDiv = authDiv;
-    this.revokeAuthDiv = revokeAuthDiv;
     this.t = t;
   }
 
@@ -133,10 +76,16 @@ class GoogleDriveRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_googledriverevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    const consentUrl =
-      "https://myaccount.google.com/permissions";
-    t("modal_googledriverevokeauth_step2").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    contentEl.createEl("p", {
+      text: "To fully revoke access, visit your Google account permissions page and remove this app.",
+      cls: "setting-item-description",
+    });
+
+    contentEl.createEl("a", {
+      href: "https://myaccount.google.com/permissions",
+      text: "Open Google Account Permissions",
+      cls: "external-link",
+    });
 
     new Setting(contentEl)
       .setName(t("modal_googledriverevokeauth_clean"))
@@ -149,17 +98,8 @@ class GoogleDriveRevokeAuthModal extends Modal {
               DEFAULT_GOOGLEDRIVE_CONFIG
             );
             await this.plugin.saveSettings();
-            const isConnected =
-              this.plugin.settings.googledrive.refreshToken !== "";
-            this.authDiv.toggleClass(
-              "googledrive-auth-button-hide",
-              isConnected
-            );
-            this.revokeAuthDiv.toggleClass(
-              "googledrive-revoke-auth-button-hide",
-              !isConnected
-            );
             new Notice(t("modal_googledriverevokeauth_clean_notice"));
+            (this.plugin as any).settingTab?.display();
             this.close();
           } catch (err) {
             console.error(err);
@@ -190,16 +130,6 @@ export const generateGoogleDriveSettingsPart = (
   );
   googleDriveDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_GDRIVE} <span>${t("settings_googledrive")}</span>`;
 
-  const googleDriveLongDescDiv = googleDriveDiv.createEl("div", {
-    cls: "settings-long-desc",
-  });
-  googleDriveLongDescDiv.createEl("p", {
-    text: t("settings_googledrive_folder", {
-      remoteBaseDir:
-        plugin.settings.googledrive.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const googleDriveNotShowUpHintSetting = new Setting(googleDriveDiv);
   googleDriveNotShowUpHintSetting.settingEl.addClass(
     "googledrive-allow-to-use-hide"
@@ -215,21 +145,24 @@ export const generateGoogleDriveSettingsPart = (
     cls: "googledrive-revoke-auth-button-hide settings-auth-related",
   });
 
+  const savedGDriveUsername = plugin.settings.googledrive?.username;
+
   const googleDriveRevokeAuthSetting = new Setting(googleDriveRevokeAuthDiv)
-    .setName(t("settings_googledrive_revoke"))
-    .setDesc(t("settings_googledrive_revoke_desc"))
+    .setName(savedGDriveUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_googledrive_revoke_button"));
+      button.setWarning();
       button.onClick(async () => {
         new GoogleDriveRevokeAuthModal(
           app,
           plugin,
-          googleDriveAuthDiv,
-          googleDriveRevokeAuthDiv,
           t
         ).open();
       });
     });
+  if (savedGDriveUsername) {
+    googleDriveRevokeAuthSetting.setDesc(savedGDriveUsername);
+  }
 
   new Setting(googleDriveAuthDiv)
     .setName(t("settings_googledrive_auth"))
@@ -237,14 +170,15 @@ export const generateGoogleDriveSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_googledrive_auth_button"));
       button.onClick(async () => {
-        new GoogleDriveAuthModal(
+        const m = new GoogleDriveAuthModal(
           app,
           plugin,
-          googleDriveAuthDiv,
-          googleDriveRevokeAuthDiv,
-          googleDriveRevokeAuthSetting,
           t
-        ).open();
+        );
+        // Store modal ref so the callback handler can close it
+        plugin.oauth2Info = plugin.oauth2Info || {};
+        plugin.oauth2Info.helperModal = m;
+        m.open();
       });
     });
 
@@ -255,30 +189,28 @@ export const generateGoogleDriveSettingsPart = (
     !isConnected
   );
 
-  let newGoogleDriveRemoteBaseDir =
-    plugin.settings.googledrive.remoteBaseDir || "";
-  new Setting(googleDriveAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .setDesc(t("settings_remotebasedir_desc"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newGoogleDriveRemoteBaseDir)
-        .onChange((value) => {
-          newGoogleDriveRemoteBaseDir = value.trim();
-        })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(
-          app,
-          plugin,
-          newGoogleDriveRemoteBaseDir,
-          "googledrive"
-        ).open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentGDriveFolder =
+    plugin.settings.googledrive.remoteBaseDir || app.vault.getName();
+  const gdriveRemoteFolderSetting = new Setting(googleDriveAllowedToUsedDiv).setName(
+    t("settings_remotebasedir")
+  );
+  renderFolderBreadcrumb(
+    gdriveRemoteFolderSetting,
+    "Google Drive",
+    currentGDriveFolder
+  );
+  gdriveRemoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "googledrive",
+        providerLabel: "Google Drive",
+      })
+    );
+  });
 
   new Setting(googleDriveAllowedToUsedDiv)
     .setName(t("settings_checkonnectivity"))

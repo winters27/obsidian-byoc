@@ -359,6 +359,9 @@ h2.byoc-section-heading::before {
 
 /* Added BYOC Intro Card */
 .byoc-intro-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   background: rgba(100, 130, 255, 0.05);
   border-left: 3px solid var(--byoc-accent);
   padding: 1rem 1.2rem;
@@ -366,6 +369,268 @@ h2.byoc-section-heading::before {
   margin-bottom: 2rem;
   color: var(--text-normal);
   font-size: 0.95em;
+}
+
+.byoc-intro-card > p {
+  margin: 0;
+  flex: 1;
+}
+
+.byoc-intro-logo {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+/* ── Remote Folder Picker ───────────────────────────────────────────────────
+   Post-OAuth modal for choosing the cloud-side base folder. Native iOS-list
+   feel: grouped card, full-width tap rows, chevron affordance, separators.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.byoc-folder-picker .modal-content {
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.byoc-folder-picker__desc {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  line-height: 1.45;
+}
+
+.byoc-folder-picker__section-label {
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 1.25rem 0 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.byoc-folder-picker__section-label:first-of-type {
+  margin-top: 0;
+}
+
+/* Grouped card around list rows. Constrains height + scrolls itself so
+   the create-new section below stays anchored even with many folders. */
+.byoc-folder-picker__list {
+  background: var(--background-secondary);
+  border-radius: 12px;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  max-height: 45vh;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Override card styling for state views (loading/empty/error) */
+.byoc-folder-picker__list--state {
+  background: transparent;
+  border: 1px dashed var(--background-modifier-border);
+}
+
+/* Row: full-width tap target, icon + name + chevron */
+.byoc-folder-picker__row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  color: var(--text-normal);
+  font-size: 0.95em;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background 120ms ease;
+  box-shadow: none;
+}
+
+.byoc-folder-picker__row:last-child {
+  border-bottom: none;
+}
+
+.byoc-folder-picker__row:hover,
+.byoc-folder-picker__row:active {
+  background: var(--background-modifier-hover);
+  box-shadow: none;
+}
+
+.byoc-folder-picker__row-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--text-accent);
+}
+
+.byoc-folder-picker__row-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.byoc-folder-picker__row-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.byoc-folder-picker__row-chev {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  opacity: 0.55;
+}
+
+.byoc-folder-picker__row-chev svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Create-new section */
+.byoc-folder-picker__create {
+  background: var(--background-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--background-modifier-border);
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.byoc-folder-picker__input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95em;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-sizing: border-box;
+}
+
+.byoc-folder-picker__create-btn {
+  width: 100%;
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 0.95em;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.byoc-folder-picker__create-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* State views */
+.byoc-folder-picker__loading,
+.byoc-folder-picker__empty,
+.byoc-folder-picker__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  gap: 0.5rem;
+}
+
+.byoc-folder-picker__loader {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--background-modifier-border);
+  border-top-color: var(--text-accent);
+  border-radius: 50%;
+  animation: byoc-folder-spin 0.8s linear infinite;
+}
+
+.byoc-folder-picker__error-msg {
+  margin: 0;
+  color: var(--text-error);
+}
+
+.byoc-folder-picker__retry {
+  min-height: 36px;
+  padding: 0 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+@keyframes byoc-folder-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Breadcrumb display for the current remote folder, shown as a Setting desc.
+   Renders as `Provider › Segment › Leaf` with muted root + separators and
+   accented leaf. Wraps cleanly when long. */
+.byoc-folder-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.92em;
+  line-height: 1.4;
+}
+
+.byoc-folder-breadcrumb__root,
+.byoc-folder-breadcrumb__sep {
+  color: var(--text-muted);
+}
+
+.byoc-folder-breadcrumb__sep {
+  opacity: 0.6;
+}
+
+.byoc-folder-breadcrumb__leaf {
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+/* The final leaf reads as the "current location" — slight accent to make
+   it the visual focus of the row. */
+.byoc-folder-breadcrumb__leaf:last-child {
+  color: var(--text-accent);
+}
+
+/* Mobile-specific tightening */
+@media (max-width: 600px) {
+  .byoc-folder-picker .modal {
+    width: calc(100vw - 1.5rem);
+    max-width: 480px;
+  }
+  .byoc-folder-picker .modal-content {
+    padding: 0.875rem 1rem 1rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .byoc-folder-picker__row {
+    min-height: 52px;
+  }
+  /* Tighter list cap on phones so the create section is reachable
+     above the on-screen keyboard. */
+  .byoc-folder-picker__list {
+    max-height: 38vh;
+  }
 }
 
 .byoc-auth-modal .modal-title svg {
@@ -385,114 +650,26 @@ h2.byoc-section-heading::before {
 }
 
 /* ── Mobile Sync Button ──────────────────────────────────────────────────────
-   Two visual modes depending on where the button was injected:
-
-   Mode 1 (.byoc-mobile-sync): Injected INTO Obsidian's mobile toolbar.
-     - Transparent background, matches native toolbar button style.
-     - Sits naturally next to the settings button at bottom-right.
-
-   Mode 2 (.byoc-mobile-sync--fab): Fallback when toolbar selector misses.
-     - Circular floating action button, fixed above the toolbar.
-     - Accent-colored so it's always discoverable.
-
-   Uses Obsidian CSS variables for full light/dark theme compatibility.
+   Lives in Obsidian's mobile bottom navbar (.mobile-navbar > .mobile-navbar-actions),
+   inserted before the rightmost menu button. Inherits .mobile-navbar-action's
+   sizing/colour from Obsidian's native CSS so it sits flush with the back,
+   forward, quick-switcher, new-tab, tabs, and menu icons. We only add what
+   the native class doesn't: the spinning state during sync.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* ── Shared base ── */
 .byoc-mobile-sync {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  cursor: pointer;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  background: transparent;
-  color: var(--icon-color);
-  transition:
-    background 120ms ease,
-    opacity 120ms ease,
-    transform 120ms ease;
 }
 
 .byoc-mobile-sync svg {
-  width: 18px;
-  height: 18px;
-  stroke-width: 2;
-  flex-shrink: 0;
+  width: var(--icon-size, 24px);
+  height: var(--icon-size, 24px);
 }
 
-/* ── Mode 1: Toolbar-native style ── */
-/* Matches Obsidian's .mobile-toolbar-option sizing + behaviour exactly */
-.byoc-mobile-sync:not(.byoc-mobile-sync--fab) {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-m, 6px);
-  opacity: 0.92;
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  box-shadow:
-    0 1px 4px rgba(0, 0, 0, 0.12),
-    0 0px 1px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  margin-right: 6px; /* gap between our button and the settings button */
-}
-
-.byoc-mobile-sync:not(.byoc-mobile-sync--fab):active {
-  background: var(--background-modifier-hover);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(0, 0, 0, 0.06);
-  opacity: 1;
-}
-
-@media (hover: hover) {
-  .byoc-mobile-sync:not(.byoc-mobile-sync--fab):hover {
-    background: var(--background-modifier-hover);
-    opacity: 1;
-  }
-}
-
-/* ── Mode 2: Floating fallback FAB ── */
-.byoc-mobile-sync--fab {
-  position: fixed;
-  bottom: 76px; /* clears the ~68px Obsidian mobile nav bar + 8px buffer */
-  right: 16px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: var(--interactive-accent);
-  color: var(--text-on-accent, #fff);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.28),
-    0 1px 4px rgba(0, 0, 0, 0.16);
-  z-index: 999;
-  opacity: 1;
-}
-
-.byoc-mobile-sync--fab svg {
-  width: 22px;
-  height: 22px;
-}
-
-.byoc-mobile-sync--fab:active {
-  transform: scale(0.90);
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.24),
-    0 1px 2px rgba(0, 0, 0, 0.12);
-}
-
-@media (hover: hover) {
-  .byoc-mobile-sync--fab:hover {
-    background: var(--interactive-accent-hover);
-  }
-}
-
-/* ── Spinning state (both modes) ── */
 .byoc-mobile-sync--syncing {
-  opacity: 0.6;
-  cursor: default;
+  opacity: 0.5;
   pointer-events: none; /* hard-blocks re-tap; JS isSyncing guard is belt+suspenders */
 }
 

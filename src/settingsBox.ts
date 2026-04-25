@@ -1,4 +1,4 @@
-﻿import { SVG_BOX } from './icons';
+import { SVG_BOX } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_BOX_CONFIG } from "./fsBox";
@@ -7,6 +7,10 @@ import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
 import { stringToFragment } from "./misc";
 import { ChangeRemoteBaseDirModal } from "./settings";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
 class BoxAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
@@ -124,13 +128,6 @@ export const generateBoxSettingsPart = (
   boxDiv.toggleClass("box-hide", plugin.settings.serviceType !== "box");
   boxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_BOX} <span>${t("settings_box")}</span>`;
 
-  const boxLongDescDiv = boxDiv.createEl("div", { cls: "settings-long-desc" });
-  boxLongDescDiv.createEl("p", {
-    text: t("settings_box_folder", {
-      remoteBaseDir: plugin.settings.box.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const boxNotShowUpHintSetting = new Setting(boxDiv);
   boxNotShowUpHintSetting.settingEl.addClass("box-allow-to-use-hide");
 
@@ -144,15 +141,20 @@ export const generateBoxSettingsPart = (
     cls: "box-revoke-auth-button-hide settings-auth-related",
   });
 
+  const savedBoxUsername = plugin.settings.box?.username;
+
   const boxRevokeAuthSetting = new Setting(boxRevokeAuthDiv)
-    .setName(t("settings_box_revoke"))
-    .setDesc(t("settings_box_revoke_desc"))
+    .setName(savedBoxUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_box_revoke_button"));
+      button.setWarning();
       button.onClick(async () => {
         new BoxRevokeAuthModal(app, plugin, boxAuthDiv, boxRevokeAuthDiv, t).open();
       });
     });
+  if (savedBoxUsername) {
+    boxRevokeAuthSetting.setDesc(savedBoxUsername);
+  }
 
   new Setting(boxAuthDiv)
     .setName(t("settings_box_auth"))
@@ -180,24 +182,24 @@ export const generateBoxSettingsPart = (
   boxAuthDiv.toggleClass("box-auth-button-hide", isConnected);
   boxRevokeAuthDiv.toggleClass("box-revoke-auth-button-hide", !isConnected);
 
-  let newBoxRemoteBaseDir = plugin.settings.box.remoteBaseDir || "";
-  new Setting(boxAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .setDesc(t("settings_remotebasedir_desc"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newBoxRemoteBaseDir)
-        .onChange((value) => {
-          newBoxRemoteBaseDir = value.trim();
-        })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(app, plugin, newBoxRemoteBaseDir, "box").open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentBoxFolder =
+    plugin.settings.box.remoteBaseDir || app.vault.getName();
+  const boxRemoteFolderSetting = new Setting(boxAllowedToUsedDiv).setName(
+    t("settings_remotebasedir")
+  );
+  renderFolderBreadcrumb(boxRemoteFolderSetting, "Box", currentBoxFolder);
+  boxRemoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "box",
+        providerLabel: "Box",
+      })
+    );
+  });
 
   new Setting(boxAllowedToUsedDiv)
     .setName(t("settings_checkonnectivity"))

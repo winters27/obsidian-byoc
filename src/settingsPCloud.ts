@@ -7,6 +7,10 @@ import type RemotelySavePlugin from "./main";
 import { stringToFragment } from "./misc";
 import { ChangeRemoteBaseDirModal, ExportSettingsQrCodeModal } from "./settings";
 import { DEFAULT_PCLOUD_CONFIG, generateAuthUrl } from "./fsPCloud";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
 class PCloudAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
@@ -74,7 +78,7 @@ class PCloudRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_pcloudrevokeauth_step1").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
+    t("modal_pcloudrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
     const consentUrl = "https://my.pcloud.com/#page=settings&settings=tab-apps";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,
@@ -126,14 +130,6 @@ export const generatePCloudSettingsPart = (
   pCloudDiv.toggleClass("pcloud-hide", plugin.settings.serviceType !== "pcloud");
   pCloudDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_PCLOUD} <span>${t("settings_pcloud")}</span>`;
 
-  // Remote folder info
-  pCloudDiv.createEl("p", {
-    cls: "settings-long-desc",
-    text: t("settings_pcloud_folder", {
-      remoteBaseDir: plugin.settings.pcloud.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const pCloudNotShowUpHintSetting = new Setting(pCloudDiv);
   pCloudNotShowUpHintSetting.settingEl.addClass("pcloud-allow-to-use-hide");
 
@@ -153,16 +149,12 @@ export const generatePCloudSettingsPart = (
   const hasAccessToken = !!plugin.settings.pcloud?.accessToken;
   const savedUsername = plugin.settings.pcloud?.username;
 
-  // "Logged in as" display â€” only rendered if we have a stored username
-  if (savedUsername) {
-    new Setting(pcloudRevokeAuthDiv)
-      .setName("Logged in as")
-      .setDesc(savedUsername);
-  }
-
-  // Revoke button row
+  // Combined identity + revoke row. Showing "Logged in as <user>" with the
+  // Revoke action on the same line reads as a single coherent state ("you
+  // are connected as X, tap to disconnect") instead of two stacked rows
+  // for the same concept.
   const pcloudRevokeAuthSetting = new Setting(pcloudRevokeAuthDiv)
-    .setName(t("settings_pcloud_revoke"))
+    .setName(savedUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_pcloud_revoke_button"));
       button.setWarning();
@@ -176,6 +168,9 @@ export const generatePCloudSettingsPart = (
         ).open();
       });
     });
+  if (savedUsername) {
+    pcloudRevokeAuthSetting.setDesc(savedUsername);
+  }
 
   // Auth button row
   new Setting(pcloudAuthDiv)
@@ -203,22 +198,24 @@ export const generatePCloudSettingsPart = (
   pcloudAuthDiv.toggleClass("pcloud-auth-button-hide", hasAccessToken);
   pcloudRevokeAuthDiv.toggleClass("pcloud-revoke-auth-button-hide", !hasAccessToken);
 
-  // Remote base dir
-  let newpcloudRemoteBaseDir = plugin.settings.pcloud.remoteBaseDir || "";
-  new Setting(pCloudAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newpcloudRemoteBaseDir)
-        .onChange((value) => { newpcloudRemoteBaseDir = value.trim(); })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(app, plugin, newpcloudRemoteBaseDir, "pcloud").open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentFolder =
+    plugin.settings.pcloud.remoteBaseDir || app.vault.getName();
+  const remoteFolderSetting = new Setting(pCloudAllowedToUsedDiv).setName(
+    t("settings_remotebasedir")
+  );
+  renderFolderBreadcrumb(remoteFolderSetting, "pCloud", currentFolder);
+  remoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "pcloud",
+        providerLabel: "pCloud",
+      })
+    );
+  });
 
   // Check connectivity
   new Setting(pCloudAllowedToUsedDiv)

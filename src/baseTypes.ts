@@ -24,12 +24,12 @@ declare global {
 export const DROPBOX_APP_KEY = globalThis.DEFAULT_DROPBOX_APP_KEY || "";
 export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "3729fc1c-0af2-4bec-9376-d7ac4f0ff806";
 export const ONEDRIVE_AUTHORITY = globalThis.DEFAULT_ONEDRIVE_AUTHORITY || "https://login.microsoftonline.com/consumers/";
-export const GOOGLEDRIVE_CLIENT_ID = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_ID || "573787634452-5301p7h0r85rpc03hbnrn5k9qqt3bulf.apps.googleusercontent.com";
-export const GOOGLEDRIVE_CLIENT_SECRET = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_SECRET || "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";
+export const GOOGLEDRIVE_CLIENT_ID = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_ID || "360279670243-8h1oeinpbipd2c9hbimt34p9rj3k5afv.apps.googleusercontent.com";
+export const GOOGLEDRIVE_CLIENT_SECRET = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_SECRET || "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";
 export const BOX_CLIENT_ID = globalThis.DEFAULT_BOX_CLIENT_ID || "";
 export const BOX_CLIENT_SECRET = globalThis.DEFAULT_BOX_CLIENT_SECRET || "";
-export const PCLOUD_CLIENT_ID = globalThis.DEFAULT_PCLOUD_CLIENT_ID || "zrDphYT1giQ";
-export const PCLOUD_CLIENT_SECRET = globalThis.DEFAULT_PCLOUD_CLIENT_SECRET || "TqjVEEaXlsHwCOczzm0R9SBmxf2y";
+export const PCLOUD_CLIENT_ID = globalThis.DEFAULT_PCLOUD_CLIENT_ID || "24ThrhW1TFk";
+export const PCLOUD_CLIENT_SECRET = globalThis.DEFAULT_PCLOUD_CLIENT_SECRET || "GnlT2myN9okdN89EmSo4iQwSBCE7";
 export const YANDEXDISK_CLIENT_ID = globalThis.DEFAULT_YANDEXDISK_CLIENT_ID || "";
 export const YANDEXDISK_CLIENT_SECRET = globalThis.DEFAULT_YANDEXDISK_CLIENT_SECRET || "";
 export const KOOFR_CLIENT_ID = globalThis.DEFAULT_KOOFR_CLIENT_ID || "";
@@ -137,6 +137,7 @@ export interface GoogleDriveConfig {
   remoteBaseDir?: string;
   credentialsShouldBeDeletedAtTimeMs?: number;
   scope: "https://www.googleapis.com/auth/drive.file";
+  username?: string;
   kind: "googledrive";
 }
 
@@ -147,6 +148,7 @@ export interface BoxConfig {
   refreshToken: string;
   remoteBaseDir?: string;
   credentialsShouldBeDeletedAtTimeMs?: number;
+  username?: string;
   kind: "box";
 }
 
@@ -170,6 +172,7 @@ export interface YandexDiskConfig {
   remoteBaseDir?: string;
   credentialsShouldBeDeletedAtTimeMs?: number;
   scope: string;
+  username?: string;
   kind: "yandexdisk";
 }
 
@@ -183,6 +186,7 @@ export interface KoofrConfig {
   scope: string;
   api: string;
   mountID: string;
+  username?: string;
   kind: "koofr";
 }
 
@@ -307,9 +311,10 @@ export const COMMAND_CALLBACK_ONEDRIVE = "bring-your-own-cloud-cb-onedrive";
 export const COMMAND_CALLBACK_DROPBOX = "bring-your-own-cloud-cb-dropbox";
 export const COMMAND_CALLBACK_ONEDRIVEFULL = "bring-your-own-cloud-cb-onedrivefull";
 export const COMMAND_CALLBACK_BOX = "bring-your-own-cloud-cb-box";
-export const COMMAND_CALLBACK_PCLOUD = "remotely-save-cb-pcloud";
+export const COMMAND_CALLBACK_PCLOUD = "bring-your-own-cloud-cb-pcloud";
 export const COMMAND_CALLBACK_YANDEXDISK = "bring-your-own-cloud-cb-yandexdisk";
 export const COMMAND_CALLBACK_KOOFR = "bring-your-own-cloud-cb-koofr";
+export const COMMAND_CALLBACK_GOOGLEDRIVE = "bring-your-own-cloud-cb-googledrive";
 
 export interface UriParams {
   func?: string;

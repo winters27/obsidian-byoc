@@ -160,7 +160,7 @@
   "settings_checkonnectivity_desc": "检查可否连接。",
   "settings_checkonnectivity_button": "检查",
   "settings_checkonnectivity_checking": "正在检查……",
-  "settings_remotebasedir": "修改远端基文件夹（实验性质）",
+  "settings_remotebasedir": "远端文件夹",
   "settings_remotebasedir_desc": "默认设定，内容会被同步到远端的和资料库同名的文件夹下。您可以在此修改远端文件夹名，或删除输入框文本从而重设到默认值。您需要点击“确认”。",
   "settings_remoteprefix_s3": "修改远端前缀路径（实验性质）",
   "settings_remoteprefix_s3_desc": "默认设定 s3 保存在存储桶（Bucket）的根目录。您可以在这里修改路径前缀，或者保持为空保持默认设置。您需要点击“确认”。",

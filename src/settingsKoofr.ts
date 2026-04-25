@@ -1,4 +1,4 @@
-﻿import { SVG_KOOFR } from './icons';
+import { SVG_KOOFR } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_KOOFR_CONFIG } from "./fsKoofr";
@@ -7,6 +7,10 @@ import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
 import { stringToFragment } from "./misc";
 import { ChangeRemoteBaseDirModal } from "./settings";
+import {
+  openFolderPickerForProvider,
+  renderFolderBreadcrumb,
+} from "./folderPicker";
 
 class KoofrAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
@@ -124,15 +128,6 @@ export const generateKoofrSettingsPart = (
   koofrDiv.toggleClass("koofr-hide", plugin.settings.serviceType !== "koofr");
   koofrDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_KOOFR} <span>${t("settings_koofr")}</span>`;
 
-  const koofrLongDescDiv = koofrDiv.createEl("div", {
-    cls: "settings-long-desc",
-  });
-  koofrLongDescDiv.createEl("p", {
-    text: t("settings_koofr_folder", {
-      remoteBaseDir: plugin.settings.koofr.remoteBaseDir || app.vault.getName(),
-    }),
-  });
-
   const koofrNotShowUpHintSetting = new Setting(koofrDiv);
   koofrNotShowUpHintSetting.settingEl.addClass("koofr-allow-to-use-hide");
 
@@ -146,11 +141,13 @@ export const generateKoofrSettingsPart = (
     cls: "koofr-revoke-auth-button-hide settings-auth-related",
   });
 
+  const savedKoofrUsername = plugin.settings.koofr?.username;
+
   const koofrRevokeAuthSetting = new Setting(koofrRevokeAuthDiv)
-    .setName(t("settings_koofr_revoke"))
-    .setDesc(t("settings_koofr_revoke_desc"))
+    .setName(savedKoofrUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
       button.setButtonText(t("settings_koofr_revoke_button"));
+      button.setWarning();
       button.onClick(async () => {
         new KoofrRevokeAuthModal(
           app,
@@ -161,6 +158,9 @@ export const generateKoofrSettingsPart = (
         ).open();
       });
     });
+  if (savedKoofrUsername) {
+    koofrRevokeAuthSetting.setDesc(savedKoofrUsername);
+  }
 
   new Setting(koofrAuthDiv)
     .setName(t("settings_koofr_auth"))
@@ -188,29 +188,24 @@ export const generateKoofrSettingsPart = (
   koofrAuthDiv.toggleClass("koofr-auth-button-hide", isConnected);
   koofrRevokeAuthDiv.toggleClass("koofr-revoke-auth-button-hide", !isConnected);
 
-  let newKoofrRemoteBaseDir = plugin.settings.koofr.remoteBaseDir || "";
-  new Setting(koofrAllowedToUsedDiv)
-    .setName(t("settings_remotebasedir"))
-    .setDesc(t("settings_remotebasedir_desc"))
-    .addText((text) =>
-      text
-        .setPlaceholder(app.vault.getName())
-        .setValue(newKoofrRemoteBaseDir)
-        .onChange((value) => {
-          newKoofrRemoteBaseDir = value.trim();
-        })
-    )
-    .addButton((button) => {
-      button.setButtonText(t("confirm"));
-      button.onClick(() => {
-        new ChangeRemoteBaseDirModal(
-          app,
-          plugin,
-          newKoofrRemoteBaseDir,
-          "koofr"
-        ).open();
-      });
-    });
+  // Remote folder — picker button + breadcrumb display.
+  const currentKoofrFolder =
+    plugin.settings.koofr.remoteBaseDir || app.vault.getName();
+  const koofrRemoteFolderSetting = new Setting(koofrAllowedToUsedDiv).setName(
+    t("settings_remotebasedir")
+  );
+  renderFolderBreadcrumb(koofrRemoteFolderSetting, "Koofr", currentKoofrFolder);
+  koofrRemoteFolderSetting.addButton((button) => {
+    button.setButtonText("Change folder").setCta();
+    button.onClick(() =>
+      openFolderPickerForProvider({
+        app,
+        plugin,
+        providerKey: "koofr",
+        providerLabel: "Koofr",
+      })
+    );
+  });
 
   new Setting(koofrAllowedToUsedDiv)
     .setName(t("settings_checkonnectivity"))

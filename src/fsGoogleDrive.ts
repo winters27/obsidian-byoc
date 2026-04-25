@@ -28,8 +28,9 @@ const DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
-// For native/desktop apps, Google supports redirect to localhost
-const REDIRECT_URI = "urn:ietf:wg:oauth:2.0:oob";
+// Bridge page catches Google's redirect and bounces the auth code into
+// Obsidian's protocol handler (obsidian://bring-your-own-cloud-cb-googledrive).
+const REDIRECT_URI = "https://bringyourowncloud.xyz/auth/googledrive/callback";
 
 export const DEFAULT_GOOGLEDRIVE_CONFIG: GoogleDriveConfig = {
   accessToken: "",
@@ -46,7 +47,7 @@ export const DEFAULT_GOOGLEDRIVE_CONFIG: GoogleDriveConfig = {
 // OAuth2 Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
-export function generateAuthUrl(verifier?: string): string {
+export function generateAuthUrl(): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: GOOGLEDRIVE_CLIENT_ID,
@@ -60,7 +61,6 @@ export function generateAuthUrl(verifier?: string): string {
 
 export async function sendAuthReq(
   code: string,
-  verifier: string,
   errorCallBack: (e: any) => Promise<void>
 ): Promise<any> {
   try {
@@ -371,6 +371,24 @@ export class FakeFsGoogleDrive extends FakeFs {
 
       pageToken = res.nextPageToken || "";
     } while (pageToken);
+  }
+
+  async listFoldersAtRoot(): Promise<string[]> {
+    const q = `'root' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
+    const res = await this._getJson(
+      `/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=1000`
+    );
+    return (res.files || [])
+      .map((f: GDriveFile) => f.name)
+      .sort((a: string, b: string) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._postJson("/files", {
+      name,
+      mimeType: FOLDER_MIME,
+      parents: ["root"],
+    });
   }
 
   async walk(): Promise<Entity[]> {

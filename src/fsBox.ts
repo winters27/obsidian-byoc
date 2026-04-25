@@ -356,6 +356,23 @@ export class FakeFsBox extends FakeFs {
     return items;
   }
 
+  async listFoldersAtRoot(): Promise<string[]> {
+    const res = await this._getJson(
+      `${BOX_API}/folders/0/items?fields=id,name,type&limit=1000`
+    );
+    return (res.entries || [])
+      .filter((e: any) => e.type === "folder")
+      .map((e: any) => e.name as string)
+      .sort((a: string, b: string) => a.localeCompare(b));
+  }
+
+  async createFolderAtRoot(name: string): Promise<void> {
+    await this._postJson(`${BOX_API}/folders`, {
+      name,
+      parent: { id: "0" },
+    });
+  }
+
   async walk(): Promise<Entity[]> {
     const baseFolderId = await this.getBaseFolderId();
     const items = await this.listFolder(baseFolderId, "");

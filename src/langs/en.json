@@ -154,7 +154,7 @@
     "settings_checkonnectivity_desc":  "",
     "settings_checkonnectivity_button":  "Check",
     "settings_checkonnectivity_checking":  "Checking...",
-    "settings_remotebasedir":  "Change The Remote Base Directory (experimental)",
+    "settings_remotebasedir":  "Remote folder",
     "settings_remotebasedir_desc":  "Folder name on remote. Defaults to vault name. Clear field to reset.",
     "settings_remoteprefix_s3":  "Change The Remote Prefix (experimental)",
     "settings_remoteprefix_s3_desc":  "By default in s3 the files are saved at the root of the bucket. You can change the remote prefix here, or keep the input field empty to reset to the default. You need to click \"Confirm\".",

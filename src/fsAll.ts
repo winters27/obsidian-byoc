@@ -66,4 +66,26 @@ export abstract class FakeFs {
   abstract getUserDisplayName(): Promise<string>;
   abstract revokeAuth(): Promise<any>;
   abstract allowEmptyFile(): boolean;
+
+  /**
+   * List folder names at the cloud root (ignoring this.remoteBaseDir).
+   * Used by the post-OAuth folder picker so users can choose where their
+   * vault lives in their cloud, instead of silently defaulting to the
+   * vault name and triggering a destructive first-sync plan.
+   *
+   * Default: throws. Override in providers that support OAuth folder picking.
+   */
+  async listFoldersAtRoot(): Promise<string[]> {
+    throw new Error(`[BYOC] listFoldersAtRoot not implemented for ${this.kind}`);
+  }
+
+  /**
+   * Create a folder at the cloud root (ignoring this.remoteBaseDir).
+   * Used by the folder picker's "Create new folder" option.
+   *
+   * Default: throws. Override in providers that support OAuth folder picking.
+   */
+  async createFolderAtRoot(name: string): Promise<void> {
+    throw new Error(`[BYOC] createFolderAtRoot not implemented for ${this.kind}`);
+  }
 }
