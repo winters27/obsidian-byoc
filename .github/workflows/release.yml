@@ -71,9 +71,14 @@ jobs:
           mkdir obsidian-byoc
           cp main.js manifest.json styles.css obsidian-byoc/
           zip -r obsidian-byoc.zip obsidian-byoc/
+      - name: Get version
+        id: version
+        run: echo "tag_name=$(node -p "require('./manifest.json').version")" >> $GITHUB_ENV
       - name: Create Release And Upload
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.tag_name }}
+          name: ${{ env.tag_name }}
           files: |
             main.js
             manifest.json
