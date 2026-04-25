@@ -28,12 +28,12 @@ import {
 } from "./folderPicker";
 import { generateAzureBlobStorageSettingsPart } from "./settingsAzureBlobStorage";
 import { generateBoxSettingsPart } from "./settingsBox";
-// import { generateClearDupFilesSettingsPart } from "./settingsClearDupFiles";
+import { generateDropboxSettingsPart } from "./settingsDropbox";
 import { generateGoogleDriveSettingsPart } from "./settingsGoogleDrive";
 import { generateKoofrSettingsPart } from "./settingsKoofr";
+import { generateOnedriveSettingsPart } from "./settingsOnedrive";
 import { generateOnedriveFullSettingsPart } from "./settingsOnedriveFull";
 import { generatePCloudSettingsPart } from "./settingsPCloud";
-// import { generateProSettingsPart } from "./settingsPro";
 import { generateYandexDiskSettingsPart } from "./settingsYandexDisk";
 import { API_VER_ENSURE_REQURL_OK, VALID_REQURL } from "./baseTypesObs";
 import { messyConfigToNormal } from "./configPersist";
@@ -41,17 +41,7 @@ import {
   exportVaultProfilerResultsToFiles,
   exportVaultSyncPlansToFiles,
 } from "./debugMode";
-import {
-  DEFAULT_DROPBOX_CONFIG,
-  getAuthUrlAndVerifier as getAuthUrlAndVerifierDropbox,
-  sendAuthReq as sendAuthReqDropbox,
-  setConfigBySuccessfullAuthInplace,
-} from "./fsDropbox";
 import { getClient } from "./fsGetter";
-import {
-  DEFAULT_ONEDRIVE_CONFIG,
-  getAuthUrlAndVerifier as getAuthUrlAndVerifierOnedrive,
-} from "./fsOnedrive";
 import { simpleTransRemotePrefix } from "./fsS3";
 import type { TransItemType } from "./i18n";
 import {
@@ -376,11 +366,7 @@ class ChangeS3RemotePrefixModal extends Modal {
   }
 }
 
-class DropboxAuthModal extends Modal {
-  readonly plugin: RemotelySavePlugin;
-  readonly authDiv: HTMLDivElement;
-  readonly revokeAuthDiv: HTMLDivElement;
-  readonly revokeAuthSetting: Setting;
+class SyncConfigDirModal extends Modal {
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
@@ -1102,135 +1088,22 @@ export class BYOCSettingTab extends PluginSettingTab {
       });
 
     //////////////////////////////////////////////////
-    // below for dropbpx
+    // below for dropbox
     //////////////////////////////////////////////////
 
-    const dropboxDiv = containerEl.createEl("div", { cls: "dropbox-hide" });
-    dropboxDiv.toggleClass(
-      "dropbox-hide",
-      this.plugin.settings.serviceType !== "dropbox"
-    );
-    dropboxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_DROPBOX} <span>${t("settings_dropbox")}</span>`;
-
-    // Remote folder — picker button + breadcrumb display.
-    const currentDropboxFolder =
-      this.plugin.settings.dropbox.remoteBaseDir || this.app.vault.getName();
-    const dropboxRemoteFolderSetting = new Setting(dropboxDiv).setName(
-      t("settings_remotebasedir")
-    );
-    renderFolderBreadcrumb(
-      dropboxRemoteFolderSetting,
-      "Dropbox",
-      currentDropboxFolder
-    );
-    dropboxRemoteFolderSetting.addButton((button) => {
-      button.setButtonText("Change folder").setCta();
-      button.onClick(() =>
-        openFolderPickerForProvider({
-          app: this.app,
-          plugin: this.plugin,
-          providerKey: "dropbox",
-          providerLabel: "Dropbox",
-        })
+    const { dropboxDiv, dropboxAllowedToUsedDiv, dropboxNotShowUpHintSetting } =
+      generateDropboxSettingsPart(containerEl, t, this.app, this.plugin, () =>
+        this.plugin.saveSettings()
       );
-    });
-
-    new Setting(dropboxDiv)
-      .setName(t("settings_checkonnectivity"))
-      .addButton(async (button) => {
-        button.setButtonText(t("settings_checkonnectivity_button"));
-        button.onClick(async () => {
-          new Notice(t("settings_checkonnectivity_checking"));
-          const client = getClient(
-            this.plugin.settings,
-            this.app.vault.getName(),
-            () => this.plugin.saveSettings()
-          );
-
-          const errors = { msg: "" };
-          const res = await client.checkConnect((err: any) => {
-            errors.msg = `${err}`;
-          });
-          if (res) {
-            new Notice(t("settings_dropbox_connect_succ"));
-          } else {
-            new Notice(t("settings_dropbox_connect_fail"));
-            new Notice(errors.msg);
-          }
-        });
-      });
 
     //////////////////////////////////////////////////
     // below for onedrive
     //////////////////////////////////////////////////
 
-    const onedriveDiv = containerEl.createEl("div", { cls: "onedrive-hide" });
-    onedriveDiv.toggleClass(
-      "onedrive-hide",
-      this.plugin.settings.serviceType !== "onedrive"
-    );
-    onedriveDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_ONEDRIVE} <span>${t("settings_onedrive")}</span>`;
-
-    // Remote folder — picker button + breadcrumb display.
-    const currentOnedriveFolder =
-      this.plugin.settings.onedrive.remoteBaseDir || this.app.vault.getName();
-    const onedriveRemoteFolderSetting = new Setting(onedriveDiv).setName(
-      t("settings_remotebasedir")
-    );
-    renderFolderBreadcrumb(
-      onedriveRemoteFolderSetting,
-      "OneDrive",
-      currentOnedriveFolder
-    );
-    onedriveRemoteFolderSetting.addButton((button) => {
-      button.setButtonText("Change folder").setCta();
-      button.onClick(() =>
-        openFolderPickerForProvider({
-          app: this.app,
-          plugin: this.plugin,
-          providerKey: "onedrive",
-          providerLabel: "OneDrive",
-        })
+    const { onedriveDiv, onedriveAllowedToUsedDiv, onedriveNotShowUpHintSetting } =
+      generateOnedriveSettingsPart(containerEl, t, this.app, this.plugin, () =>
+        this.plugin.saveSettings()
       );
-    });
-
-    new Setting(onedriveDiv)
-      .setName(t("settings_onedrive_emptyfile"))
-      .setDesc(t("settings_onedrive_emptyfile_desc"))
-      .addDropdown(async (dropdown) => {
-        dropdown
-          .addOption("skip", t("settings_onedrive_emptyfile_skip"))
-          .addOption("error", t("settings_onedrive_emptyfile_error"))
-          .setValue(this.plugin.settings.onedrive.emptyFile)
-          .onChange(async (val) => {
-            this.plugin.settings.onedrive.emptyFile = val as any;
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(onedriveDiv)
-      .setName(t("settings_checkonnectivity"))
-      .addButton(async (button) => {
-        button.setButtonText(t("settings_checkonnectivity_button"));
-        button.onClick(async () => {
-          new Notice(t("settings_checkonnectivity_checking"));
-          const client = getClient(
-            this.plugin.settings,
-            this.app.vault.getName(),
-            () => this.plugin.saveSettings()
-          );
-          const errors = { msg: "" };
-          const res = await client.checkConnect((err: any) => {
-            errors.msg = `${err}`;
-          });
-          if (res) {
-            new Notice(t("settings_onedrive_connect_succ"));
-          } else {
-            new Notice(t("settings_onedrive_connect_fail"));
-            new Notice(errors.msg);
-          }
-        });
-      });
 
     //////////////////////////////////////////////////
     // below for webdav
