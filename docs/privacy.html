@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BYOC — Privacy Policy</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.7;
+      background: #0d0f14;
+      color: #c6cdd5;
+      padding: 2rem;
+    }
+    .container { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; color: #e8ecf0; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.125rem; color: #e8ecf0; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    p, li { font-size: 0.9375rem; color: #8b95a3; margin-bottom: 0.75rem; }
+    ul { padding-left: 1.25rem; }
+    a { color: #4285f4; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .updated { font-size: 0.8125rem; color: #5a6270; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: April 25, 2026</p>
+
+    <p><strong>Bring Your Own Cloud (BYOC)</strong> is an open-source Obsidian plugin that syncs your vault to your own cloud storage. Your privacy is a core design principle.</p>
+
+    <h2>What we access</h2>
+    <p>BYOC requests the <code>drive.file</code> scope from Google Drive. This means the plugin can <strong>only</strong> see, read, and write files and folders that it created itself. It cannot access any other files in your Google Drive.</p>
+
+    <h2>Data storage</h2>
+    <ul>
+      <li>Your OAuth tokens are stored <strong>locally</strong> on your device, inside your Obsidian vault's plugin data.</li>
+      <li>No credentials, tokens, or vault data are transmitted to any third-party server.</li>
+      <li>The OAuth bridge page (this website) is a static redirect — it does not store, log, or transmit any data.</li>
+    </ul>
+
+    <h2>Data we collect</h2>
+    <p>None. BYOC has no server, no analytics, no telemetry, and no tracking.</p>
+
+    <h2>Third-party services</h2>
+    <p>BYOC communicates directly with the Google Drive API using your own credentials. No intermediary services are used.</p>
+
+    <h2>Open source</h2>
+    <p>The full source code is available at <a href="https://github.com/winters27/obsidian-byoc">github.com/winters27/obsidian-byoc</a>.</p>
+
+    <h2>Contact</h2>
+    <p>For questions, open an issue on the <a href="https://github.com/winters27/obsidian-byoc/issues">GitHub repository</a>.</p>
+  </div>
+</body>
+</html>
