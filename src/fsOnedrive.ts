@@ -413,12 +413,12 @@ const fromDriveItemToEntity = (x: DriveItem, remoteBaseDir: string): Entity => {
       throw Error(
         `file/folder with /drive/items/, no idea how to deal with it:
 fullPathOriginal=${fullPathOriginal}
-matchFirstPrefixRes=${matchFirstPrefixRes}
-matchFifthPrefixRes=${matchFifthPrefixRes}
-matchSixthPrefixRes=${matchSixthPrefixRes}
-matchSixthV2PrefixRes=${matchSixthV2PrefixRes}
-matchSecondPrefixRes=${matchSecondPrefixRes}
-matchThirdPrefixRes=${matchThirdPrefixRes}
+matchFirstPrefixRes=${String(matchFirstPrefixRes)}
+matchFifthPrefixRes=${String(matchFifthPrefixRes)}
+matchSixthPrefixRes=${String(matchSixthPrefixRes)}
+matchSixthV2PrefixRes=${String(matchSixthV2PrefixRes)}
+matchSecondPrefixRes=${String(matchSecondPrefixRes)}
+matchThirdPrefixRes=${String(matchThirdPrefixRes)}
 ${constructFromDriveItemToEntityError(x)}`
       );
     }
@@ -429,12 +429,12 @@ ${constructFromDriveItemToEntityError(x)}`
     throw Error(
       `file/folder, no idea how to deal with it without known prefix:
 fullPathOriginal=${fullPathOriginal}
-matchFirstPrefixRes=${matchFirstPrefixRes}
-matchFifthPrefixRes=${matchFifthPrefixRes}
-matchSixthPrefixRes=${matchSixthPrefixRes}
-matchSixthV2PrefixRes=${matchSixthV2PrefixRes}
-matchSecondPrefixRes=${matchSecondPrefixRes}
-matchThirdPrefixRes=${matchThirdPrefixRes}
+matchFirstPrefixRes=${String(matchFirstPrefixRes)}
+matchFifthPrefixRes=${String(matchFifthPrefixRes)}
+matchSixthPrefixRes=${String(matchSixthPrefixRes)}
+matchSixthV2PrefixRes=${String(matchSixthV2PrefixRes)}
+matchSecondPrefixRes=${String(matchSecondPrefixRes)}
+matchThirdPrefixRes=${String(matchThirdPrefixRes)}
 ${constructFromDriveItemToEntityError(x)}`
     );
   }
@@ -509,7 +509,7 @@ class MyAuthProvider implements AuthenticationProvider {
       if ((r as { error?: unknown }).error !== undefined) {
         const r2 = r as AccessCodeResponseFailedType;
         throw Error(
-          `Error while refreshing accessToken: ${r2.error}, ${r2.error_codes}: ${r2.error_description}`
+          `Error while refreshing accessToken: ${r2.error}, ${String(r2.error_codes)}: ${r2.error_description}`
         );
       }
       const r2 = r as AccessCodeResponseSuccessfulType;

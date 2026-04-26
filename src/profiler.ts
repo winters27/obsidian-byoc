@@ -59,7 +59,7 @@ export class Profiler {
     return this;
   }
 
-  insertSize(label: string, obj: any) {
+  insertSize(label: string, obj: unknown) {
     if (!this.recordSize) {
       return;
     }

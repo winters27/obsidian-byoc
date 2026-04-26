@@ -8,7 +8,6 @@
 import { CryptoProvider, PublicClientApplication } from "@azure/msal-node";
 import type {
   DriveItem,
-  FileSystemInfo,
   UploadSession,
   User,
 } from "@microsoft/microsoft-graph-types";

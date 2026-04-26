@@ -45,21 +45,9 @@ class DropboxAuthModal extends Modal {
     const { contentEl } = this;
     const t = this.t;
 
-    let needManualPaste = false;
-    const userAgent = activeWindow.navigator.userAgent.toLocaleLowerCase() || "";
     // Linux may open a second Obsidian instance on protocol redirect,
     // so fall back to manual paste on Linux desktop.
-    if (
-      Platform.isDesktopApp &&
-      !Platform.isMacOS &&
-      (/linux/.test(userAgent) ||
-        /ubuntu/.test(userAgent) ||
-        /debian/.test(userAgent) ||
-        /fedora/.test(userAgent) ||
-        /centos/.test(userAgent))
-    ) {
-      needManualPaste = true;
-    }
+    const needManualPaste = Platform.isDesktopApp && Platform.isLinux;
 
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
       DROPBOX_APP_KEY,
@@ -342,7 +330,7 @@ export const generateDropboxSettingsPart = (
         );
         const errors = { msg: "" };
         const res = await client.checkConnect((err: unknown) => {
-          errors.msg = `${err}`;
+          errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
           new Notice(t("settings_dropbox_connect_succ"));

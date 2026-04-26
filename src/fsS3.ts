@@ -221,7 +221,7 @@ const getObjectBodyToArrayBuffer = async (
   } else if (b instanceof Blob) {
     return await b.arrayBuffer();
   } else {
-    throw TypeError(`The type of ${b} is not one of the supported types`);
+    throw TypeError(`The type of ${String(b)} is not one of the supported types`);
   }
 };
 

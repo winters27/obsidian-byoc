@@ -5,7 +5,6 @@ import { type App, Modal, Notice, Setting } from "obsidian";
 import {
   DEFAULT_GOOGLEDRIVE_CONFIG,
   generateAuthUrl,
-  setConfigBySuccessfullAuthInplace,
 } from "./fsGoogleDrive";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
@@ -225,7 +224,7 @@ export const generateGoogleDriveSettingsPart = (
         );
         const errors = { msg: "" };
         const res = await client.checkConnect((err: unknown) => {
-          errors.msg = `${err}`;
+          errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
           new Notice(t("settings_googledrive_connect_succ"));

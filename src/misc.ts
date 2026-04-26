@@ -50,7 +50,7 @@ export const getFolderLevels = (x: string, addEndingSlash = false) => {
   }
 
   const y1 = x.split("/");
-  const i = 0;
+  const _i = 0;
   for (let index = 0; index + 1 < y1.length; index++) {
     let k = y1.slice(0, index + 1).join("/");
     if (k === "" || k === "/") {
@@ -402,7 +402,7 @@ export const toText = (x: unknown) => {
     typeof x === "bigint" ||
     typeof x === "boolean"
   ) {
-    return `${x}`;
+    return String(x);
   }
 
   if (x instanceof Error) {
@@ -422,7 +422,7 @@ export const toText = (x: unknown) => {
     }
     throw new Error("not jsonable");
   } catch {
-    return `${x}`;
+    return String(x);
   }
 };
 
@@ -675,7 +675,7 @@ export const getSha1 = async (x: ArrayBuffer, stringify: "base64" | "hex") => {
   } else if (stringify === "hex") {
     return arrayBufferToHex(y);
   }
-  throw Error(`not supported stringify option = ${stringify}`);
+  throw Error(`not supported stringify option = ${String(stringify)}`);
 };
 
 /**

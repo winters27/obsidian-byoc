@@ -8,8 +8,6 @@ import { request } from "obsidian";
 import {
   BOX_CLIENT_ID,
   BOX_CLIENT_SECRET,
-  COMMAND_CALLBACK_BOX,
-  DEFAULT_CONTENT_TYPE,
   type BoxConfig,
   type Entity,
 } from "./baseTypes";
@@ -150,7 +148,7 @@ class BoxPathResolver {
       const entries = res.entries || [];
 
       const match = entries.find(
-        (e: any) => e.name === seg && e.type === "folder"
+        (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === seg && e.type === "folder"
       );
 
       if (match) {
@@ -177,13 +175,13 @@ class BoxPathResolver {
   }
 }
 
-function fromBoxItemToEntity(item: any, baseDirPrefix: string): Entity {
+function fromBoxItemToEntity(item: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }, baseDirPrefix: string): Entity {
   let key = "";
 
   // Build the key from path_collection
   if (item.path_collection?.entries) {
     const parts = item.path_collection.entries
-      .map((e: any) => e.name)
+      .map((e) => e.name)
       .filter((n: string) => n !== "All Files");
     parts.push(item.name);
     key = parts.join("/");
@@ -362,7 +360,7 @@ export class FakeFsBox extends FakeFs {
     folderId: string,
     pathPrefix: string
   ): Promise<any[]> {
-    const items: any[] = [];
+    const items: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }[] = [];
     let offset = 0;
     const limit = 1000;
 
@@ -394,7 +392,7 @@ export class FakeFsBox extends FakeFs {
       `${BOX_API}/folders/0/items?fields=id,name,type&limit=1000`
     );
     return (res.entries || [])
-      .filter((e: any) => e.type === "folder")
+      .filter((e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.type === "folder")
       .map((e: any) => e.name as string)
       .sort((a: string, b: string) => a.localeCompare(b));
   }
@@ -415,7 +413,7 @@ export class FakeFsBox extends FakeFs {
       // Build key from the item — we need to resolve relative to our base
       let key = "";
       if (item.path_collection?.entries) {
-        const parts = item.path_collection.entries.map((e: any) => e.name);
+        const parts = item.path_collection.entries.map((e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name);
         parts.push(item.name);
         // Remove "All Files" and the base dir prefix
         const fullPath = parts.filter((n: string) => n !== "All Files").join("/");
@@ -477,7 +475,7 @@ export class FakeFsBox extends FakeFs {
       `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type,size,modified_at,created_at,etag`
     );
     const match = (res.entries || []).find(
-      (e: any) => e.name === fileName && e.type === "file"
+      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
     );
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found`);
 
@@ -531,7 +529,7 @@ export class FakeFsBox extends FakeFs {
         `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type&limit=1000`
       );
       const match = (res.entries || []).find(
-        (e: any) => e.name === fileName && e.type === "file"
+        (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
       );
       if (match) existingFileId = match.id;
     } catch {
@@ -597,7 +595,7 @@ export class FakeFsBox extends FakeFs {
       `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type&limit=1000`
     );
     const match = (res.entries || []).find(
-      (e: any) => e.name === fileName && e.type === "file"
+      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
     );
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found for read`);
 
@@ -639,7 +637,7 @@ export class FakeFsBox extends FakeFs {
     );
     const itemType = isFolder ? "folder" : "file";
     const match = (res.entries || []).find(
-      (e: any) => e.name === name && e.type === itemType
+      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === name && e.type === itemType
     );
     if (!match) return; // Already gone
 

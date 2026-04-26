@@ -19,8 +19,8 @@ export abstract class FakeFs {
   /** Returns true if this provider supports atomic rename without copy+delete. */
   abstract supportsRename(): boolean;
   abstract rm(key: string): Promise<void>;
-  abstract checkConnect(callbackFunc?: any): Promise<boolean>;
-  async checkConnectCommonOps(callbackFunc?: any) {
+  abstract checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean>;
+  async checkConnectCommonOps(callbackFunc?: (err: unknown) => unknown) {
     try {
       console.debug(`check connect: create folder`);
       const folderName = `rs-test-folder-${nanoid()}/`;

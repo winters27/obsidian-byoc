@@ -24,7 +24,7 @@ const getKeyIVFromPassword = async (
   const k2 = (await activeWindow.crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
-      salt: salt as any,
+      salt: salt as unknown as BufferSource,
       iterations: rounds,
       hash: "SHA-256",
     },
@@ -78,7 +78,7 @@ export const decryptArrayBuffer = async (
   password: string,
   rounds: number = DEFAULT_ITER
 ) => {
-  const prefix = arrBuf.slice(0, 8);
+  const _prefix = arrBuf.slice(0, 8);
   const salt = arrBuf.slice(8, 16);
   const derivedKey = await getKeyIVFromPassword(
     new Uint8Array(salt),

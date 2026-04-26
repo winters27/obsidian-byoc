@@ -403,7 +403,7 @@ export interface MixedEntity {
   renameFrom?: string;
 
   change?: boolean;
-  sideNotes?: any;
+  sideNotes?: unknown;
 }
 
 /** @deprecated */

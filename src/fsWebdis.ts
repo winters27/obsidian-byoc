@@ -192,7 +192,7 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command = `${command}/ctime/${ctime}`;
     }
-    const rsp = (await (await this._fetchCommand("GET", command)).json)[
+    const _rsp = (await (await this._fetchCommand("GET", command)).json)[
       "HSET"
     ];
     return await this.stat(key);
@@ -214,13 +214,13 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command1 = `${command1}/ctime/${ctime}`;
     }
-    const rsp1 = (await (await this._fetchCommand("GET", command1)).json)[
+    const _rsp1 = (await (await this._fetchCommand("GET", command1)).json)[
       "HSET"
     ];
 
     // content
     const command2 = `SET/${fullKey}:content`;
-    const rsp2 = (
+    const _rsp2 = (
       await (await this._fetchCommand("PUT", command2, content)).json
     )["SET"];
 
@@ -247,7 +247,7 @@ export class FakeFsWebdis extends FakeFs {
   async rm(key: string): Promise<void> {
     const fullKey = getWebdisPath(key, this.remoteBaseDir);
     const command = `DEL/${fullKey}:meta/${fullKey}:content`;
-    const rsp = (await (await this._fetchCommand("PUT", command)).json)[
+    const _rsp = (await (await this._fetchCommand("PUT", command)).json)[
       "DEL"
     ];
   }

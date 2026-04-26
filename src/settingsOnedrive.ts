@@ -268,7 +268,7 @@ export const generateOnedriveSettingsPart = (
         );
         const errors = { msg: "" };
         const res = await client.checkConnect((err: unknown) => {
-          errors.msg = `${err}`;
+          errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
           new Notice(t("settings_onedrive_connect_succ"));

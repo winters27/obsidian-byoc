@@ -6,7 +6,6 @@ import {
   PCLOUD_CLIENT_ID,
   PCLOUD_CLIENT_SECRET,
   type PCloudConfig,
-  COMMAND_URI,
   COMMAND_CALLBACK_PCLOUD,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
@@ -519,7 +518,7 @@ async _getAccessToken() {
 
     const prevCachedEntity: PCloudEntity | undefined =
       this.keyToPCloudEntity[key];
-    const prevFileID: number | undefined = prevCachedEntity?.id;
+    const _prevFileID: number | undefined = prevCachedEntity?.id;
 
     let parentID: number | undefined = undefined;
     let parentFolderPath: string | undefined = undefined;
@@ -578,7 +577,7 @@ async _getAccessToken() {
         // requestUrl has no abort signal support; we deliberately use fetch
         // here so we can abort the hung empty-file request after 300ms.
          
-        const rsp = await fetch(apiUrl, {
+        const _rsp = await fetch(apiUrl, {
           method: "PUT",
           body: content,
           signal: controller.signal,

@@ -37,7 +37,7 @@ class BoxAuthModal extends Modal {
     setSvgTitle(this.titleEl, SVG_BOX, "Connect Box Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
-    const t = this.t;
+    const _t = this.t;
     const authUrl = generateAuthUrl();
 
     const div2 = contentEl.createDiv();
@@ -76,7 +76,7 @@ class BoxRevokeAuthModal extends Modal {
   async onOpen() {
     setSvgTitle(this.titleEl, SVG_BOX, "Revoke Box Account");
     this.modalEl.addClass("byoc-auth-modal");
-    const t = this.t;
+    const _t = this.t;
     const { contentEl } = this;
 
     contentEl.createEl("p", { text: "To revoke BYOC's access:" });
@@ -218,7 +218,7 @@ export const generateBoxSettingsPart = (
         );
         const errors = { msg: "" };
         const res = await client.checkConnect((err: unknown) => {
-          errors.msg = `${err}`;
+          errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
           new Notice(t("settings_box_connect_succ"));

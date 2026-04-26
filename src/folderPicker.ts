@@ -76,6 +76,7 @@ export function openFolderPickerForProvider(opts: {
     fs,
     providerLabel,
     suggestedFolderName(app, current),
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- modal callback awaits internally
     async (folderName) => {
       plugin.settings[providerKey].remoteBaseDir = folderName;
       await plugin.saveSettings();
@@ -172,6 +173,7 @@ export class RemoteFolderPickerModal extends Modal {
       cls: "byoc-folder-picker__retry",
       text: "Retry",
     });
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- async event handler is fire-and-forget
     retry.addEventListener("click", async () => {
       this.renderLoading(host);
       try {
@@ -216,6 +218,7 @@ export class RemoteFolderPickerModal extends Modal {
       cls: "byoc-folder-picker__create-btn mod-cta",
       text: "Create & use",
     });
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- async event handler is fire-and-forget
     btn.addEventListener("click", async () => {
       if (this.busy) return;
       const name = input.value.trim();

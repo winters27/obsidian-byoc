@@ -10,7 +10,7 @@ interface RecvMsg {
   status: "ok" | "error";
   outputName?: string;
   outputContent?: ArrayBuffer;
-  error?: any;
+  error?: unknown;
 }
 
 export const getSizeFromOrigToEnc = encryptedSize;
@@ -33,7 +33,8 @@ export class CipherRclone {
     // console.debug("begin creating EncryptWorker");
     this.workers = [];
     for (let i = 0; i < workerNum; ++i) {
-      this.workers.push(new (EncryptWorker as any)() as Worker);
+      // EncryptWorker is a webpack-injected worker constructor (see worker.d.ts)
+      this.workers.push(new (EncryptWorker as new () => Worker)());
     }
 
     // console.debug("finish creating EncryptWorker");

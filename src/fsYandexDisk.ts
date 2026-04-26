@@ -263,7 +263,7 @@ export class FakeFsYandexDisk extends FakeFs {
 
     while (true) {
       const path = encodeURIComponent(`disk:/${this.remoteBaseDir}`);
-      const res = await this._getJson(
+      const _res = await this._getJson(
         `/resources?path=${path}&limit=${limit}&offset=${offset}&fields=_embedded.items.path,_embedded.items.type,_embedded.items.size,_embedded.items.modified,_embedded.items.created,_embedded.total`
       );
 

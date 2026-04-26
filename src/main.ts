@@ -68,7 +68,6 @@ import {
 import {
   DEFAULT_PCLOUD_CONFIG,
   type AuthAllowFirstRes as AuthAllowFirstResPCloud,
-  generateAuthUrl as generateAuthUrlPCloud,
   sendAuthReq as sendAuthReqPCloud,
   setConfigBySuccessfullAuthInplace as setConfigBySuccessfullAuthInplacePCloud,
 } from "./fsPCloud";
@@ -195,7 +194,7 @@ const getIconSvg = () => {
   return res;
 };
 
-const getStatusBarShortMsgFromSyncSource = (
+const _getStatusBarShortMsgFromSyncSource = (
   t: (x: TransItemType, vars?: Record<string, string>) => string,
   s: SyncTriggerSourceType | undefined
 ) => {
@@ -206,7 +205,7 @@ const getStatusBarShortMsgFromSyncSource = (
     case "auto": return t("statusbar_sync_source_auto");
     case "auto_once_init": return t("statusbar_sync_source_auto_once_init");
     case "auto_sync_on_save": return t("statusbar_sync_source_auto_sync_on_save");
-    default: throw new Error(`no translate for ${s}`);
+    default: throw new Error(`no translate for ${String(s)}`);
   }
 };
 
@@ -878,10 +877,10 @@ export default class BYOCPlugin extends Plugin {
     this.enableMobileSyncButton();      // mobile: sync button in bottom toolbar
     this.toggleSyncOnSaveIfSet();
 
-    const { oldVersion } = await upsertPluginVersionByVault(this.db, this.vaultRandomID, this.manifest.version);
+    const { oldVersion: _oldVersion } = await upsertPluginVersionByVault(this.db, this.vaultRandomID, this.manifest.version);
   }
 
-  async onunload() {
+  onunload() {
     console.debug(`unloading plugin ${this.manifest.id}`);
     this.syncRibbon = undefined;
     if (this.appContainerObserver !== undefined) {
@@ -1149,6 +1148,7 @@ export default class BYOCPlugin extends Plugin {
     btn.setAttribute("aria-label", "Sync vault now");
     setIcon(btn, iconNameSyncWait);
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises -- async event handler is fire-and-forget
     btn.addEventListener("click", async () => {
       if (this.isSyncing) return;
       btn.addClass("byoc-mobile-sync--syncing");

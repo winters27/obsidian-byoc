@@ -13,7 +13,6 @@ import type { TextComponent } from "obsidian";
 import type {
   CipherMethodType,
   ConflictActionType,
-  EmptyFolderCleanType,
   QRExportType,
   SUPPORTED_SERVICES_TYPE,
   SUPPORTED_SERVICES_TYPE_WITH_REMOTE_BASE_DIR,
@@ -22,10 +21,6 @@ import type {
 } from "./baseTypes";
 
 import cloneDeep from "lodash/cloneDeep";
-import {
-  openFolderPickerForProvider,
-  renderFolderBreadcrumb,
-} from "./folderPicker";
 import { generateAzureBlobStorageSettingsPart } from "./settingsAzureBlobStorage";
 import { generateBoxSettingsPart } from "./settingsBox";
 import { generateDropboxSettingsPart } from "./settingsDropbox";
@@ -474,7 +469,7 @@ export class ExportSettingsQrCodeModal extends Modal {
       {
         cls: "qrcode-img",
       },
-      async (el) => {
+      (el) => {
         el.src = imgUri;
       }
     );
@@ -816,7 +811,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for dropbox
     //////////////////////////////////////////////////
 
-    const { dropboxDiv, dropboxAllowedToUsedDiv, dropboxNotShowUpHintSetting } =
+    const { dropboxDiv, dropboxAllowedToUsedDiv: _dropboxAllowedToUsedDiv, dropboxNotShowUpHintSetting: _dropboxNotShowUpHintSetting } =
       generateDropboxSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -825,7 +820,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for onedrive
     //////////////////////////////////////////////////
 
-    const { onedriveDiv, onedriveAllowedToUsedDiv, onedriveNotShowUpHintSetting } =
+    const { onedriveDiv, onedriveAllowedToUsedDiv: _onedriveAllowedToUsedDiv, onedriveNotShowUpHintSetting: _onedriveNotShowUpHintSetting } =
       generateOnedriveSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1019,7 +1014,7 @@ export class BYOCSettingTab extends PluginSettingTab {
           );
           const errors = { msg: "" };
           const res = await client.checkConnect((err: unknown) => {
-            errors.msg = `${err}`;
+            errors.msg = err instanceof Error ? err.message : String(err);
           });
           if (res) {
             new Notice(t("settings_webdav_connect_succ"));
@@ -1126,7 +1121,7 @@ export class BYOCSettingTab extends PluginSettingTab {
           );
           const errors = { msg: "" };
           const res = await client.checkConnect((err: unknown) => {
-            errors.msg = `${err}`;
+            errors.msg = err instanceof Error ? err.message : String(err);
           });
           if (res) {
             new Notice(t("settings_webdis_connect_succ"));
@@ -1143,8 +1138,8 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       onedriveFullDiv,
-      onedriveFullAllowedToUsedDiv,
-      onedriveFullNotShowUpHintSetting,
+      onedriveFullAllowedToUsedDiv: _onedriveFullAllowedToUsedDiv,
+      onedriveFullNotShowUpHintSetting: _onedriveFullNotShowUpHintSetting,
     } = generateOnedriveFullSettingsPart(
       containerEl,
       t,
@@ -1159,8 +1154,8 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       googleDriveDiv,
-      googleDriveAllowedToUsedDiv,
-      googleDriveNotShowUpHintSetting,
+      googleDriveAllowedToUsedDiv: _googleDriveAllowedToUsedDiv,
+      googleDriveNotShowUpHintSetting: _googleDriveNotShowUpHintSetting,
     } = generateGoogleDriveSettingsPart(
       containerEl,
       t,
@@ -1173,7 +1168,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for box
     //////////////////////////////////////////////////
 
-    const { boxDiv, boxAllowedToUsedDiv, boxNotShowUpHintSetting } =
+    const { boxDiv, boxAllowedToUsedDiv: _boxAllowedToUsedDiv, boxNotShowUpHintSetting: _boxNotShowUpHintSetting } =
       generateBoxSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1182,7 +1177,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for pcloud
     //////////////////////////////////////////////////
 
-    const { pCloudDiv, pCloudAllowedToUsedDiv, pCloudNotShowUpHintSetting } =
+    const { pCloudDiv, pCloudAllowedToUsedDiv: _pCloudAllowedToUsedDiv, pCloudNotShowUpHintSetting: _pCloudNotShowUpHintSetting } =
       generatePCloudSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1193,8 +1188,8 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       yandexDiskDiv,
-      yandexDiskAllowedToUsedDiv,
-      yandexDiskNotShowUpHintSetting,
+      yandexDiskAllowedToUsedDiv: _yandexDiskAllowedToUsedDiv,
+      yandexDiskNotShowUpHintSetting: _yandexDiskNotShowUpHintSetting,
     } = generateYandexDiskSettingsPart(
       containerEl,
       t,
@@ -1207,7 +1202,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for koofr
     //////////////////////////////////////////////////
 
-    const { koofrDiv, koofrAllowedToUsedDiv, koofrNotShowUpHintSetting } =
+    const { koofrDiv, koofrAllowedToUsedDiv: _koofrAllowedToUsedDiv, koofrNotShowUpHintSetting: _koofrNotShowUpHintSetting } =
       generateKoofrSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1218,8 +1213,8 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       azureBlobStorageDiv,
-      azureBlobStorageAllowedToUsedDiv,
-      azureBlobStorageNotShowUpHintSetting,
+      azureBlobStorageAllowedToUsedDiv: _azureBlobStorageAllowedToUsedDiv,
+      azureBlobStorageNotShowUpHintSetting: _azureBlobStorageNotShowUpHintSetting,
     } = generateAzureBlobStorageSettingsPart(
       containerEl,
       t,
@@ -1544,7 +1539,9 @@ export class BYOCSettingTab extends PluginSettingTab {
         textArea.inputEl.cols = 30;
 
         textArea.inputEl.addClass("ignorepaths-textarea");
-        textArea.setPlaceholder("*.pdf\n.obsidian/plugins/foo/**\nsecret-folder/");
+        textArea.setPlaceholder(
+          `*.pdf\n${this.app.vault.configDir}/plugins/foo/**\nsecret-folder/`
+        );
       });
 
     new Setting(basicDiv)
@@ -1991,7 +1988,7 @@ export class BYOCSettingTab extends PluginSettingTab {
                 );
               }
             } catch (e) {
-              new Notice(`${e}`);
+              new Notice(e instanceof Error ? e.message : String(e));
             }
 
             importSettingVal = "";
@@ -2006,7 +2003,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for pro
     //////////////////////////////////////////////////
 
-    const proDiv = containerEl.createEl("div");
+    const _proDiv = containerEl.createEl("div");
 
 
     //////////////////////////////////////////////////

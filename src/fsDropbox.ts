@@ -652,7 +652,7 @@ export class FakeFsDropbox extends FakeFs {
     }
 
     const mtimeFixed = Math.floor(mtime / 1000.0) * 1000;
-    const ctimeFixed = Math.floor(ctime / 1000.0) * 1000;
+    const _ctimeFixed = Math.floor(ctime / 1000.0) * 1000;
     const mtimeStr = new Date(mtimeFixed)
       .toISOString()
       .replace(/\.\d{3}Z$/, "Z");
@@ -703,7 +703,7 @@ export class FakeFsDropbox extends FakeFs {
       `downloadFromRemoteRaw=${key}`
     );
     if (rsp === undefined) {
-      throw Error(`unknown rsp from dropbox download: ${rsp}`);
+      throw Error(`unknown rsp from dropbox download: ${JSON.stringify(rsp)}`);
     }
     if ((rsp.result as any).fileBlob !== undefined) {
       // we get a Blob
@@ -714,7 +714,7 @@ export class FakeFsDropbox extends FakeFs {
       const content = (rsp.result as any).fileBinary as Buffer;
       return bufferToArrayBuffer(content) as ArrayBuffer;
     } else {
-      throw Error(`unknown rsp from dropbox download: ${rsp}`);
+      throw Error(`unknown rsp from dropbox download: ${JSON.stringify(rsp)}`);
     }
   }
 

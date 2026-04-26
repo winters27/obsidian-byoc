@@ -85,7 +85,7 @@ export class FakeFsLocal extends FakeFs {
           sizeRaw: 0,
         };
       } else {
-        throw Error(`unexpected ${entry}`);
+        throw Error(`unexpected ${JSON.stringify(entry)}`);
       }
 
       if (r.keyRaw.startsWith(DEFAULT_DEBUG_FOLDER)) {

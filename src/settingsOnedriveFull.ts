@@ -52,7 +52,7 @@ class OnedrivefullAuthModal extends Modal {
 
       this.plugin.oauth2Info.verifier = verifier;
 
-      const div2 = contentEl.createDiv();
+      const _div2 = contentEl.createDiv();
       contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 } catch (e) {
@@ -249,7 +249,7 @@ export const generateOnedriveFullSettingsPart = (
         );
         const errors = { msg: "" };
         const res = await client.checkConnect((err: unknown) => {
-          errors.msg = `${err}`;
+          errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
           new Notice(t("settings_onedrivefull_connect_succ"));

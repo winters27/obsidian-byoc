@@ -378,7 +378,7 @@ export class FakeFsWebdav extends FakeFs {
       s[s.length - 2] = "uploads";
       return s.join("/");
     }
-    throw Error(`cannot construct upload address for ${s}`);
+    throw Error(`cannot construct upload address for ${s.join("/")}`);
   };
 
   async _checkPartialSupport() {
