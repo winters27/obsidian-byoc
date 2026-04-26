@@ -111,14 +111,15 @@ export const sendAuthReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1);
-    if (rsp2.error !== undefined) {
+    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    if ((rsp2 as AccessCodeResponseFailedType).error !== undefined) {
       return rsp2 as AccessCodeResponseFailedType;
     }
     return rsp2 as AccessCodeResponseSuccessfulType;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 };
 
@@ -126,7 +127,7 @@ export const sendRefreshTokenReq = async (
   clientID: string,
   authority: string,
   refreshToken: string
-) => {
+): Promise<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType> => {
   try {
     const rsp1 = await request({
       url: `${authority}/oauth2/v2.0/token`,
@@ -141,11 +142,8 @@ export const sendRefreshTokenReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1);
-    if (rsp2.error !== undefined) {
-      return rsp2 as AccessCodeResponseFailedType;
-    }
-    return rsp2 as AccessCodeResponseSuccessfulType;
+    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    return rsp2;
   } catch (e) {
     console.error(e);
     throw e;
@@ -356,8 +354,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     url = url.replace(/#/g, "%23");
     return url;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _getJson(path: string): Promise<any> {
+  private async _getJson<T = unknown>(path: string): Promise<T> {
     return JSON.parse(
       await request({
         url: this._buildUrl(path),
@@ -368,10 +365,10 @@ export class FakeFsOnedriveFull extends FakeFs {
           "Cache-Control": "no-cache",
         },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _postJson(path: string, payload: any): Promise<any> {
+
+  private async _postJson<T = unknown>(path: string, payload: unknown): Promise<T> {
     return JSON.parse(
       await request({
         url: this._buildUrl(path),
@@ -382,10 +379,10 @@ export class FakeFsOnedriveFull extends FakeFs {
           Authorization: `Bearer ${await this.auth.getAccessToken()}`,
         },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _patchJson(path: string, payload: any): Promise<any> {
+
+  private async _patchJson<T = unknown>(path: string, payload: unknown): Promise<T> {
     return JSON.parse(
       await request({
         url: this._buildUrl(path),
@@ -396,7 +393,7 @@ export class FakeFsOnedriveFull extends FakeFs {
           Authorization: `Bearer ${await this.auth.getAccessToken()}`,
         },
       })
-    );
+    ) as T;
   }
 
   private async _deleteJson(path: string): Promise<void> {
@@ -476,10 +473,10 @@ export class FakeFsOnedriveFull extends FakeFs {
   }
 
   async listFoldersAtRoot(): Promise<string[]> {
-    const k = await this._getJson("/drive/root/children");
-    return (k.value as DriveItem[])
-      .filter((x: DriveItem) => "folder" in x)
-      .map((x: DriveItem) => x.name!)
+    const k = await this._getJson<{ value: DriveItem[] }>("/drive/root/children");
+    return k.value
+      .filter((x) => "folder" in x)
+      .map((x) => x.name!)
       .sort((a, b) => a.localeCompare(b));
   }
 
@@ -497,18 +494,24 @@ export class FakeFsOnedriveFull extends FakeFs {
     const NEXT_KEY = "@odata.nextLink";
     const DELTA_KEY = "@odata.deltaLink";
 
-    let res = await this._getJson(
+    type DeltaResponse = {
+      value: DriveItem[];
+      "@odata.nextLink"?: string;
+      "@odata.deltaLink"?: string;
+    };
+
+    let res = await this._getJson<DeltaResponse>(
       `/drive/root:/${this.remoteBaseDir}:/delta`
     );
-    const items = res.value as DriveItem[];
+    const items = res.value;
 
-    while (NEXT_KEY in res) {
-      res = await this._getJson(res[NEXT_KEY]);
-      items.push(...cloneDeep(res.value as DriveItem[]));
+    while (res[NEXT_KEY]) {
+      res = await this._getJson<DeltaResponse>(res[NEXT_KEY]);
+      items.push(...cloneDeep(res.value));
     }
 
-    if (DELTA_KEY in res) {
-      this.config.deltaLink = res[DELTA_KEY];
+    if (DELTA_KEY in res && res[DELTA_KEY]) {
+      this.config.deltaLink = res[DELTA_KEY]!;
       await this.saveFunc();
     }
 
@@ -520,14 +523,19 @@ export class FakeFsOnedriveFull extends FakeFs {
   async walkPartial(): Promise<Entity[]> {
     await this._init();
 
+    type DeltaResponse = {
+      value: DriveItem[];
+      "@odata.deltaLink"?: string;
+    };
+
     const DELTA_KEY = "@odata.deltaLink";
-    const res = await this._getJson(
+    const res = await this._getJson<DeltaResponse>(
       `/drive/root:/${this.remoteBaseDir}:/delta`
     );
-    const items = res.value as DriveItem[];
+    const items = res.value;
 
-    if (DELTA_KEY in res) {
-      this.config.deltaLink = res[DELTA_KEY];
+    if (DELTA_KEY in res && res[DELTA_KEY]) {
+      this.config.deltaLink = res[DELTA_KEY]!;
       await this.saveFunc();
     }
 
@@ -539,10 +547,10 @@ export class FakeFsOnedriveFull extends FakeFs {
   async stat(key: string): Promise<Entity> {
     await this._init();
     const path = getOnedrivePath(key, this.remoteBaseDir);
-    const rsp = await this._getJson(
+    const rsp = await this._getJson<DriveItem>(
       `${path}?$select=cTag,eTag,fileSystemInfo,folder,file,name,parentReference,size`
     );
-    return fromDriveItemToEntity(rsp as DriveItem, this.remoteBaseDir);
+    return fromDriveItemToEntity(rsp, this.remoteBaseDir);
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -551,7 +559,11 @@ export class FakeFsOnedriveFull extends FakeFs {
 
     const uploadFolder = getOnedrivePath(key, this.remoteBaseDir);
     if (!this.foldersCreated.has(uploadFolder)) {
-      const payload: any = {
+      const payload: {
+        folder: Record<string, never>;
+        "@microsoft.graph.conflictBehavior": string;
+        fileSystemInfo?: Record<string, string>;
+      } = {
         folder: {},
         "@microsoft.graph.conflictBehavior": "replace",
       };
@@ -611,7 +623,7 @@ export class FakeFsOnedriveFull extends FakeFs {
       }
     } else {
       // Large file upload session
-      const session: UploadSession = await this._postJson(
+      const session = await this._postJson<UploadSession>(
         `${remotePath}:/createUploadSession`,
         {
           item: {
@@ -646,10 +658,13 @@ export class FakeFsOnedriveFull extends FakeFs {
     if (key.endsWith("/")) throw Error(`readFile called on folder: ${key}`);
 
     const remotePath = getOnedrivePath(key, this.remoteBaseDir);
-    const rsp = await this._getJson(
+    const rsp = await this._getJson<{ "@microsoft.graph.downloadUrl"?: string }>(
       `${remotePath}?$select=@microsoft.graph.downloadUrl`
     );
-    const downloadUrl: string = rsp["@microsoft.graph.downloadUrl"];
+    const downloadUrl = rsp["@microsoft.graph.downloadUrl"];
+    if (!downloadUrl) {
+      throw Error(`OneDrive Full: no downloadUrl returned for '${key}'`);
+    }
 
     try {
       return await (await retryFetch(downloadUrl, { cache: "no-store" })).arrayBuffer();
@@ -686,8 +701,8 @@ export class FakeFsOnedriveFull extends FakeFs {
 
   async getUserDisplayName(): Promise<string> {
     await this._init();
-    const res: User = await this._getJson("/me?$select=displayName");
-    return res.displayName || "<unknown>";
+    const res = await this._getJson<User>("/me?$select=displayName");
+    return res.displayName ?? "<unknown>";
   }
 
   async revokeAuth(): Promise<void> {

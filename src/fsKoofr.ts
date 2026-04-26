@@ -33,6 +33,52 @@ export const DEFAULT_KOOFR_CONFIG: KoofrConfig = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Koofr API response types
+////////////////////////////////////////////////////////////////////////////////
+
+interface KoofrOAuthRes {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}
+
+interface KoofrMount {
+  id: string;
+  isPrimary?: boolean;
+  name?: string;
+}
+
+interface KoofrMountsRes {
+  mounts?: KoofrMount[];
+}
+
+interface KoofrFile {
+  name: string;
+  type: string;
+  modified?: number;
+  size?: number;
+  hash?: string;
+}
+
+interface KoofrFileList {
+  files?: KoofrFile[];
+}
+
+interface KoofrFileInfo {
+  type?: string;
+  modified?: number;
+  size?: number;
+  hash?: string;
+}
+
+interface KoofrUser {
+  firstName?: string;
+  lastName?: string;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // OAuth2 Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -46,11 +92,10 @@ export function generateAuthUrl(): string {
   return `${KOOFR_AUTH_URL}?${params.toString()}`;
 }
 
- 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>
-): Promise<any> {
+): Promise<KoofrOAuthRes> {
   try {
     const rsp = await request({
       url: KOOFR_TOKEN_URL,
@@ -64,15 +109,15 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp);
+    return JSON.parse(rsp) as KoofrOAuthRes;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- external OAuth response shape
-async function refreshAccessToken(refreshToken: string): Promise<any> {
+async function refreshAccessToken(refreshToken: string): Promise<KoofrOAuthRes> {
   const rsp = await request({
     url: KOOFR_TOKEN_URL,
     method: "POST",
@@ -84,20 +129,19 @@ async function refreshAccessToken(refreshToken: string): Promise<any> {
       client_secret: KOOFR_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp);
+  return JSON.parse(rsp) as KoofrOAuthRes;
 }
 
 export async function setConfigBySuccessfullAuthInplace(
   config: KoofrConfig,
-  authRes: Record<string, unknown>,
+  authRes: KoofrOAuthRes,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  const r = authRes as unknown as { access_token: string; refresh_token?: string; expires_in?: number };
-  config.accessToken = r.access_token;
-  config.refreshToken = r.refresh_token || config.refreshToken;
-  config.accessTokenExpiresInMs = (r.expires_in ?? 3600) * 1000;
+  config.accessToken = authRes.access_token;
+  config.refreshToken = authRes.refresh_token ?? config.refreshToken;
+  config.accessTokenExpiresInMs = (authRes.expires_in ?? 3600) * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + (r.expires_in ?? 3600) * 1000 - 300_000;
+    Date.now() + (authRes.expires_in ?? 3600) * 1000 - 300_000;
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
 }
@@ -115,6 +159,14 @@ function getRemotePath(key: string, remoteBaseDir: string): string {
 ////////////////////////////////////////////////////////////////////////////////
 // The Client
 ////////////////////////////////////////////////////////////////////////////////
+
+interface RequestOpts {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  contentType?: string;
+  body?: string;
+}
 
 export class FakeFsKoofr extends FakeFs {
   kind = "koofr";
@@ -149,7 +201,7 @@ export class FakeFsKoofr extends FakeFs {
     ) {
       const res = await refreshAccessToken(this.config.refreshToken);
       if (res.error) {
-        throw Error(`[BYOC] Koofr refresh error: ${res.error_description}`);
+        throw Error(`[BYOC] Koofr refresh error: ${res.error_description ?? res.error}`);
       }
       this.config.accessToken = res.access_token;
       if (res.refresh_token) this.config.refreshToken = res.refresh_token;
@@ -165,19 +217,18 @@ export class FakeFsKoofr extends FakeFs {
     if (this.config.mountID) return this.config.mountID;
 
     // Get the primary mount (default storage)
-    const mounts = await this._getJson("/api/v2/mounts");
-    if (mounts && mounts.mounts && mounts.mounts.length > 0) {
+    const mounts = await this._getJson<KoofrMountsRes>("/api/v2/mounts");
+    if (mounts.mounts && mounts.mounts.length > 0) {
       // Find the primary mount
-      const primary =
-        mounts.mounts.find((m: any) => m.isPrimary) || mounts.mounts[0];
+      const primary = mounts.mounts.find((m) => m.isPrimary) ?? mounts.mounts[0];
       this.config.mountID = primary.id;
       await this.saveFunc();
       return this.config.mountID;
     }
     throw Error("[BYOC] Koofr: no mounts found");
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _getJson(path: string): Promise<any> {
+
+  private async _getJson<T = unknown>(path: string): Promise<T> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
     return JSON.parse(
@@ -189,13 +240,13 @@ export class FakeFsKoofr extends FakeFs {
           Accept: "application/json",
         },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _postJson(path: string, body?: any): Promise<any> {
+
+  private async _postJson<T = unknown>(path: string, body?: unknown): Promise<T> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
-    const opts: any = {
+    const opts: RequestOpts = {
       url,
       method: "POST",
       headers: {
@@ -208,7 +259,7 @@ export class FakeFsKoofr extends FakeFs {
       opts.body = JSON.stringify(body);
     }
     const rsp = await request(opts);
-    return rsp ? JSON.parse(rsp) : {};
+    return (rsp ? JSON.parse(rsp) : {}) as T;
   }
 
   private async _delete(path: string): Promise<void> {
@@ -245,10 +296,10 @@ export class FakeFsKoofr extends FakeFs {
     remotePath: string,
     entities: Entity[]
   ): Promise<void> {
-    const res = await this._getJson(
+    const res = await this._getJson<KoofrFileList>(
       `/api/v2/mounts/${mountID}/files/list?path=${encodeURIComponent(remotePath)}`
     );
-    const files = res.files || [];
+    const files = res.files ?? [];
 
     for (const item of files) {
       const itemPath = `${remotePath === "/" ? "" : remotePath}/${item.name}`;
@@ -288,13 +339,13 @@ export class FakeFsKoofr extends FakeFs {
 
   async listFoldersAtRoot(): Promise<string[]> {
     const mountID = await this.ensureMountID();
-    const res = await this._getJson(
+    const res = await this._getJson<KoofrFileList>(
       `/api/v2/mounts/${mountID}/files/list?path=${encodeURIComponent("/")}`
     );
-    return (res.files || [])
-      .filter((item: any) => item.type === "dir")
-      .map((item: any) => item.name as string)
-      .sort((a: string, b: string) => a.localeCompare(b));
+    return (res.files ?? [])
+      .filter((item) => item.type === "dir")
+      .map((item) => item.name)
+      .sort((a, b) => a.localeCompare(b));
   }
 
   async createFolderAtRoot(name: string): Promise<void> {
@@ -320,7 +371,7 @@ export class FakeFsKoofr extends FakeFs {
   async stat(key: string): Promise<Entity> {
     const mountID = await this.ensureMountID();
     const remotePath = getRemotePath(key, this.remoteBaseDir);
-    const res = await this._getJson(
+    const res = await this._getJson<KoofrFileInfo>(
       `/api/v2/mounts/${mountID}/files/info?path=${encodeURIComponent(remotePath)}`
     );
 
@@ -450,7 +501,7 @@ export class FakeFsKoofr extends FakeFs {
   }
 
   async getUserDisplayName(): Promise<string> {
-    const res = await this._getJson("/api/v2/user");
+    const res = await this._getJson<KoofrUser>("/api/v2/user");
     return `${res.firstName ?? ""} ${res.lastName ?? ""}`.trim() || "Koofr User";
   }
 

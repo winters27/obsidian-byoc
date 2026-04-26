@@ -59,11 +59,18 @@ export function generateAuthUrl(): string {
   return `${GOOGLE_AUTH_URL}?${params.toString()}`;
 }
 
- 
+interface GDriveOAuthRes {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}
+
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>
-): Promise<any> {
+): Promise<GDriveOAuthRes> {
   try {
     const rsp = await request({
       url: GOOGLE_TOKEN_URL,
@@ -77,15 +84,15 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp);
+    return JSON.parse(rsp) as GDriveOAuthRes;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- external OAuth response shape
-async function refreshAccessToken(refreshToken: string): Promise<any> {
+async function refreshAccessToken(refreshToken: string): Promise<GDriveOAuthRes> {
   const rsp = await request({
     url: GOOGLE_TOKEN_URL,
     method: "POST",
@@ -97,20 +104,19 @@ async function refreshAccessToken(refreshToken: string): Promise<any> {
       client_secret: GOOGLEDRIVE_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp);
+  return JSON.parse(rsp) as GDriveOAuthRes;
 }
 
 export async function setConfigBySuccessfullAuthInplace(
   config: GoogleDriveConfig,
-  authRes: Record<string, unknown>,
+  authRes: GDriveOAuthRes,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  const r = authRes as unknown as { access_token: string; refresh_token?: string; expires_in?: number };
-  config.accessToken = r.access_token;
-  config.refreshToken = r.refresh_token || config.refreshToken;
-  config.accessTokenExpiresInMs = (r.expires_in ?? 3600) * 1000;
+  config.accessToken = authRes.access_token;
+  config.refreshToken = authRes.refresh_token ?? config.refreshToken;
+  config.accessTokenExpiresInMs = (authRes.expires_in ?? 3600) * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + (r.expires_in ?? 3600) * 1000 - 300_000;
+    Date.now() + (authRes.expires_in ?? 3600) * 1000 - 300_000;
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
 }
@@ -133,6 +139,15 @@ interface GDriveFile {
   createdTime?: string;
   parents?: string[];
   trashed?: boolean;
+}
+
+interface GDriveFileList {
+  files?: GDriveFile[];
+  nextPageToken?: string;
+}
+
+interface GDriveAbout {
+  user?: { displayName?: string; emailAddress?: string };
 }
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -175,7 +190,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     ) {
       const res = await refreshAccessToken(this.config.refreshToken);
       if (res.error) {
-        throw Error(`[BYOC] Google Drive refresh error: ${res.error_description}`);
+        throw Error(`[BYOC] Google Drive refresh error: ${res.error_description ?? res.error}`);
       }
       this.config.accessToken = res.access_token;
       if (res.refresh_token) this.config.refreshToken = res.refresh_token;
@@ -186,8 +201,8 @@ export class FakeFsGoogleDrive extends FakeFs {
 
     return this.config.accessToken;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _getJson(url: string): Promise<any> {
+
+  private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
     return JSON.parse(
@@ -196,10 +211,10 @@ export class FakeFsGoogleDrive extends FakeFs {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _postJson(url: string, body: any): Promise<any> {
+
+  private async _postJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
     return JSON.parse(
@@ -210,10 +225,10 @@ export class FakeFsGoogleDrive extends FakeFs {
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _patchJson(url: string, body: any): Promise<any> {
+
+  private async _patchJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
     return JSON.parse(
@@ -224,7 +239,7 @@ export class FakeFsGoogleDrive extends FakeFs {
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
 
   private async _delete(url: string): Promise<void> {
@@ -250,7 +265,7 @@ export class FakeFsGoogleDrive extends FakeFs {
 
     // Search for existing
     const q = `name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
-    const res = await this._getJson(
+    const res = await this._getJson<GDriveFileList>(
       `/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=1`
     );
 
@@ -261,7 +276,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     }
 
     // Create
-    const created = await this._postJson("/files", {
+    const created = await this._postJson<GDriveFile>("/files", {
       name: name,
       mimeType: FOLDER_MIME,
       parents: [parentId],
@@ -322,7 +337,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     let q = `name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and trashed=false`;
     if (mimeType) q += ` and mimeType='${mimeType}'`;
 
-    const res = await this._getJson(
+    const res = await this._getJson<GDriveFileList>(
       `/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,size,modifiedTime,createdTime,parents)&pageSize=1`
     );
 
@@ -343,8 +358,8 @@ export class FakeFsGoogleDrive extends FakeFs {
       let url = `/files?q='${folderId}'+in+parents+and+trashed%3Dfalse&fields=nextPageToken,files(id,name,mimeType,size,modifiedTime,createdTime)&pageSize=1000`;
       if (pageToken) url += `&pageToken=${pageToken}`;
 
-      const res = await this._getJson(url);
-      const files: GDriveFile[] = res.files || [];
+      const res = await this._getJson<GDriveFileList>(url);
+      const files: GDriveFile[] = res.files ?? [];
 
       for (const f of files) {
         const isFolder = f.mimeType === FOLDER_MIME;
@@ -372,18 +387,18 @@ export class FakeFsGoogleDrive extends FakeFs {
         }
       }
 
-      pageToken = res.nextPageToken || "";
+      pageToken = res.nextPageToken ?? "";
     } while (pageToken);
   }
 
   async listFoldersAtRoot(): Promise<string[]> {
     const q = `'root' in parents and mimeType='${FOLDER_MIME}' and trashed=false`;
-    const res = await this._getJson(
+    const res = await this._getJson<GDriveFileList>(
       `/files?q=${encodeURIComponent(q)}&fields=files(id,name)&pageSize=1000`
     );
-    return (res.files || [])
-      .map((f: GDriveFile) => f.name)
-      .sort((a: string, b: string) => a.localeCompare(b));
+    return (res.files ?? [])
+      .map((f) => f.name)
+      .sort((a, b) => a.localeCompare(b));
   }
 
   async createFolderAtRoot(name: string): Promise<void> {
@@ -460,7 +475,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     // Check if file already exists
     const existing = await this.findFile(name, parentId);
 
-    const metadata: any = {
+    const metadata: { modifiedTime: string; name?: string; parents?: string[] } = {
       modifiedTime: new Date(mtime).toISOString(),
     };
 
@@ -576,8 +591,8 @@ export class FakeFsGoogleDrive extends FakeFs {
 
   async getUserDisplayName(): Promise<string> {
     try {
-      const res = await this._getJson("/about?fields=user");
-      return res.user?.displayName || res.user?.emailAddress || "Google Drive User";
+      const res = await this._getJson<GDriveAbout>("/about?fields=user");
+      return res.user?.displayName ?? res.user?.emailAddress ?? "Google Drive User";
     } catch {
       return "Google Drive (not configured)";
     }
@@ -617,7 +632,7 @@ export class FakeFsGoogleDrive extends FakeFs {
  * This combines JSON metadata and file content in one request.
  */
 function createMultipartBody(
-  metadata: any,
+  metadata: Record<string, unknown>,
   content: ArrayBuffer,
   filename: string
 ): Blob {
