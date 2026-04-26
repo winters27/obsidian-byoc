@@ -1,4 +1,5 @@
 import { SVG_DROPBOX } from './icons';
+import { DROPBOX_APP_KEY } from './baseTypes';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Platform, Setting } from "obsidian";
 import {
@@ -61,7 +62,7 @@ class DropboxAuthModal extends Modal {
     }
 
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
-      this.plugin.settings.dropbox.clientID,
+      DROPBOX_APP_KEY,
       needManualPaste
     );
 
@@ -109,7 +110,7 @@ class DropboxAuthModal extends Modal {
             new Notice(t("modal_dropboxauth_maualinput_notice"));
             try {
               const authRes = await sendAuthReq(
-                this.plugin.settings.dropbox.clientID,
+                DROPBOX_APP_KEY,
                 verifier,
                 authCode,
                 async (e: any) => {
@@ -282,10 +283,11 @@ export const generateDropboxSettingsPart = (
   }
 
   new Setting(dropboxAuthDiv)
-    .setName(t("settings_dropbox_auth"))
-    .setDesc(t("settings_dropbox_auth_desc"))
+    .setName("Connect Dropbox Account")
+    .setDesc("Authenticate BYOC with your Dropbox account to enable cloud synchronization.")
     .addButton(async (button) => {
-      button.setButtonText(t("settings_dropbox_auth_button"));
+      button.setButtonText("Authorize");
+      button.setCta();
       button.onClick(async () => {
         const modal = new DropboxAuthModal(
           app,

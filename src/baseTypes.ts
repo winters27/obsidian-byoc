@@ -22,14 +22,14 @@ declare global {
 }
 
 export const DROPBOX_APP_KEY = globalThis.DEFAULT_DROPBOX_APP_KEY || "";
-export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "3729fc1c-0af2-4bec-9376-d7ac4f0ff806";
+export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "";
 export const ONEDRIVE_AUTHORITY = globalThis.DEFAULT_ONEDRIVE_AUTHORITY || "https://login.microsoftonline.com/consumers/";
-export const GOOGLEDRIVE_CLIENT_ID = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_ID || "360279670243-8h1oeinpbipd2c9hbimt34p9rj3k5afv.apps.googleusercontent.com";
-export const GOOGLEDRIVE_CLIENT_SECRET = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_SECRET || "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";
+export const GOOGLEDRIVE_CLIENT_ID = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_ID || "";
+export const GOOGLEDRIVE_CLIENT_SECRET = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_SECRET || "";
 export const BOX_CLIENT_ID = globalThis.DEFAULT_BOX_CLIENT_ID || "";
 export const BOX_CLIENT_SECRET = globalThis.DEFAULT_BOX_CLIENT_SECRET || "";
-export const PCLOUD_CLIENT_ID = globalThis.DEFAULT_PCLOUD_CLIENT_ID || "24ThrhW1TFk";
-export const PCLOUD_CLIENT_SECRET = globalThis.DEFAULT_PCLOUD_CLIENT_SECRET || "GnlT2myN9okdN89EmSo4iQwSBCE7";
+export const PCLOUD_CLIENT_ID = globalThis.DEFAULT_PCLOUD_CLIENT_ID || "";
+export const PCLOUD_CLIENT_SECRET = globalThis.DEFAULT_PCLOUD_CLIENT_SECRET || "";
 export const YANDEXDISK_CLIENT_ID = globalThis.DEFAULT_YANDEXDISK_CLIENT_ID || "";
 export const YANDEXDISK_CLIENT_SECRET = globalThis.DEFAULT_YANDEXDISK_CLIENT_SECRET || "";
 export const KOOFR_CLIENT_ID = globalThis.DEFAULT_KOOFR_CLIENT_ID || "";

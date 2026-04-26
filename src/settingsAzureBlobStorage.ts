@@ -19,13 +19,13 @@ export const generateAzureBlobStorageSettingsPart = (
     "azureblobstorage-hide",
     plugin.settings.serviceType !== "azureblobstorage"
   );
-  azureBlobStorageDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_AZURE} <span>${t("settings_azureblobstorage")}</span>`;
+  azureBlobStorageDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_AZURE} <span>Azure Blob Storage</span>`;
 
   const azureDescDiv = azureBlobStorageDiv.createEl("div", {
     cls: "settings-long-desc",
   });
   azureDescDiv.createEl("p", {
-    text: t("settings_azureblobstorage_disclaimer"),
+    text: "Authenticate with a secure Container SAS URL. BYOC requires List, Read, Write, and Delete permissions to fully synchronize your vault in Azure.",
     cls: "azureblobstorage-disclaimer"
   });
 
@@ -37,8 +37,8 @@ export const generateAzureBlobStorageSettingsPart = (
   const azureBlobStorageAllowedToUsedDiv = azureBlobStorageDiv.createDiv();
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName(t("settings_azureblobstorage_sasurl"))
-    .setDesc(t("settings_azureblobstorage_sasurl_desc"))
+    .setName("Container SAS URL")
+    .setDesc("Enter your full Shared Access Signature URL ending in ?sv=... Ensure it targets a container, not a specific blob, and allows read/write/list/delete.")
     .addText((text) => {
       text
         .setPlaceholder("https://account.blob.core.windows.net/container?...")
@@ -51,8 +51,8 @@ export const generateAzureBlobStorageSettingsPart = (
     });
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName(t("settings_azureblobstorage_prefix"))
-    .setDesc(t("settings_azureblobstorage_prefix_desc"))
+    .setName("Base Directory / Prefix")
+    .setDesc("A virtual directory within the container to isolate your vault data. Defaults to your vault name if left blank.")
     .addText((text) =>
       text
         .setPlaceholder(app.vault.getName())
@@ -64,17 +64,17 @@ export const generateAzureBlobStorageSettingsPart = (
     );
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName(t("settings_azureblobstorage_generatefolderobject"))
-    .setDesc(t("settings_azureblobstorage_generatefolderobject_desc"))
+    .setName("Generate Empty Folder Blobs")
+    .setDesc("Creates 0-byte blobs ending with '/' to emulate folders. Required for compatibility with some S3/blob browsers, but technically unnecessary for BYOC.")
     .addDropdown((dropdown) =>
       dropdown
         .addOption(
           "false",
-          t("settings_azureblobstorage_generatefolderobject_notgenerate")
+          "No (Recommended)"
         )
         .addOption(
           "true",
-          t("settings_azureblobstorage_generatefolderobject_generate")
+          "Yes"
         )
         .setValue(
           plugin.settings.azureblobstorage.generateFolderObject
@@ -106,11 +106,13 @@ export const generateAzureBlobStorageSettingsPart = (
     );
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName(t("settings_checkonnectivity"))
+    .setName("Test Connection")
+    .setDesc("Verify that BYOC can successfully contact Azure and read your container using the SAS URL provided.")
     .addButton(async (button) => {
-      button.setButtonText(t("settings_checkonnectivity_button"));
+      button.setButtonText("Check Connectivity");
+      button.setCta();
       button.onClick(async () => {
-        new Notice(t("settings_checkonnectivity_checking"));
+        new Notice("Checking Azure connection...");
         const client = getClient(plugin.settings, app.vault.getName(), () =>
           plugin.saveSettings()
         );
@@ -119,9 +121,9 @@ export const generateAzureBlobStorageSettingsPart = (
           errors.msg = `${err}`;
         });
         if (res) {
-          new Notice(t("settings_azureblobstorage_connect_succ"));
+          new Notice("Azure Blob connection successful!");
         } else {
-          new Notice(t("settings_azureblobstorage_connect_fail"));
+          new Notice("Azure Blob connection failed.");
           new Notice(errors.msg);
         }
       });

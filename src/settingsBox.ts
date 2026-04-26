@@ -42,8 +42,11 @@ class BoxAuthModal extends Modal {
     const authUrl = generateAuthUrl();
 
     const div2 = contentEl.createDiv();
-    t("modal_boxauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+    div2.createEl("p", { text: "1. Click the button below to authorize BYOC within Box." });
+    div2.createEl("p", { text: `2. BYOC will authenticate via the obsidian:// protocol.` });
+    div2.createEl("p", { text: "3. If prompted, please allow the browser to open Obsidian." });
+    const btn = contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+    btn.addClass("mod-cta");
 
 }
 
@@ -77,19 +80,21 @@ class BoxRevokeAuthModal extends Modal {
     const t = this.t;
     const { contentEl } = this;
 
-    t("modal_boxrevokeauth_step1").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
+    contentEl.createEl("p", { text: "To revoke BYOC's access:" });
+    contentEl.createEl("p", { text: `1. Visit the Box Security portal and remove the BYOC application.` });
     const consentUrl = "https://app.box.com/account/security";
     contentEl.createEl("p").createEl("a", {
       href: consentUrl,
       text: consentUrl,
     });
-    t("modal_boxrevokeauth_step2").split("\n").forEach((val) => { contentEl.createEl("p", { text: val }); });
+    contentEl.createEl("p", { text: "2. Click 'Clear Local OAuth Data' below to erase the credentials from your device." });
 
     new Setting(contentEl)
-      .setName(t("modal_boxrevokeauth_clean"))
-      .setDesc(t("modal_boxrevokeauth_clean_desc"))
+      .setName("Clear Local OAuth Data")
+      .setDesc("Erases the stored refresh/access tokens from your vault.")
       .addButton(async (button) => {
-        button.setButtonText(t("modal_boxrevokeauth_clean_button"));
+        button.setButtonText("Clear Tokens");
+        button.setCta();
         button.onClick(async () => {
           try {
             this.plugin.settings.box = cloneDeep(DEFAULT_BOX_CONFIG);
@@ -102,11 +107,11 @@ class BoxRevokeAuthModal extends Modal {
               "box-revoke-auth-button-hide",
               this.plugin.settings.box.refreshToken === ""
             );
-            new Notice(t("modal_boxrevokeauth_clean_notice"));
+            new Notice("Local Box authorization tokens cleared.");
             this.close();
           } catch (err) {
             console.error(err);
-            new Notice(t("modal_boxrevokeauth_clean_fail"));
+            new Notice("Failed to clear Box tokens.");
           }
         });
       });
@@ -126,7 +131,7 @@ export const generateBoxSettingsPart = (
 ) => {
   const boxDiv = containerEl.createEl("div", { cls: "box-hide" });
   boxDiv.toggleClass("box-hide", plugin.settings.serviceType !== "box");
-  boxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_BOX} <span>${t("settings_box")}</span>`;
+  boxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_BOX} <span>Box</span>`;
 
   const boxNotShowUpHintSetting = new Setting(boxDiv);
   boxNotShowUpHintSetting.settingEl.addClass("box-allow-to-use-hide");
@@ -146,7 +151,7 @@ export const generateBoxSettingsPart = (
   const boxRevokeAuthSetting = new Setting(boxRevokeAuthDiv)
     .setName(savedBoxUsername ? "Logged in as" : "Connected")
     .addButton(async (button) => {
-      button.setButtonText(t("settings_box_revoke_button"));
+      button.setButtonText("Revoke Access");
       button.setWarning();
       button.onClick(async () => {
         new BoxRevokeAuthModal(app, plugin, boxAuthDiv, boxRevokeAuthDiv, t).open();
@@ -157,10 +162,11 @@ export const generateBoxSettingsPart = (
   }
 
   new Setting(boxAuthDiv)
-    .setName(t("settings_box_auth"))
-    .setDesc(t("settings_box_auth_desc"))
+    .setName("Connect Box Account")
+    .setDesc("Authenticate BYOC with your Box account to enable cloud synchronization.")
     .addButton(async (button) => {
-      button.setButtonText(t("settings_box_auth_button"));
+      button.setButtonText("Authorize");
+      button.setCta();
       button.onClick(async () => {
         const modal = new BoxAuthModal(
           app,
@@ -186,7 +192,7 @@ export const generateBoxSettingsPart = (
   const currentBoxFolder =
     plugin.settings.box.remoteBaseDir || app.vault.getName();
   const boxRemoteFolderSetting = new Setting(boxAllowedToUsedDiv).setName(
-    t("settings_remotebasedir")
+    "Base Directory"
   );
   renderFolderBreadcrumb(boxRemoteFolderSetting, "Box", currentBoxFolder);
   boxRemoteFolderSetting.addButton((button) => {

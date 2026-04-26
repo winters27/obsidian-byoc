@@ -1,4 +1,5 @@
 import { SVG_ONEDRIVE } from './icons';
+import { ONEDRIVE_CLIENT_ID, ONEDRIVE_AUTHORITY } from './baseTypes';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Platform, Setting } from "obsidian";
 import {
@@ -43,8 +44,8 @@ class OnedriveAuthModal extends Modal {
     const t = this.t;
 
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
-      this.plugin.settings.onedrive.clientID,
-      this.plugin.settings.onedrive.authority
+      ONEDRIVE_CLIENT_ID,
+      ONEDRIVE_AUTHORITY
     );
     this.plugin.oauth2Info.verifier = verifier;
 
@@ -192,10 +193,11 @@ export const generateOnedriveSettingsPart = (
   }
 
   new Setting(onedriveAuthDiv)
-    .setName(t("settings_onedrive_auth"))
-    .setDesc(t("settings_onedrive_auth_desc"))
+    .setName("Connect OneDrive Account")
+    .setDesc("Authenticate BYOC with your Microsoft OneDrive account to enable cloud synchronization.")
     .addButton(async (button) => {
-      button.setButtonText(t("settings_onedrive_auth_button"));
+      button.setButtonText("Authorize");
+      button.setCta();
       button.onClick(async () => {
         const modal = new OnedriveAuthModal(
           app,

