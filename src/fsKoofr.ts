@@ -46,6 +46,7 @@ export function generateAuthUrl(): string {
   return `${KOOFR_AUTH_URL}?${params.toString()}`;
 }
 
+ 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>

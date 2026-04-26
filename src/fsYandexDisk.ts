@@ -45,6 +45,7 @@ export function generateAuthUrl(): string {
   return `${YANDEX_AUTH_URL}?${params.toString()}`;
 }
 
+ 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>

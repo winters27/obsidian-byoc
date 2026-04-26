@@ -43,6 +43,7 @@ export function generateAuthUrl(): string {
   return `${BOX_AUTH_URL}?${params.toString()}`;
 }
 
+ 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>
@@ -67,6 +68,7 @@ export async function sendAuthReq(
   }
 }
 
+ 
 async function refreshAccessToken(
   refreshToken: string
 ): Promise<any> {

@@ -163,7 +163,7 @@ function extractProConfigs(
 
       if (hasRealData) {
         (settings as unknown as Record<string, unknown>)[settingsKey] = {
-          ...((current as unknown as Record<string, unknown>) || {}),
+          ...((current) || {}),
           ...cloneDeep(incoming),
         };
         console.debug(
