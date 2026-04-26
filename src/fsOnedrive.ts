@@ -18,7 +18,7 @@ import {
 } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { bufferToArrayBuffer, retryFetch } from "./misc";
+import { retryFetch } from "./misc";
 
 const SCOPES = ["User.Read", "Files.ReadWrite.AppFolder", "offline_access"];
 const REDIRECT_URI = `obsidian://${COMMAND_CALLBACK_ONEDRIVE}`;
@@ -245,23 +245,23 @@ const fromDriveItemToEntity = (x: DriveItem, remoteBaseDir: string): Entity => {
   // possible prefix:
   // pure english: /drive/root:/Apps/remotely-save/${remoteBaseDir}
   // or localized, e.g.: /drive/root:/应用/remotely-save/${remoteBaseDir}
-  const FIRST_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^\/]+\/remotely-save\//g;
+  const FIRST_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^/]+\/remotely-save\//g;
 
   // why?? /drive/root:/Apps/Graph
-  const FIFTH_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^\/]+\/Graph\//g;
+  const FIFTH_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^/]+\/Graph\//g;
 
   // why again?? /drive/root:/Apps/Graph 1
-  const SIXTH_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^\/]+\/Graph 1\//g;
-  const SIXTH_COMMON_PREFIX_REGEX_V2 = /^\/drive\/root:\/[^\/]+\/Graph%201\//g;
+  const SIXTH_COMMON_PREFIX_REGEX = /^\/drive\/root:\/[^/]+\/Graph 1\//g;
+  const SIXTH_COMMON_PREFIX_REGEX_V2 = /^\/drive\/root:\/[^/]+\/Graph%201\//g;
 
   // or the root is absolute path /Livefolders,
   // e.g.: /Livefolders/应用/remotely-save/${remoteBaseDir}
-  const SECOND_COMMON_PREFIX_REGEX = /^\/Livefolders\/[^\/]+\/remotely-save\//g;
+  const SECOND_COMMON_PREFIX_REGEX = /^\/Livefolders\/[^/]+\/remotely-save\//g;
 
   // another report, why???
   // /drive/root:/something/app/remotely-save/${remoteBaseDir}
   const THIRD_COMMON_PREFIX_REGEX =
-    /^\/drive\/root:\/[^\/]+\/app\/remotely-save\//g;
+    /^\/drive\/root:\/[^/]+\/app\/remotely-save\//g;
 
   // another possibile prefix
   const FOURTH_COMMON_PREFIX_RAW = `/drive/items/`;

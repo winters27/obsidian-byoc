@@ -15,7 +15,7 @@ import type {
 import type { Entity, WebdavConfig } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { bufferToArrayBuffer, delay, splitFileSizeToChunkRanges } from "./misc";
+import { bufferToArrayBuffer, splitFileSizeToChunkRanges } from "./misc";
 
 /**
  * https://stackoverflow.com/questions/32850898/how-to-check-if-a-string-has-any-non-iso-8859-1-characters-with-javascript

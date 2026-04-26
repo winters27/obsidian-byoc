@@ -94,7 +94,7 @@ import {
 import { syncer } from "./sync/syncer";
 
 // --- Data Migration (Batch 4) ---
-import { runMigration, CURRENT_MIGRATION_VERSION } from "./migration";
+import { runMigration } from "./migration";
 
 import { I18n } from "./i18n";
 import type { LangTypeAndAuto, TransItemType } from "./i18n";
@@ -110,7 +110,6 @@ import {
   upsertLastSuccessSyncTimeByVault,
   upsertPluginVersionByVault,
 } from "./localdb";
-import { delay } from "./misc";
 import { DEFAULT_PROFILER_CONFIG, Profiler } from "./profiler";
 import { BYOCSettingTab } from "./settings";
 import { openFolderPickerForProvider } from "./folderPicker";
@@ -528,11 +527,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           inputParams.code,
           async (e: any) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${e}`); throw e; }
-        );
-
-        const self = this;
-        setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => self.saveSettings());
-        const client = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        );        setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => this.saveSettings());
+        const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await client.getUserDisplayName();
         this.settings.dropbox.username = username;
         await this.saveSettings();
@@ -543,10 +539,10 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.authDiv = undefined;
         this.oauth2Info.revokeAuthSetting = undefined;
         this.oauth2Info.revokeDiv = undefined;
-        self.settingTab?.display();
+        this.settingTab?.display();
         openFolderPickerForProvider({
           app: this.app,
-          plugin: self,
+          plugin: this,
           providerKey: "dropbox",
           providerLabel: "Dropbox",
         });
@@ -571,10 +567,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
-        const self = this;
-        setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => self.saveSettings());
-        const client = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }        setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => this.saveSettings());
+        const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         this.settings.onedrive.username = await client.getUserDisplayName();
         await this.saveSettings();
         this.oauth2Info.verifier = "";
@@ -583,10 +577,10 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.authDiv = undefined;
         this.oauth2Info.revokeAuthSetting = undefined;
         this.oauth2Info.revokeDiv = undefined;
-        self.settingTab?.display();
+        this.settingTab?.display();
         openFolderPickerForProvider({
           app: this.app,
-          plugin: self,
+          plugin: this,
           providerKey: "onedrive",
           providerLabel: "OneDrive",
         });
@@ -611,10 +605,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
-        const self = this;
-        setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => self.saveSettings());
-        const client = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }        setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => this.saveSettings());
+        const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         this.settings.onedrivefull.username = await client.getUserDisplayName();
         await this.saveSettings();
         this.oauth2Info.verifier = "";
@@ -623,10 +615,10 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.authDiv = undefined;
         this.oauth2Info.revokeAuthSetting = undefined;
         this.oauth2Info.revokeDiv = undefined;
-        self.settingTab?.display();
+        this.settingTab?.display();
         openFolderPickerForProvider({
           app: this.app,
-          plugin: self,
+          plugin: this,
           providerKey: "onedrivefull",
           providerLabel: "OneDrive",
         });
@@ -646,25 +638,23 @@ export default class BYOCPlugin extends Plugin {
       const authRes = await sendAuthReqBox(
         inputParams.code,
         async (e: any) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${e}`); throw e; }
-      );
-      const self = this;
-      await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => self.saveSettings());
+      );      await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
       this.oauth2Info.authDiv = undefined;
       try {
-        const boxClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        const boxClient = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await boxClient.getUserDisplayName();
         this.settings.box.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
-      self.settingTab?.display();
+      this.settingTab?.display();
       openFolderPickerForProvider({
         app: this.app,
-        plugin: self,
+        plugin: this,
         providerKey: "box",
         providerLabel: "Box",
       });
@@ -681,13 +671,11 @@ export default class BYOCPlugin extends Plugin {
         inputParams.hostname,
         inputParams.code,
         async (e: any) => { new Notice(t("protocol_pcloud_connect_fail")); new Notice(`${e}`); throw e; }
-      );
-      const self = this;
-      await setConfigBySuccessfullAuthInplacePCloud(
+      );      await setConfigBySuccessfullAuthInplacePCloud(
         this.settings.pcloud,
         inputParams as unknown as AuthAllowFirstResPCloud,
         authRes,
-        () => self.saveSettings()
+        () => this.saveSettings()
       );
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
@@ -697,11 +685,11 @@ export default class BYOCPlugin extends Plugin {
       // Fetch display name and let the settings tab re-render to show the
       // combined "Logged in as <user>" row with the Revoke action.
       try {
-        const pcloudClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        const pcloudClient = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await pcloudClient.getUserDisplayName();
         this.settings.pcloud.username = username;
         await this.saveSettings();
-        self.settingTab?.display();
+        this.settingTab?.display();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv?.toggleClass("pcloud-revoke-auth-button-hide", this.settings.pcloud?.accessToken === "");
@@ -713,7 +701,7 @@ export default class BYOCPlugin extends Plugin {
       // produces a destructive "delete everything" plan.
       openFolderPickerForProvider({
         app: this.app,
-        plugin: self,
+        plugin: this,
         providerKey: "pcloud",
         providerLabel: "pCloud",
       });
@@ -729,25 +717,23 @@ export default class BYOCPlugin extends Plugin {
       const authRes = await sendAuthReqYandexDisk(
         inputParams.code,
         async (e: any) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${e}`); throw e; }
-      );
-      const self = this;
-      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => self.saveSettings());
+      );      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
       this.oauth2Info.authDiv = undefined;
       try {
-        const yandexClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        const yandexClient = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await yandexClient.getUserDisplayName();
         this.settings.yandexdisk.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
-      self.settingTab?.display();
+      this.settingTab?.display();
       openFolderPickerForProvider({
         app: this.app,
-        plugin: self,
+        plugin: this,
         providerKey: "yandexdisk",
         providerLabel: "Yandex Disk",
       });
@@ -763,25 +749,23 @@ export default class BYOCPlugin extends Plugin {
       const authRes = await sendAuthReqKoofr(
         inputParams.code,
         async (e: any) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${e}`); throw e; }
-      );
-      const self = this;
-      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => self.saveSettings());
+      );      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
       this.oauth2Info.authDiv = undefined;
       try {
-        const koofrClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+        const koofrClient = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await koofrClient.getUserDisplayName();
         this.settings.koofr.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
-      self.settingTab?.display();
+      this.settingTab?.display();
       openFolderPickerForProvider({
         app: this.app,
-        plugin: self,
+        plugin: this,
         providerKey: "koofr",
         providerLabel: "Koofr",
       });
@@ -797,9 +781,7 @@ export default class BYOCPlugin extends Plugin {
         const k = this.oauth2Info.helperModal.contentEl;
         k.empty();
         k.createEl("p", { text: "Connecting to Google Drive…" });
-      }
-      const self = this;
-      try {
+      }      try {
         const authRes = await sendAuthReqGoogleDrive(
           inputParams.code,
           async (e: any) => { new Notice("Google Drive connection failed"); new Notice(`${e}`); throw e; }
@@ -811,11 +793,11 @@ export default class BYOCPlugin extends Plugin {
         await setConfigBySuccessfullAuthInplaceGoogleDrive(
           this.settings.googledrive,
           authRes,
-          () => self.saveSettings()
+          () => this.saveSettings()
         );
         // Fetch display name
         try {
-          const gdClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
+          const gdClient = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
           const username = await gdClient.getUserDisplayName();
           this.settings.googledrive.username = username;
           await this.saveSettings();
@@ -823,10 +805,10 @@ export default class BYOCPlugin extends Plugin {
         this.oauth2Info.helperModal?.close();
         this.oauth2Info.helperModal = undefined;
         new Notice("Google Drive connected successfully!");
-        self.settingTab?.display();
+        this.settingTab?.display();
         openFolderPickerForProvider({
           app: this.app,
-          plugin: self,
+          plugin: this,
           providerKey: "googledrive",
           providerLabel: "Google Drive",
         });

@@ -8,7 +8,6 @@ import { requestUrl } from "obsidian";
 import type { AzureBlobStorageConfig, Entity } from "./baseTypes";
 import { DEFAULT_CONTENT_TYPE } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { bufferToArrayBuffer } from "./misc";
 
 export const DEFAULT_AZUREBLOBSTORAGE_CONFIG: AzureBlobStorageConfig = {
   containerSasUrl: "",

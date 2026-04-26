@@ -25,7 +25,7 @@ import { buildQueryString } from "@smithy/querystring-builder";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
 import AggregateError from "aggregate-error";
 import * as mime from "mime-types";
-import { Platform, type RequestUrlParam, requestUrl } from "obsidian";
+import { type RequestUrlParam, requestUrl } from "obsidian";
 import PQueue from "p-queue";
 import { DEFAULT_CONTENT_TYPE, type S3Config } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";

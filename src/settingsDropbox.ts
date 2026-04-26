@@ -11,7 +11,6 @@ import {
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
-import { stringToFragment } from "./misc";
 import {
   openFolderPickerForProvider,
   renderFolderBreadcrumb,
@@ -123,7 +122,7 @@ class DropboxAuthModal extends Modal {
               setConfigBySuccessfullAuthInplace(
                 this.plugin.settings.dropbox,
                 authRes!,
-                () => self.plugin.saveSettings()
+                () => this.plugin.saveSettings()
               );
               const client = getClient(
                 this.plugin.settings,

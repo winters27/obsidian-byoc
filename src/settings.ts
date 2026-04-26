@@ -1,4 +1,4 @@
-import { BYOC_LOGO_DATA_URI, SVG_DROPBOX, SVG_ONEDRIVE, SVG_PCLOUD, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
+import { BYOC_LOGO_DATA_URI, SVG_S3, SVG_WEBDAV, SVG_WEBDIS } from './icons';
 import { Eye, EyeOff, createElement } from "lucide";
 import {
   type App,

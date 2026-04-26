@@ -4,8 +4,6 @@ import { type App, Modal, Notice, Setting } from "obsidian";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
-import { stringToFragment } from "./misc";
-import { ChangeRemoteBaseDirModal, ExportSettingsQrCodeModal } from "./settings";
 import { DEFAULT_PCLOUD_CONFIG, generateAuthUrl } from "./fsPCloud";
 import {
   openFolderPickerForProvider,

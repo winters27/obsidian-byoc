@@ -38,6 +38,18 @@ export default defineConfig([
       // (OneDrive, pCloud, WebDAV, etc.) are proper nouns. The sentence-case
       // rule fights both. We'll handle individual cases inline.
       "obsidianmd/ui/sentence-case": "off",
+      // Don't flag unused catch params or args/vars prefixed with _.
+      // Catch param names are often required for legacy compat or readability.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          args: "none",
+          caughtErrors: "none",
+          varsIgnorePattern: "^_",
+          argsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ]);

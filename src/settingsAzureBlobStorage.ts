@@ -1,6 +1,5 @@
 import { SVG_AZURE } from './icons';
 import { type App, Notice, Setting } from "obsidian";
-import { DEFAULT_AZUREBLOBSTORAGE_CONFIG } from "./fsAzureBlobStorage";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";

@@ -1,5 +1,5 @@
 import { isEqual } from "lodash";
-import { requestUrl, type RequestUrlResponse } from "obsidian";
+import { requestUrl } from "obsidian";
 import {
   DEFAULT_CONTENT_TYPE,
   type Entity,

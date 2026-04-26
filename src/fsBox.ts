@@ -4,7 +4,7 @@
  * OAuth2 authorization code flow with silent token refresh.
  */
 
-import { request, requestUrl } from "obsidian";
+import { request } from "obsidian";
 import {
   BOX_CLIENT_ID,
   BOX_CLIENT_SECRET,
@@ -13,7 +13,6 @@ import {
   type BoxConfig,
   type Entity,
 } from "./baseTypes";
-import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
 import { retryFetch } from "./misc";
 

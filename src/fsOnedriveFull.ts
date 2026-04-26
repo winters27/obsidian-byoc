@@ -24,7 +24,7 @@ import {
 } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { bufferToArrayBuffer, retryFetch } from "./misc";
+import { retryFetch } from "./misc";
 
 // Full access scopes — reads/writes anywhere on the drive
 const SCOPES = ["User.Read", "Files.ReadWrite.All", "offline_access"];
