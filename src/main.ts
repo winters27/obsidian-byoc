@@ -336,7 +336,9 @@ export default class BYOCPlugin extends Plugin {
     const errNotifyFunc = async (s: SyncTriggerSourceType, error: Error) => {
       console.error(error);
       if (error instanceof AggregateError) {
-        for (const e of error.errors) getNotice(s, e.message, 10 * 1000);
+        for (const e of error.errors as unknown as Error[]) {
+          getNotice(s, e.message, 10 * 1000);
+        }
       } else {
         getNotice(s, error?.message ?? "error while sync", 10 * 1000);
       }
@@ -525,7 +527,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.dropbox.clientID,
           this.oauth2Info.verifier,
           inputParams.code,
-          async (e: any) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${e}`); throw e; }
+          async (e: unknown) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${String(e)}`); throw e; }
         );
         await setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => this.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
@@ -565,7 +567,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.onedrive.authority,
           inputParams.code,
           this.oauth2Info.verifier,
-          async (e: any) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${e}`); return; }
+          async (e: unknown) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${String(e)}`); return; }
         );
         if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         await setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => this.saveSettings());
@@ -604,7 +606,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.onedrivefull.authority,
           inputParams.code,
           this.oauth2Info.verifier,
-          async (e: any) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${e}`); return; }
+          async (e: unknown) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${String(e)}`); return; }
         );
         if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         await setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => this.saveSettings());
@@ -639,8 +641,9 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqBox(
         inputParams.code,
-        async (e: any) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${e}`); throw e; }
-      );      await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => this.saveSettings());
+        async (e: unknown) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${String(e)}`); throw e; }
+      );
+      await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -672,8 +675,9 @@ export default class BYOCPlugin extends Plugin {
       const authRes = await sendAuthReqPCloud(
         inputParams.hostname,
         inputParams.code,
-        async (e: any) => { new Notice(t("protocol_pcloud_connect_fail")); new Notice(`${e}`); throw e; }
-      );      await setConfigBySuccessfullAuthInplacePCloud(
+        async (e: unknown) => { new Notice(t("protocol_pcloud_connect_fail")); new Notice(`${String(e)}`); throw e; }
+      );
+      await setConfigBySuccessfullAuthInplacePCloud(
         this.settings.pcloud,
         inputParams as unknown as AuthAllowFirstResPCloud,
         authRes,
@@ -718,8 +722,9 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqYandexDisk(
         inputParams.code,
-        async (e: any) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${e}`); throw e; }
-      );      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => this.saveSettings());
+        async (e: unknown) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${String(e)}`); throw e; }
+      );
+      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -750,8 +755,9 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqKoofr(
         inputParams.code,
-        async (e: any) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${e}`); throw e; }
-      );      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => this.saveSettings());
+        async (e: unknown) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${String(e)}`); throw e; }
+      );
+      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -783,7 +789,8 @@ export default class BYOCPlugin extends Plugin {
         const k = this.oauth2Info.helperModal.contentEl;
         k.empty();
         k.createEl("p", { text: "Connecting to Google Drive…" });
-      }      try {
+      }
+      try {
         const authRes = await sendAuthReqGoogleDrive(
           inputParams.code,
           async (e: unknown) => { new Notice("Google Drive connection failed"); new Notice(`${String(e)}`); throw e; }
@@ -831,7 +838,7 @@ export default class BYOCPlugin extends Plugin {
     if (!Platform.isMobile && this.settings.enableStatusBarInfo === true) {
       const statusBarItem = this.addStatusBarItem();
       statusBarItem.addClass("byoc-status-bar");
-      statusBarItem.addEventListener("click", () => this.syncRun("manual"));
+      statusBarItem.addEventListener("click", () => { void this.syncRun("manual"); });
       this.statusBarElement = statusBarItem.createEl("span");
       this.statusBarElement.setAttribute("data-tooltip-position", "top");
 
@@ -897,7 +904,7 @@ export default class BYOCPlugin extends Plugin {
     this.settings = Object.assign(
       {},
       cloneDeep(DEFAULT_SETTINGS),
-      messyConfigToNormal(await this.loadData())
+      messyConfigToNormal(await this.loadData() as Parameters<typeof messyConfigToNormal>[0])
     );
 
     // Ensure all provider configs exist
@@ -1200,7 +1207,7 @@ export default class BYOCPlugin extends Plugin {
     }
   }
 
-  _syncOnSaveEvent1 = () => { this._checkCurrFileModified("SYNC"); };
+  _syncOnSaveEvent1 = () => { void this._checkCurrFileModified("SYNC"); };
   
   _debouncedSyncImpl?: ReturnType<typeof debounce>;
   _syncOnSaveRegistered = false;
@@ -1223,7 +1230,8 @@ export default class BYOCPlugin extends Plugin {
       if (!this._syncOnSaveRegistered) {
         this._syncOnSaveRegistered = true;
         this.app.workspace.onLayoutReady(() => {
-          this.registerEvent(this.syncEvent?.on("SYNC_DONE", this._syncOnSaveEvent1)!);
+          const syncDoneRef = this.syncEvent?.on("SYNC_DONE", this._syncOnSaveEvent1);
+          if (syncDoneRef) this.registerEvent(syncDoneRef);
           this.registerEvent(this.app.vault.on("modify", this._syncOnSaveEvent2));
           this.registerEvent(this.app.vault.on("create", this._syncOnSaveEvent2));
           this.registerEvent(this.app.vault.on("delete", this._syncOnSaveEvent2));
@@ -1334,7 +1342,11 @@ export default class BYOCPlugin extends Plugin {
     const ignoreFile = `${pluginConfigDir}/.gitignore`;
     const ignoreFileExists = await this.app.vault.adapter.exists(ignoreFile);
     if (!ignoreFileExists) {
-      try { this.app.vault.adapter.write(ignoreFile, "data.json\n"); } catch (_) {}
+      try {
+        await this.app.vault.adapter.write(ignoreFile, "data.json\n");
+      } catch {
+        // .gitignore is best-effort
+      }
     }
   }
 

@@ -24,6 +24,7 @@ import { bufferToArrayBuffer, splitFileSizeToChunkRanges } from "./misc";
  * @returns true if all are iso 8859 1 chars
  */
 function onlyAscii(str: string) {
+  // eslint-disable-next-line no-control-regex -- ISO-8859-1 detection needs full \u0000-\u00ff range
   return !/[^\u0000-\u00ff]/g.test(str);
 }
 
@@ -38,12 +39,12 @@ function objKeyToLower(obj: Record<string, string>) {
   );
 }
 
-// @ts-ignore
-import { getPatcher } from "webdav/dist/web/index.js";
+import { getPatcher } from "webdav";
 if (VALID_REQURL) {
-  getPatcher().patch(
+  getPatcher().patch<Promise<Response>>(
     "request",
-    async (options: RequestOptionsWithState): Promise<Response> => {
+    async (...args: unknown[]): Promise<Response> => {
+      const options = args[0] as RequestOptionsWithState;
       const transformedHeaders = objKeyToLower({ ...options.headers });
       delete transformedHeaders["host"];
       delete transformedHeaders["content-length"];
@@ -139,9 +140,7 @@ if (VALID_REQURL) {
   );
 }
 
-// @ts-ignore
-// biome-ignore lint: we want to ts-ignore the next line
-import { AuthType, BufferLike, createClient } from "webdav/dist/web/index.js";
+import { AuthType, type BufferLike, createClient } from "webdav";
 
 export const DEFAULT_WEBDAV_CONFIG = {
   address: "",
@@ -681,7 +680,7 @@ export class FakeFsWebdav extends FakeFs {
     // console.debug(`start _writeFileFromRootFull`);
     await this.client.putFileContents(key, content, {
       overwrite: true,
-      onUploadProgress: (progress: any) => {
+      onUploadProgress: (progress: { loaded: number; total: number }) => {
         console.debug(`Uploaded ${progress.loaded} bytes of ${progress.total}`);
       },
     });
@@ -741,7 +740,6 @@ export class FakeFsWebdav extends FakeFs {
 
     // create folder
     await clientForUpload.createDirectory(tmpFolderName, {
-      method: "MKCOL",
       headers: {
         Destination: destUrl,
       },
