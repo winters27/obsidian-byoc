@@ -27,7 +27,7 @@ const LEGACY_PLUGIN_ID = "remotely-save";
  */
 async function readLegacyConfig(
   plugin: Plugin
-): Promise<Record<string, any> | null> {
+): Promise<Record<string, unknown> | null> {
   const legacyDataPath = `${plugin.app.vault.configDir}/plugins/${LEGACY_PLUGIN_ID}/data.json`;
 
   try {
@@ -48,7 +48,7 @@ async function readLegacyConfig(
     }
 
     console.debug("[BYOC Migration] Successfully read legacy remotely-save config.");
-    return decoded;
+    return decoded as unknown as Record<string, unknown>;
   } catch (err) {
     console.warn("[BYOC Migration] Failed to read legacy config:", err);
     return null;
@@ -152,8 +152,8 @@ function extractProConfigs(
   for (const [proKey, settingsKey] of Object.entries(providerMap)) {
     if (pro[proKey] && typeof pro[proKey] === "object") {
       // Only merge if the current config is empty/default
-      const current = settings[settingsKey] as Record<string, any> | undefined;
-      const incoming = pro[proKey] as Record<string, any>;
+      const current = settings[settingsKey] as Record<string, unknown> | undefined;
+      const incoming = pro[proKey] as Record<string, unknown>;
 
       // Check if incoming has real data (e.g., a non-empty accessToken)
       const hasRealData =
@@ -162,8 +162,8 @@ function extractProConfigs(
         incoming.containerSasUrl;
 
       if (hasRealData) {
-        (settings as any)[settingsKey] = {
-          ...((current as any) || {}),
+        (settings as unknown as Record<string, unknown>)[settingsKey] = {
+          ...((current as unknown as Record<string, unknown>) || {}),
           ...cloneDeep(incoming),
         };
         console.debug(
@@ -204,7 +204,7 @@ function mergeLegacyIntoSettings(
     if (!legacyRaw || typeof legacyRaw !== "object") continue;
     const legacy = legacyRaw as Record<string, unknown>;
 
-    const current = settings[provider] as Record<string, any>;
+    const current = settings[provider] as unknown as Record<string, unknown> | undefined;
     if (!current) continue;
 
     // Check if legacy has meaningful credentials
@@ -238,7 +238,7 @@ function mergeLegacyIntoSettings(
   // Scalar settings — only copy if BYOC has the default value
   const scalarFields: Array<{
     key: keyof BYOCPluginSettings;
-    defaultVal: any;
+    defaultVal: unknown;
   }> = [
     { key: "serviceType", defaultVal: "s3" },
     { key: "password", defaultVal: "" },
@@ -267,11 +267,11 @@ function mergeLegacyIntoSettings(
       // Only overwrite if BYOC still has the default
       const isDefault =
         Array.isArray(defaultVal)
-          ? Array.isArray(currentVal) && (currentVal as any[]).length === 0
+          ? Array.isArray(currentVal) && (currentVal as unknown[]).length === 0
           : currentVal === defaultVal;
 
       if (isDefault) {
-        (settings as any)[key] = cloneDeep(legacyVal);
+        (settings as unknown as Record<string, unknown>)[key] = cloneDeep(legacyVal);
       }
     }
   }
@@ -317,7 +317,7 @@ export async function runMigration(
 
     // Step 5: Clean up deprecated pro field
     if ("pro" in settings) {
-      delete (settings as any).pro;
+      delete (settings as unknown as Record<string, unknown>).pro;
     }
 
     new Notice(

@@ -787,7 +787,7 @@ export default class BYOCPlugin extends Plugin {
       }      try {
         const authRes = await sendAuthReqGoogleDrive(
           inputParams.code,
-          async (e: any) => { new Notice("Google Drive connection failed"); new Notice(`${e}`); throw e; }
+          async (e: unknown) => { new Notice("Google Drive connection failed"); new Notice(`${String(e)}`); throw e; }
         );
         if (!authRes || authRes.error) {
           new Notice("Google Drive connection failed");
@@ -972,7 +972,7 @@ export default class BYOCPlugin extends Plugin {
     if (this.settings.profiler.recordSize === undefined) this.settings.profiler.recordSize = false;
 
     // Remove pro field if it survived migration
-    if ("pro" in this.settings) delete (this.settings as any).pro;
+    if ("pro" in this.settings) delete (this.settings as unknown as Record<string, unknown>).pro;
 
     await this.saveSettings();
   }

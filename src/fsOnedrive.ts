@@ -632,6 +632,7 @@ export class FakeFsOnedrive extends FakeFs {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API payload
   async _postJson(pathFragOrig: string, payload: any) {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`postJson, theUrl=${theUrl}`);
@@ -648,6 +649,7 @@ export class FakeFsOnedrive extends FakeFs {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API payload
   async _patchJson(pathFragOrig: string, payload: any) {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`patchJson, theUrl=${theUrl}`);
@@ -886,7 +888,7 @@ export class FakeFsOnedrive extends FakeFs {
     } else {
       // https://stackoverflow.com/questions/56479865/creating-nested-folders-in-one-go-onedrive-api
       // use PATCH to create folder recursively!!!
-      const playload: any = {
+      const playload: Record<string, unknown> = {
         folder: {},
         "@microsoft.graph.conflictBehavior": "replace",
       };
@@ -990,7 +992,7 @@ export class FakeFsOnedrive extends FakeFs {
 
       // 1. create uploadSession
       // uploadFile already starts with /drive/special/approot:/${remoteBaseDir}
-      let playload: any = {
+      let playload: Record<string, unknown> = {
         item: {
           "@microsoft.graph.conflictBehavior": "replace",
         },

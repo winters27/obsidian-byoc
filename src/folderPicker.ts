@@ -60,6 +60,7 @@ export function renderFolderBreadcrumb(
  */
 export function openFolderPickerForProvider(opts: {
   app: App;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- avoids circular import on BYOCPlugin
   plugin: any;
   providerKey: string;
   providerLabel: string;
@@ -159,13 +160,13 @@ export class RemoteFolderPickerModal extends Modal {
     wrap.createSpan({ text: "Loading folders…" });
   }
 
-  private renderError(host: HTMLElement, err: any) {
+  private renderError(host: HTMLElement, err: unknown) {
     host.empty();
     host.addClass("byoc-folder-picker__list--state");
     const wrap = host.createDiv({ cls: "byoc-folder-picker__error" });
     wrap.createEl("p", {
       cls: "byoc-folder-picker__error-msg",
-      text: `Could not list folders: ${err?.message ?? err}`,
+      text: `Could not list folders: ${err instanceof Error ? err.message : String(err)}`,
     });
     const retry = wrap.createEl("button", {
       cls: "byoc-folder-picker__retry",
