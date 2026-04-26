@@ -368,7 +368,7 @@ export class FakeFsPCloud extends FakeFs {
         this.vaultFolderExists = true;
       } else {
         // not found, let's create it!
-        const f: Folder = await this._sdk.createfolder(this.remoteBaseDir, 0);
+        const f = (await this._sdk.createfolder(this.remoteBaseDir, 0)) as Folder;
         // console.debug(f);
         this.baseDirID = f.folderid;
         this.vaultFolderExists = true;
@@ -490,10 +490,10 @@ async _getAccessToken() {
     let folderItselfWithoutSlash = folderLevels[folderLevels.length - 1];
     folderItselfWithoutSlash = folderItselfWithoutSlash.split("/").pop()!;
 
-    const f = await this._sdk.createfolder(
+    const f = (await this._sdk.createfolder(
       folderItselfWithoutSlash,
       parentID
-    );
+    )) as Folder;
 
     const entity = fromRawResponseToEntity(f, parentFolderPath);
     // insert into cache
@@ -560,7 +560,7 @@ async _getAccessToken() {
         method: "PUT",
         body: content,
       });
-      const f: StatRawResponse = await rsp.json();
+      const f = (await rsp.json()) as StatRawResponse;
       const entity = fromRawResponseToEntity(f.metadata[0], parentFolderPath);
       // console.debug(entity);
       this.keyToPCloudEntity[key] = entity;
@@ -576,13 +576,13 @@ async _getAccessToken() {
       try {
         // requestUrl has no abort signal support; we deliberately use fetch
         // here so we can abort the hung empty-file request after 300ms.
-         
-        const _rsp = await fetch(apiUrl, {
+        // eslint-disable-next-line no-restricted-globals -- abort support requires fetch over Obsidian's requestUrl
+        await fetch(apiUrl, {
           method: "PUT",
           body: content,
           signal: controller.signal,
         });
-      } catch (e) {
+      } catch {
         // console.warn(`we abort the request of uploading empty file ${key}:`);
         // console.warn(e);
       } finally {
@@ -597,7 +597,7 @@ async _getAccessToken() {
       });
       const apiUrlStat = `https://${this.pCloudConfig.hostname}/stat?${params}`;
       const rsp2 = await retryFetch(apiUrlStat);
-      const f = await rsp2.json();
+      const f = (await rsp2.json()) as { metadata: Folder | File };
       const entity = fromRawResponseToEntity(f.metadata, parentFolderPath);
       // console.warn(entity);
       this.keyToPCloudEntity[key] = entity;
@@ -622,9 +622,8 @@ async _getAccessToken() {
 
     // Referrer is restricted to pcloud.com.
     // we need to bypass it
-    const meta = (await requestUrl(urlMeta)).json;
-    // console.debug(meta);
-    const link: string = `https://${meta.hosts[0]}${meta.path}`;
+    const meta = (await requestUrl(urlMeta)).json as { hosts: string[]; path: string };
+    const link = `https://${meta.hosts[0]}${meta.path}`;
     const rsp = await requestUrl(link);
     const content = rsp.arrayBuffer;
     return content;
@@ -671,9 +670,9 @@ async _getAccessToken() {
     });
     const url = `https://${this.pCloudConfig.hostname}/userinfo?${params}`;
     const rsp = await retryFetch(url);
-    const info = await rsp.json();
+    const info = (await rsp.json()) as { email?: string };
     // pCloud returns `email` as the primary identifier
-    return (info.email as string) ?? "pCloud user";
+    return info.email ?? "pCloud user";
   }
 
   async revokeAuth(): Promise<void> {

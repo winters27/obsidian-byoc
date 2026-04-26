@@ -1,4 +1,5 @@
 import { type App, Modal, Notice, Setting, setIcon } from "obsidian";
+import type { BYOCPluginSettings } from "./baseTypes";
 import type { FakeFs } from "./fsAll";
 import { getClient } from "./fsGetter";
 
@@ -48,6 +49,18 @@ export function renderFolderBreadcrumb(
 }
 
 /**
+ * Minimal plugin shape used by the folder picker. Defined locally to avoid
+ * a circular import on BYOCPlugin.
+ */
+type ProviderSettingsSlot = { remoteBaseDir?: string };
+interface FolderPickerHostPlugin {
+  awaitingFolderSelection: boolean;
+  settings: BYOCPluginSettings;
+  saveSettings: () => Promise<void> | void;
+  settingTab?: { display: () => void };
+}
+
+/**
  * Single helper for opening the folder picker for any provider. Used by:
  *   1. Post-OAuth callbacks in main.ts (run after auth completes)
  *   2. Settings → Change folder buttons in each provider's settings panel
@@ -55,22 +68,20 @@ export function renderFolderBreadcrumb(
  * Sets `awaitingFolderSelection` while the picker is open so sync triggers
  * bail out, then clears it on pick. Refreshes the settings tab on pick so
  * the breadcrumb display reflects the new folder immediately.
- *
- * `plugin: any` avoids a circular import on BYOCPlugin.
  */
 export function openFolderPickerForProvider(opts: {
   app: App;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- avoids circular import on BYOCPlugin
-  plugin: any;
+  plugin: FolderPickerHostPlugin;
   providerKey: string;
   providerLabel: string;
 }): void {
   const { app, plugin, providerKey, providerLabel } = opts;
   plugin.awaitingFolderSelection = true;
-  const fs = getClient(plugin.settings, app.vault.getName(), () =>
-    plugin.saveSettings()
-  );
-  const current = plugin.settings[providerKey]?.remoteBaseDir;
+  const fs = getClient(plugin.settings, app.vault.getName(), async () => {
+    await plugin.saveSettings();
+  });
+  const settingsRec = plugin.settings as unknown as Record<string, ProviderSettingsSlot | undefined>;
+  const current = settingsRec[providerKey]?.remoteBaseDir;
   new RemoteFolderPickerModal(
     app,
     fs,
@@ -78,7 +89,9 @@ export function openFolderPickerForProvider(opts: {
     suggestedFolderName(app, current),
     // eslint-disable-next-line @typescript-eslint/no-misused-promises -- modal callback awaits internally
     async (folderName) => {
-      plugin.settings[providerKey].remoteBaseDir = folderName;
+      const next = settingsRec[providerKey] ?? {};
+      next.remoteBaseDir = folderName;
+      settingsRec[providerKey] = next;
       await plugin.saveSettings();
       plugin.awaitingFolderSelection = false;
       plugin.settingTab?.display();
@@ -253,7 +266,7 @@ export class RemoteFolderPickerModal extends Modal {
         // Provider returned "already exists" — race condition or hidden
         // folder we couldn't enumerate. Treat it as success and use the
         // name; the next sync will resolve to whatever's there.
-        const msg = String((err as any)?.message ?? err).toLowerCase();
+        const msg = String((err as { message?: unknown } | undefined)?.message ?? err).toLowerCase();
         if (
           msg.includes("already exists") ||
           msg.includes("already_exists") ||
@@ -264,7 +277,8 @@ export class RemoteFolderPickerModal extends Modal {
           return;
         }
         console.error("[BYOC] createFolderAtRoot failed:", err);
-        new Notice(`Could not create folder: ${(err as any)?.message ?? err}`);
+        const errMsg = (err as { message?: unknown } | undefined)?.message ?? err;
+        new Notice(`Could not create folder: ${String(errMsg)}`);
         this.busy = false;
         btn.disabled = false;
         btn.textContent = "Create & use";

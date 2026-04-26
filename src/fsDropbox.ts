@@ -245,7 +245,7 @@ export const getAuthUrlAndVerifier = async (
     : `obsidian://${COMMAND_CALLBACK_DROPBOX}`;
   const authUrl = (
     await auth.getAuthenticationUrl(
-      callback as any,
+      callback as string,
       undefined,
       "code",
       "offline",
@@ -705,14 +705,13 @@ export class FakeFsDropbox extends FakeFs {
     if (rsp === undefined) {
       throw Error(`unknown rsp from dropbox download: ${JSON.stringify(rsp)}`);
     }
-    if ((rsp.result as any).fileBlob !== undefined) {
+    const result = rsp.result as { fileBlob?: Blob; fileBinary?: Buffer };
+    if (result.fileBlob !== undefined) {
       // we get a Blob
-      const content = (rsp.result as any).fileBlob as Blob;
-      return await content.arrayBuffer();
-    } else if ((rsp.result as any).fileBinary !== undefined) {
+      return await result.fileBlob.arrayBuffer();
+    } else if (result.fileBinary !== undefined) {
       // we get a Buffer
-      const content = (rsp.result as any).fileBinary as Buffer;
-      return bufferToArrayBuffer(content) as ArrayBuffer;
+      return bufferToArrayBuffer(result.fileBinary) as ArrayBuffer;
     } else {
       throw Error(`unknown rsp from dropbox download: ${JSON.stringify(rsp)}`);
     }
