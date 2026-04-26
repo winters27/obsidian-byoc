@@ -94,7 +94,9 @@ export const deserializeMetadataOnRemote = (x: string | ArrayBuffer) => {
   try {
     y3 = (
       base64url.parse(reverseString(y2obj.d), {
-        out: ((size: number) => Buffer.allocUnsafe(size)) as unknown as new (size: number) => { [index: number]: number },
+        // rfc4648 invokes `out` with `new`, so the wrapper must be a function
+        // expression (constructable), not an arrow (no [[Construct]]).
+        out: function out(size: number) { return Buffer.allocUnsafe(size); } as unknown as new (size: number) => { [index: number]: number },
         loose: true,
       }) as Buffer
     ).toString("utf-8");

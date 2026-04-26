@@ -1228,10 +1228,14 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     // we need to create chooser
     // after all service-div-s being created
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let serviceChooserDropdownComponent: any = null;
     new Setting(serviceChooserDiv)
       .setName(t("settings_chooseservice"))
       .setDesc(t("settings_chooseservice_desc"))
       .addDropdown(async (dropdown) => {
+        serviceChooserDropdownComponent = dropdown;
+
         dropdown.addOption("s3", t("settings_chooseservice_s3"));
         dropdown.addOption("dropbox", t("settings_chooseservice_dropbox"));
         dropdown.addOption("webdav", t("settings_chooseservice_webdav"));
@@ -1244,25 +1248,13 @@ export class BYOCSettingTab extends PluginSettingTab {
           "disabled"
         );
 
-        dropdown.addOption(
-          "googledrive",
-          t("settings_chooseservice_googledrive")
-        );
-        dropdown.addOption(
-          "onedrivefull",
-          t("settings_chooseservice_onedrivefull")
-        );
+        dropdown.addOption("googledrive", t("settings_chooseservice_googledrive"));
+        dropdown.addOption("onedrivefull", t("settings_chooseservice_onedrivefull"));
         dropdown.addOption("box", t("settings_chooseservice_box"));
         dropdown.addOption("pcloud", t("settings_chooseservice_pcloud"));
-        dropdown.addOption(
-          "yandexdisk",
-          t("settings_chooseservice_yandexdisk")
-        );
+        dropdown.addOption("yandexdisk", t("settings_chooseservice_yandexdisk"));
         dropdown.addOption("koofr", t("settings_chooseservice_koofr"));
-        dropdown.addOption(
-          "azureblobstorage",
-          t("settings_chooseservice_azureblobstorage")
-        );
+        dropdown.addOption("azureblobstorage", t("settings_chooseservice_azureblobstorage"));
 
         dropdown
           .setValue(this.plugin.settings.serviceType)
@@ -1320,6 +1312,43 @@ export class BYOCSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
       });
+
+    const isCfg = (srv: SUPPORTED_SERVICES_TYPE) => {
+      const s = this.plugin.settings;
+      switch (srv) {
+        case "s3": return !!(s.s3.s3AccessKeyID && s.s3.s3SecretAccessKey);
+        case "dropbox": return !!(s.dropbox.accessToken || s.dropbox.refreshToken);
+        case "webdav": return !!s.webdav.address;
+        case "onedrive": return !!(s.onedrive.accessToken || s.onedrive.refreshToken);
+        case "webdis": return !!s.webdis.address;
+        case "googledrive": return !!(s.googledrive.accessToken || s.googledrive.refreshToken);
+        case "onedrivefull": return !!(s.onedrivefull.accessToken || s.onedrivefull.refreshToken);
+        case "box": return !!(s.box.accessToken || s.box.refreshToken);
+        case "pcloud": return !!s.pcloud.accessToken;
+        case "yandexdisk": return !!(s.yandexdisk.accessToken || s.yandexdisk.refreshToken);
+        case "koofr": return !!(s.koofr.accessToken || s.koofr.refreshToken);
+        case "azureblobstorage": return !!s.azureblobstorage.containerSasUrl;
+        default: return false;
+      }
+    };
+    
+    const linkedProviders = (["s3", "dropbox", "webdav", "onedrive", "webdis", "googledrive", "onedrivefull", "box", "pcloud", "yandexdisk", "koofr", "azureblobstorage"] as SUPPORTED_SERVICES_TYPE[]).filter(isCfg);
+
+    if (linkedProviders.length > 0) {
+      const badgesContainer = serviceChooserDiv.createDiv({ cls: "byoc-linked-providers-badges" });
+      badgesContainer.createSpan({ text: "Linked", cls: "byoc-linked-label" });
+      for (const p of linkedProviders) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawT = t(`settings_chooseservice_${p}` as any);
+        const badge = badgesContainer.createSpan({ cls: "byoc-linked-badge", text: rawT });
+        badge.onclick = () => {
+          if (serviceChooserDropdownComponent) {
+            serviceChooserDropdownComponent.setValue(p);
+            serviceChooserDropdownComponent.selectEl.dispatchEvent(new Event("change"));
+          }
+        };
+      }
+    }
 
     //////////////////////////////////////////////////
     // below for basic settings

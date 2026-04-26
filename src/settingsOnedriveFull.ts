@@ -147,7 +147,7 @@ export const generateOnedriveFullSettingsPart = (
     "onedrivefull-hide",
     plugin.settings.serviceType !== "onedrivefull"
   );
-  setSvgTitle(new Setting(onedriveFullDiv).setHeading().nameEl, SVG_ONEDRIVE, "${t(\"settings_onedrivefull\")}");
+  setSvgTitle(new Setting(onedriveFullDiv).setHeading().nameEl, SVG_ONEDRIVE, t("settings_onedrivefull"));
 
   const onedriveFullNotShowUpHintSetting = new Setting(onedriveFullDiv);
   onedriveFullNotShowUpHintSetting.settingEl.addClass(

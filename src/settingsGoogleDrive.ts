@@ -128,7 +128,7 @@ export const generateGoogleDriveSettingsPart = (
     "googledrive-hide",
     plugin.settings.serviceType !== "googledrive"
   );
-  setSvgTitle(new Setting(googleDriveDiv).setHeading().nameEl, SVG_GDRIVE, "${t(\"settings_googledrive\")}");
+  setSvgTitle(new Setting(googleDriveDiv).setHeading().nameEl, SVG_GDRIVE, t("settings_googledrive"));
 
   const googleDriveNotShowUpHintSetting = new Setting(googleDriveDiv);
   googleDriveNotShowUpHintSetting.settingEl.addClass(

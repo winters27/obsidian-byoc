@@ -128,7 +128,7 @@ export const generateYandexDiskSettingsPart = (
     "yandexdisk-hide",
     plugin.settings.serviceType !== "yandexdisk"
   );
-  setSvgTitle(new Setting(yandexDiskDiv).setHeading().nameEl, SVG_YANDEX, "${t(\"settings_yandexdisk\")}");
+  setSvgTitle(new Setting(yandexDiskDiv).setHeading().nameEl, SVG_YANDEX, t("settings_yandexdisk"));
 
   const yandexDiskNotShowUpHintSetting = new Setting(yandexDiskDiv);
   yandexDiskNotShowUpHintSetting.settingEl.addClass("yandexdisk-allow-to-use-hide");

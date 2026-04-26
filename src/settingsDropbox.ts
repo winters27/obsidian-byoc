@@ -233,7 +233,7 @@ export const generateDropboxSettingsPart = (
     "dropbox-hide",
     plugin.settings.serviceType !== "dropbox"
   );
-  setSvgTitle(new Setting(dropboxDiv).setHeading().nameEl, SVG_DROPBOX, "${t(\"settings_dropbox\")}");
+  setSvgTitle(new Setting(dropboxDiv).setHeading().nameEl, SVG_DROPBOX, t("settings_dropbox"));
 
   const dropboxNotShowUpHintSetting = new Setting(dropboxDiv);
   dropboxNotShowUpHintSetting.settingEl.addClass("dropbox-allow-to-use-hide");

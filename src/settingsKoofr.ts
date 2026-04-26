@@ -125,7 +125,7 @@ export const generateKoofrSettingsPart = (
 ) => {
   const koofrDiv = containerEl.createEl("div", { cls: "koofr-hide" });
   koofrDiv.toggleClass("koofr-hide", plugin.settings.serviceType !== "koofr");
-  setSvgTitle(new Setting(koofrDiv).setHeading().nameEl, SVG_KOOFR, "${t(\"settings_koofr\")}");
+  setSvgTitle(new Setting(koofrDiv).setHeading().nameEl, SVG_KOOFR, t("settings_koofr"));
 
   const koofrNotShowUpHintSetting = new Setting(koofrDiv);
   koofrNotShowUpHintSetting.settingEl.addClass("koofr-allow-to-use-hide");

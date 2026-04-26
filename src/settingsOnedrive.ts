@@ -156,7 +156,7 @@ export const generateOnedriveSettingsPart = (
     "onedrive-hide",
     plugin.settings.serviceType !== "onedrive"
   );
-  setSvgTitle(new Setting(onedriveDiv).setHeading().nameEl, SVG_ONEDRIVE, "${t(\"settings_onedrive\")}");
+  setSvgTitle(new Setting(onedriveDiv).setHeading().nameEl, SVG_ONEDRIVE, t("settings_onedrive"));
 
   const onedriveNotShowUpHintSetting = new Setting(onedriveDiv);
   onedriveNotShowUpHintSetting.settingEl.addClass("onedrive-allow-to-use-hide");

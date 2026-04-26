@@ -19,7 +19,7 @@ export const generateAzureBlobStorageSettingsPart = (
     "azureblobstorage-hide",
     plugin.settings.serviceType !== "azureblobstorage"
   );
-  setSvgTitle(new Setting(azureBlobStorageDiv).setHeading().nameEl, SVG_AZURE, "Azure Blob Storage");
+  setSvgTitle(new Setting(azureBlobStorageDiv).setHeading().nameEl, SVG_AZURE, t("settings_azureblobstorage"));
 
   const azureDescDiv = azureBlobStorageDiv.createEl("div", {
     cls: "settings-long-desc",

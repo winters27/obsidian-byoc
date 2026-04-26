@@ -127,7 +127,7 @@ export const generatePCloudSettingsPart = (
 ) => {
   const pCloudDiv = containerEl.createEl("div", { cls: "pcloud-hide" });
   pCloudDiv.toggleClass("pcloud-hide", plugin.settings.serviceType !== "pcloud");
-  setSvgTitle(new Setting(pCloudDiv).setHeading().nameEl, SVG_PCLOUD, "${t(\"settings_pcloud\")}");
+  setSvgTitle(new Setting(pCloudDiv).setHeading().nameEl, SVG_PCLOUD, t("settings_pcloud"));
 
   const pCloudNotShowUpHintSetting = new Setting(pCloudDiv);
   pCloudNotShowUpHintSetting.settingEl.addClass("pcloud-allow-to-use-hide");

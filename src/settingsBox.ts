@@ -130,7 +130,7 @@ export const generateBoxSettingsPart = (
 ) => {
   const boxDiv = containerEl.createEl("div", { cls: "box-hide" });
   boxDiv.toggleClass("box-hide", plugin.settings.serviceType !== "box");
-  setSvgTitle(new Setting(boxDiv).setHeading().nameEl, SVG_BOX, "Box");
+  setSvgTitle(new Setting(boxDiv).setHeading().nameEl, SVG_BOX, t("settings_box"));
 
   const boxNotShowUpHintSetting = new Setting(boxDiv);
   boxNotShowUpHintSetting.settingEl.addClass("box-allow-to-use-hide");
