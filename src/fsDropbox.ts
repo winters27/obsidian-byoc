@@ -409,7 +409,7 @@ export class FakeFsDropbox extends FakeFs {
         this.dropboxConfig.refreshToken
       );
 
-      setConfigBySuccessfullAuthInplace(
+      await setConfigBySuccessfullAuthInplace(
         this.dropboxConfig,
         resp,
         this.saveUpdatedConfigFunc

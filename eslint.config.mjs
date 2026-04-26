@@ -26,6 +26,10 @@ export default defineConfig([
     languageOptions: {
       parser: tsparser,
       parserOptions: { project: "./tsconfig.json" },
+      globals: {
+        // webpack injects buffer-browserify polyfill globally.
+        Buffer: "readonly",
+      },
     },
     rules: {
       // Disable the auto-convert-to-unknown fixer so eslint --fix doesn't

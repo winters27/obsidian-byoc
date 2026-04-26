@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-nodejs-modules -- polyfilled via webpack
 import { Buffer } from "buffer";
 import { Queue } from "@fyears/tsqueue";
 import { getReasonPhrase } from "http-status-codes/build/cjs/utils-functions";
@@ -225,7 +226,9 @@ const tryEncodeUsernamePassword = (x: string) => {
   if (onlyAscii(x)) {
     return x;
   }
-  return unescape(encodeURIComponent(x));
+  // Modern equivalent of legacy unescape(encodeURIComponent(x)) — produces
+  // a binary string where each char maps to one UTF-8 byte (0..255).
+  return new TextDecoder("latin1").decode(new TextEncoder().encode(x));
 };
 
 const parseCustomHeaders = (x: string): Record<string, string> => {
@@ -342,6 +345,7 @@ export class FakeFsWebdav extends FakeFs {
       this.webdavConfig.depth === "auto_unknown"
     ) {
       this.webdavConfig.depth = "manual_1";
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- migration: backfill legacy field
       this.webdavConfig.manualRecursive = true;
       if (this.saveUpdatedConfigFunc !== undefined) {
         await this.saveUpdatedConfigFunc();

@@ -664,6 +664,7 @@ export class BYOCSettingTab extends PluginSettingTab {
             .addOption("disable", t("disable"))
             .addOption("enable", t("enable"));
 
+          /* eslint-disable @typescript-eslint/no-deprecated -- bypassCorsLocally is deprecated but still user-toggleable for legacy setups */
           dropdown
             .setValue(
               `${
@@ -678,6 +679,7 @@ export class BYOCSettingTab extends PluginSettingTab {
               }
               await this.plugin.saveSettings();
             });
+          /* eslint-enable @typescript-eslint/no-deprecated */
         });
     }
 
@@ -945,6 +947,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("manual_1", t("settings_webdav_depth_1"));
         dropdown.addOption("manual_infinity", t("settings_webdav_depth_inf"));
 
+        /* eslint-disable @typescript-eslint/no-deprecated -- manualRecursive is deprecated but still backed by user dropdown */
         dropdown
           .setValue(this.plugin.settings.webdav.depth || "manual_1")
           .onChange(async (val) => {
@@ -955,6 +958,7 @@ export class BYOCSettingTab extends PluginSettingTab {
               this.plugin.settings.webdav.depth = "manual_infinity";
               this.plugin.settings.webdav.manualRecursive = false;
             }
+            /* eslint-enable @typescript-eslint/no-deprecated */
 
             // normally save
             await this.plugin.saveSettings();
@@ -1416,7 +1420,7 @@ export class BYOCSettingTab extends PluginSettingTab {
             ) {
               const intervalID = activeWindow.setInterval(() => {
                 console.debug("auto run from settings.ts");
-                this.plugin.syncRun("auto");
+                void this.plugin.syncRun("auto");
               }, realVal);
               this.plugin.autoRunIntervalID = intervalID;
               this.plugin.registerInterval(intervalID);
@@ -1984,7 +1988,7 @@ export class BYOCSettingTab extends PluginSettingTab {
                   this.plugin.settings,
                   copied
                 );
-                this.plugin.saveSettings();
+                await this.plugin.saveSettings();
                 new Notice(
                   t("protocol_saveqr", {
                     manifestName: this.plugin.manifest.name,

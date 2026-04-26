@@ -1,3 +1,8 @@
+// This file intentionally references several @deprecated symbols
+// (SyncMetaMappingRecord, fileHistoryTbl, syncMappingTbl, etc.) — they
+// are retained solely to migrate users from the original Remotely Save
+// schema to the BYOC v3 schema.
+/* eslint-disable @typescript-eslint/no-deprecated */
 import localforage from "localforage";
 import { extendPrototype as ep1 } from "localforage-getitems";
 import { extendPrototype as ep2 } from "localforage-removeitems";

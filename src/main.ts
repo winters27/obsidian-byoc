@@ -416,7 +416,7 @@ export default class BYOCPlugin extends Plugin {
       callbackSyncProcess
     );
 
-    fsEncrypt.closeResources();
+    void fsEncrypt.closeResources();
     (profiler)?.clear();
     this.syncEvent?.trigger("SYNC_DONE");
   }
@@ -467,7 +467,7 @@ export default class BYOCPlugin extends Plugin {
     // Token refresh is handled per-provider during sync.
 
     const vaultRandomIDFromOldConfigFile = await this.getVaultRandomIDFromOldConfigFile();
-    this.tryToAddIgnoreFile();
+    void this.tryToAddIgnoreFile();
 
     const vaultBasePath = this.getVaultBasePath();
 
@@ -490,7 +490,7 @@ export default class BYOCPlugin extends Plugin {
       } else {
         const copied = cloneDeep(parsed.result);
         this.settings = Object.assign({}, this.settings, copied);
-        this.saveSettings();
+        await this.saveSettings();
         new Notice(t("protocol_saveqr", { manifestName: this.manifest.name }));
       }
     });
@@ -527,7 +527,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           inputParams.code,
           async (e: any) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${e}`); throw e; }
-        );        setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => this.saveSettings());
+        );
+        await setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => this.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         const username = await client.getUserDisplayName();
         this.settings.dropbox.username = username;
@@ -567,7 +568,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }        setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => this.saveSettings());
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
+        await setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => this.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         this.settings.onedrive.username = await client.getUserDisplayName();
         await this.saveSettings();
@@ -605,7 +607,8 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }        setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => this.saveSettings());
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
+        await setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => this.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
         this.settings.onedrivefull.username = await client.getUserDisplayName();
         await this.saveSettings();
@@ -919,11 +922,13 @@ export default class BYOCPlugin extends Plugin {
     if (this.settings.onedrive.kind === undefined) this.settings.onedrive.kind = "onedrive";
 
     // WebDAV defaults
+    /* eslint-disable @typescript-eslint/no-deprecated -- migration: read deprecated fields to backfill new ones */
     if (this.settings.webdav.manualRecursive === undefined) this.settings.webdav.manualRecursive = true;
     if (this.settings.webdav.depth === undefined || ["auto","auto_1","auto_infinity","auto_unknown"].includes(this.settings.webdav.depth)) {
       this.settings.webdav.depth = "manual_1";
       this.settings.webdav.manualRecursive = true;
     }
+    /* eslint-enable @typescript-eslint/no-deprecated */
     if (this.settings.webdav.remoteBaseDir === undefined) this.settings.webdav.remoteBaseDir = "";
     if (this.settings.webdav.customHeaders === undefined) this.settings.webdav.customHeaders = "";
 
@@ -946,11 +951,13 @@ export default class BYOCPlugin extends Plugin {
     }
     if (this.settings.deleteToWhere === undefined) this.settings.deleteToWhere = "system";
     if (this.settings.syncBookmarks === undefined) this.settings.syncBookmarks = false;
+    /* eslint-disable @typescript-eslint/no-deprecated -- migration: zero out / backfill deprecated fields */
     this.settings.logToDB = false; // deprecated
     if (requireApiVersion(API_VER_ENSURE_REQURL_OK)) this.settings.s3.bypassCorsLocally = true;
     if (this.settings.agreeToUseSyncV3 === undefined) this.settings.agreeToUseSyncV3 = true; // BYOC: always true
     if (this.settings.conflictAction === undefined) this.settings.conflictAction = "keep_newer";
     if (this.settings.howToCleanEmptyFolder === undefined) this.settings.howToCleanEmptyFolder = "clean_both";
+    /* eslint-enable @typescript-eslint/no-deprecated */
     if (this.settings.protectModifyPercentage === undefined) this.settings.protectModifyPercentage = 50;
     if (this.settings.syncDirection === undefined) this.settings.syncDirection = "bidirectional";
     if (this.settings.obfuscateSettingFile === undefined) this.settings.obfuscateSettingFile = true;
@@ -987,12 +994,14 @@ export default class BYOCPlugin extends Plugin {
 
   async getVaultRandomIDFromOldConfigFile() {
     let vaultRandomID = "";
+    /* eslint-disable @typescript-eslint/no-deprecated -- migration: drain legacy vaultRandomID from data.json */
     if (this.settings.vaultRandomID !== undefined) {
       if (this.settings.vaultRandomID !== "") vaultRandomID = this.settings.vaultRandomID;
       console.debug("vaultRandomID is no longer saved in data.json");
       delete this.settings.vaultRandomID;
       await this.saveSettings();
     }
+    /* eslint-enable @typescript-eslint/no-deprecated */
     return vaultRandomID;
   }
 
@@ -1086,7 +1095,7 @@ export default class BYOCPlugin extends Plugin {
       resumeTimer = activeWindow.setTimeout(() => {
         if (!this.isSyncing) {
           console.debug("[BYOC] Mobile resume sync: triggering syncRun");
-          this.syncRun("manual");
+          void this.syncRun("manual");
         }
       }, RESUME_DEBOUNCE_MS);
     };
@@ -1196,7 +1205,8 @@ export default class BYOCPlugin extends Plugin {
   _debouncedSyncImpl?: ReturnType<typeof debounce>;
   _syncOnSaveRegistered = false;
   
-  _syncOnSaveEvent2 = async (...args: any[]) => {
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- debounced fire-and-forget; settled internally
+  _syncOnSaveEvent2 = (...args: unknown[]) => {
     this._debouncedSyncImpl?.(...args);
   };
 
@@ -1330,13 +1340,13 @@ export default class BYOCPlugin extends Plugin {
 
   enableAutoClearOutputToDBHistIfSet() {
     this.app.workspace.onLayoutReady(() => {
-      activeWindow.setTimeout(() => clearAllLoggerOutputRecords(this.db), 1000 * 30);
+      activeWindow.setTimeout(() => void clearAllLoggerOutputRecords(this.db), 1000 * 30);
     });
   }
 
   enableAutoClearSyncPlanHist() {
     this.app.workspace.onLayoutReady(() => {
-      activeWindow.setTimeout(() => clearExpiredSyncPlanRecords(this.db), 1000 * 45);
+      activeWindow.setTimeout(() => void clearExpiredSyncPlanRecords(this.db), 1000 * 45);
       const intervalID = activeWindow.setInterval(() => clearExpiredSyncPlanRecords(this.db), 1000 * 60 * 5);
       this.registerInterval(intervalID);
     });

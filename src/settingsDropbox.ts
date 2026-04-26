@@ -118,8 +118,7 @@ class DropboxAuthModal extends Modal {
                   throw e;
                 }
               );
-              const self = this;
-              setConfigBySuccessfullAuthInplace(
+              await setConfigBySuccessfullAuthInplace(
                 this.plugin.settings.dropbox,
                 authRes!,
                 () => this.plugin.saveSettings()

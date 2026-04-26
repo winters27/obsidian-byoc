@@ -1,6 +1,11 @@
+// Polyfilled at build time via webpack's "browser" field in package.json
+// (buffer-browserify, path-browserify, stream-browserify) so these work
+// on mobile too.
+/* eslint-disable import/no-nodejs-modules */
 import { Buffer } from "buffer";
 import * as path from "path";
 import { Readable } from "stream";
+/* eslint-enable import/no-nodejs-modules */
 import type { PutObjectCommandInput, _Object } from "@aws-sdk/client-s3";
 import {
   DeleteObjectCommand,
@@ -227,6 +232,7 @@ const getS3Client = (s3Config: S3Config) => {
   }
 
   let s3Client: S3Client;
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- bypassCorsLocally still drives client setup for legacy users
   if (VALID_REQURL && s3Config.bypassCorsLocally) {
     s3Client = new S3Client({
       region: s3Config.s3Region,
@@ -470,7 +476,7 @@ export class FakeFsS3 extends FakeFs {
       if (this.s3Config.useAccurateMTime) {
         // head requests of all objects, love it
         for (const content of rsp.Contents) {
-          queueHead.add(async () => {
+          void queueHead.add(async () => {
             const rspHead = await this.s3Client.send(
               new HeadObjectCommand({
                 Bucket: this.s3Config.s3BucketName,

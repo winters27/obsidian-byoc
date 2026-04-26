@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-nodejs-modules -- polyfilled via webpack (path-browserify)
 import * as path from "path";
 import type { Vault } from "obsidian";
 
