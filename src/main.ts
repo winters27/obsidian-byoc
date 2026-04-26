@@ -1205,7 +1205,7 @@ export default class BYOCPlugin extends Plugin {
   _debouncedSyncImpl?: ReturnType<typeof debounce>;
   _syncOnSaveRegistered = false;
   
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- debounced fire-and-forget; settled internally
+   
   _syncOnSaveEvent2 = (...args: unknown[]) => {
     this._debouncedSyncImpl?.(...args);
   };

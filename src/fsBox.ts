@@ -273,6 +273,12 @@ export class FakeFsBox extends FakeFs {
    
 
 
+   
+
+
+   
+
+
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
@@ -284,6 +290,12 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
+
+   
+
+
+   
+
 
    
 
@@ -301,6 +313,12 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
+
+   
+
+
+   
+
 
    
 

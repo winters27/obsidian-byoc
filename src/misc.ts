@@ -3,14 +3,9 @@ import * as path from "path";
 import type { Vault } from "obsidian";
 
 import emojiRegex from "emoji-regex";
+import moment from "moment";
 import { base32 } from "rfc4648";
 import XRegExp from "xregexp";
-
-declare global {
-  interface Window {
-    moment: (...data: any) => any;
-  }
-}
 
 /**
  * If any part of the file starts with '.' or '_' then it's a hidden file.
@@ -328,7 +323,7 @@ export const getSplitRanges = (bytesTotal: number, bytesEachPart: number) => {
  * @param obj anything
  * @returns string of the name of the object
  */
-export const getTypeName = (obj: any) => {
+export const getTypeName = (obj: unknown) => {
   return Object.prototype.toString.call(obj).slice(8, -1);
 };
 
@@ -364,10 +359,10 @@ export const unixTimeToStr = (x: number | undefined | null, hasMs = false) => {
   }
   if (hasMs) {
     // 1716712162574 => '2024-05-26T16:29:22.574+08:00'
-    return activeWindow.moment(x).toISOString(true);
+    return moment(x).toISOString(true);
   } else {
     // 1716712162574 => '2024-05-26T16:29:22+08:00'
-    return activeWindow.moment(x).format() as string;
+    return moment(x).format();
   }
 };
 
@@ -376,8 +371,8 @@ export const unixTimeToStr = (x: number | undefined | null, hasMs = false) => {
  * @returns
  */
 const getCircularReplacer = () => {
-  const seen = new WeakSet();
-  return (key: any, value: any) => {
+  const seen = new WeakSet<object>();
+  return (_key: string, value: unknown) => {
     if (typeof value === "object" && value !== null) {
       if (seen.has(value)) {
         return;
@@ -393,7 +388,7 @@ const getCircularReplacer = () => {
  * @param x
  * @returns
  */
-export const toText = (x: any) => {
+export const toText = (x: unknown) => {
   if (x === undefined || x === null) {
     return `${x}`;
   }
@@ -410,14 +405,14 @@ export const toText = (x: any) => {
     return `${x}`;
   }
 
-  if (
-    x instanceof Error ||
-    (x?.stack &&
-      x?.message &&
-      typeof x.stack === "string" &&
-      typeof x.message === "string")
-  ) {
-    return `ERROR! MESSAGE: ${x.message}, STACK: ${x.stack}`;
+  if (x instanceof Error) {
+    return `ERROR! MESSAGE: ${x.message}, STACK: ${x.stack ?? ""}`;
+  }
+  if (x !== null && typeof x === "object" && "stack" in x && "message" in x) {
+    const e = x as { stack?: unknown; message?: unknown };
+    if (typeof e.stack === "string" && typeof e.message === "string") {
+      return `ERROR! MESSAGE: ${e.message}, STACK: ${e.stack}`;
+    }
   }
 
   try {
@@ -607,9 +602,9 @@ export const fixEntityListCasesInplace = (entities: { keyRaw: string }[]) => {
  * @param object
  * @returns bytes
  */
-export const roughSizeOfObject = (object: any) => {
-  const objectList: any[] = [];
-  const stack = [object];
+export const roughSizeOfObject = (object: unknown) => {
+  const objectList: unknown[] = [];
+  const stack: unknown[] = [object];
   let bytes = 0;
 
   while (stack.length) {
@@ -626,11 +621,12 @@ export const roughSizeOfObject = (object: any) => {
         bytes += 8;
         break;
       case "object":
-        if (!objectList.includes(value)) {
+        if (value !== null && !objectList.includes(value)) {
           objectList.push(value);
-          for (const prop in value) {
-            if (Object.prototype.hasOwnProperty.call(value, prop)) {
-              stack.push(value[prop]);
+          const obj = value as Record<string, unknown>;
+          for (const prop in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+              stack.push(obj[prop]);
             }
           }
         }

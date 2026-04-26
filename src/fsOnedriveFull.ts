@@ -361,6 +361,12 @@ export class FakeFsOnedriveFull extends FakeFs {
    
 
 
+   
+
+
+   
+
+
   private async _getJson(path: string): Promise<any> {
     return JSON.parse(
       await request({
@@ -378,6 +384,12 @@ export class FakeFsOnedriveFull extends FakeFs {
    
 
 
+   
+
+
+   
+
+
   private async _postJson(path: string, payload: any): Promise<any> {
     return JSON.parse(
       await request({
@@ -391,6 +403,12 @@ export class FakeFsOnedriveFull extends FakeFs {
       })
     );
   }
+
+   
+
+
+   
+
 
    
 

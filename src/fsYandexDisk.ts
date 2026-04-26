@@ -172,6 +172,12 @@ export class FakeFsYandexDisk extends FakeFs {
    
 
 
+   
+
+
+   
+
+
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
@@ -183,6 +189,12 @@ export class FakeFsYandexDisk extends FakeFs {
       })
     );
   }
+
+   
+
+
+   
+
 
    
 

@@ -1,4 +1,4 @@
-import type { MixedEntity, ConflictActionType, DecisionTypeForMixedEntity } from "../baseTypes";
+import type { Entity, MixedEntity, ConflictActionType, DecisionTypeForMixedEntity } from "../baseTypes";
 
 // Two timestamps are considered equal if within 2 seconds of each other.
 // Necessary because providers and local FS have different mtime precision.
@@ -141,8 +141,8 @@ export const determineSyncDecision = (
 
 const resolveCreatedConflict = (
   action: ConflictActionType,
-  local: any,
-  remote: any
+  local: Entity | undefined,
+  remote: Entity | undefined
 ): DecisionTypeForMixedEntity => {
   if (action === "keep_newer") {
     const side = newerSide(local?.mtimeCli, remote?.mtimeCli ?? remote?.mtimeSvr);
@@ -161,8 +161,8 @@ const resolveCreatedConflict = (
 
 const resolveModifiedConflict = (
   action: ConflictActionType,
-  local: any,
-  remote: any
+  local: Entity | undefined,
+  remote: Entity | undefined
 ): DecisionTypeForMixedEntity => {
   if (action === "keep_newer") {
     const side = newerSide(local?.mtimeCli, remote?.mtimeCli ?? remote?.mtimeSvr);

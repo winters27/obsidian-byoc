@@ -179,6 +179,12 @@ export class FakeFsKoofr extends FakeFs {
    
 
 
+   
+
+
+   
+
+
   private async _getJson(path: string): Promise<any> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
@@ -193,6 +199,12 @@ export class FakeFsKoofr extends FakeFs {
       })
     );
   }
+
+   
+
+
+   
+
 
    
 
