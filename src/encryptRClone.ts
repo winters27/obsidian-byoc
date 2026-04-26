@@ -67,13 +67,13 @@ export class CipherRclone {
               this.init = true;
               resolve(); // return the class object itself
             } else {
-              reject("error after prepareByCallingWorker");
+              reject(new Error("error after prepareByCallingWorker"));
             }
           };
 
           channel.port2.onmessageerror = (event) => {
             // console.debug("main: receiving error in prepare");
-            reject(event);
+            reject(new Error(`messageerror: ${String(event.data)}`));
           };
 
           // console.debug("main: before postMessage in prepare");
@@ -107,7 +107,7 @@ export class CipherRclone {
         // console.debug("main: receiving msg in encryptNameByCallingWorker");
         const { outputName } = event.data as RecvMsg;
         if (outputName === undefined) {
-          reject("unknown outputName after encryptNameByCallingWorker");
+          reject(new Error("unknown outputName after encryptNameByCallingWorker"));
         } else {
           resolve(outputName);
         }
@@ -115,7 +115,7 @@ export class CipherRclone {
 
       channel.port2.onmessageerror = (event) => {
         // console.debug("main: receiving error in encryptNameByCallingWorker");
-        reject(event);
+        reject(new Error(`messageerror: ${String(event.data)}`));
       };
 
       // console.debug("main: before postMessage in encryptNameByCallingWorker");
@@ -141,10 +141,10 @@ export class CipherRclone {
         const { outputName, status } = event.data as RecvMsg;
 
         if (status === "error") {
-          reject("error");
+          reject(new Error("error"));
         } else {
           if (outputName === undefined) {
-            reject("unknown outputName after decryptNameByCallingWorker");
+            reject(new Error("unknown outputName after decryptNameByCallingWorker"));
           } else {
             resolve(outputName);
           }
@@ -153,7 +153,7 @@ export class CipherRclone {
 
       channel.port2.onmessageerror = (event) => {
         // console.debug("main: receiving error in decryptNameByCallingWorker");
-        reject(event);
+        reject(new Error(`messageerror: ${String(event.data)}`));
         channel;
       };
 
@@ -181,7 +181,7 @@ export class CipherRclone {
         // console.debug("main: receiving msg in encryptContentByCallingWorker");
         const { outputContent } = event.data as RecvMsg;
         if (outputContent === undefined) {
-          reject("unknown outputContent after encryptContentByCallingWorker");
+          reject(new Error("unknown outputContent after encryptContentByCallingWorker"));
         } else {
           resolve(outputContent);
         }
@@ -189,7 +189,7 @@ export class CipherRclone {
 
       channel.port2.onmessageerror = (event) => {
         // console.debug("main: receiving error in encryptContentByCallingWorker");
-        reject(event);
+        reject(new Error(`messageerror: ${String(event.data)}`));
       };
 
       // console.debug(
@@ -222,10 +222,10 @@ export class CipherRclone {
         const { outputContent, status } = event.data as RecvMsg;
 
         if (status === "error") {
-          reject("error");
+          reject(new Error("error"));
         } else {
           if (outputContent === undefined) {
-            reject("unknown outputContent after decryptContentByCallingWorker");
+            reject(new Error("unknown outputContent after decryptContentByCallingWorker"));
           } else {
             resolve(outputContent);
           }
@@ -236,7 +236,7 @@ export class CipherRclone {
         // console.debug(
         //   "main: receiving onmessageerror in decryptContentByCallingWorker"
         // );
-        reject(event);
+        reject(new Error(`messageerror: ${String(event.data)}`));
       };
 
       // console.debug(

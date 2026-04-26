@@ -539,7 +539,7 @@ export class FakeFsS3 extends FakeFs {
           continue;
         }
         if (
-          !this.synthFoldersCache.hasOwnProperty(f) ||
+          !Object.prototype.hasOwnProperty.call(this.synthFoldersCache, f) ||
           remoteEntity.mtimeSvr! >= this.synthFoldersCache[f].mtimeSvr!
         ) {
           this.synthFoldersCache[f] = {
@@ -564,7 +564,7 @@ export class FakeFsS3 extends FakeFs {
   }
 
   async stat(key: string): Promise<Entity> {
-    if (this.synthFoldersCache.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(this.synthFoldersCache, key)) {
       return this.synthFoldersCache[key];
     }
     let keyFullPath = key;
@@ -723,7 +723,7 @@ export class FakeFsS3 extends FakeFs {
       },
     });
     upload.on("httpUploadProgress", (progress) => {
-      // console.info(progress);
+      // console.debug(progress);
     });
     await upload.done();
 
@@ -772,7 +772,7 @@ export class FakeFsS3 extends FakeFs {
     }
 
     if (key.endsWith("/")) {
-      if (this.synthFoldersCache.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(this.synthFoldersCache, key)) {
         delete this.synthFoldersCache[key];
         return;
       }

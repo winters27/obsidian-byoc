@@ -1,7 +1,7 @@
 import { base64url } from "rfc4648";
 import { reverseString } from "./misc";
 
-import type { RemotelySavePluginSettings } from "./baseTypes";
+import type { BYOCPluginSettings } from "./baseTypes";
 
 const DEFAULT_README: string =
   "The file contains sensitive info, so DO NOT take screenshot of, copy, or share it to anyone! It's also generated automatically, so do not edit it manually.";
@@ -15,8 +15,8 @@ interface MessyConfigType {
  * this should accept the result after loadData();
  */
 export const messyConfigToNormal = (
-  x: MessyConfigType | RemotelySavePluginSettings | null | undefined
-): RemotelySavePluginSettings | null | undefined => {
+  x: MessyConfigType | BYOCPluginSettings | null | undefined
+): BYOCPluginSettings | null | undefined => {
   // console.debug("loading, original config on disk:");
   // console.debug(x);
   if (x === null || x === undefined) {
@@ -47,7 +47,7 @@ export const messyConfigToNormal = (
  * this should accept the result of original config
  */
 export const normalConfigToMessy = (
-  x: RemotelySavePluginSettings | null | undefined
+  x: BYOCPluginSettings | null | undefined
 ) => {
   if (x === null || x === undefined) {
     console.debug("the normal config is null or undefined, skip");

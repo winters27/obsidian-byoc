@@ -21,6 +21,10 @@ declare global {
   var DEFAULT_KOOFR_CLIENT_SECRET: string;
 }
 
+// These globals are injected by webpack's DefinePlugin at build time, not
+// related to popout windows. The activeWindow/activeDocument rule doesn't
+// apply to module-load-time constants.
+/* eslint-disable obsidianmd/prefer-active-doc, no-restricted-globals */
 export const DROPBOX_APP_KEY = globalThis.DEFAULT_DROPBOX_APP_KEY || "";
 export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "";
 export const ONEDRIVE_AUTHORITY = globalThis.DEFAULT_ONEDRIVE_AUTHORITY || "https://login.microsoftonline.com/consumers/";
@@ -34,6 +38,7 @@ export const YANDEXDISK_CLIENT_ID = globalThis.DEFAULT_YANDEXDISK_CLIENT_ID || "
 export const YANDEXDISK_CLIENT_SECRET = globalThis.DEFAULT_YANDEXDISK_CLIENT_SECRET || "";
 export const KOOFR_CLIENT_ID = globalThis.DEFAULT_KOOFR_CLIENT_ID || "";
 export const KOOFR_CLIENT_SECRET = globalThis.DEFAULT_KOOFR_CLIENT_SECRET || "";
+/* eslint-enable obsidianmd/prefer-active-doc, no-restricted-globals */
 
 export const DEFAULT_CONTENT_TYPE = "application/octet-stream";
 
@@ -290,12 +295,6 @@ export interface BYOCPluginSettings {
   /** @deprecated - removed in BYOC, kept for migration compat */
   pro?: Record<string, unknown>;
 }
-
-/**
- * Alias for backwards compatibility with any code still using the old name.
- * @deprecated Use BYOCPluginSettings
- */
-export type RemotelySavePluginSettings = BYOCPluginSettings;
 
 export const PLUGIN_ID = "obsidian-byoc";
 export const PLUGIN_NAME = "BYOC";

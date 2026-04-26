@@ -37,7 +37,7 @@ export const exportVaultSyncPlansToFiles = async (
   howMany: number,
   onlyChange: boolean
 ) => {
-  console.info("exporting sync plans");
+  console.debug("exporting sync plans");
   await mkdirpInVault(DEFAULT_DEBUG_FOLDER, vault);
   const records = await readAllSyncPlanRecordTextsByVault(db, vaultRandomID);
   let md = "";
@@ -68,7 +68,7 @@ export const exportVaultSyncPlansToFiles = async (
   await vault.create(filePath, md, {
     mtime: ts,
   });
-  console.info("finish exporting sync plans");
+  console.debug("finish exporting sync plans");
 };
 
 export const exportVaultProfilerResultsToFiles = async (
@@ -76,7 +76,7 @@ export const exportVaultProfilerResultsToFiles = async (
   vault: Vault,
   vaultRandomID: string
 ) => {
-  console.info("exporting profiler results");
+  console.debug("exporting profiler results");
   await mkdirpInVault(DEFAULT_DEBUG_FOLDER, vault);
   const records = await readAllProfilerResultsByVault(db, vaultRandomID);
   let md = "";
@@ -92,5 +92,5 @@ export const exportVaultProfilerResultsToFiles = async (
   await vault.create(filePath, md, {
     mtime: ts,
   });
-  console.info("finish exporting profiler results");
+  console.debug("finish exporting profiler results");
 };

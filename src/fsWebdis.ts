@@ -1,4 +1,5 @@
 import { isEqual } from "lodash";
+import { requestUrl, type RequestUrlResponse } from "obsidian";
 import {
   DEFAULT_CONTENT_TYPE,
   type Entity,
@@ -94,17 +95,21 @@ export class FakeFsWebdis extends FakeFs {
     const username = this.webdisConfig.username ?? "";
     const password = this.webdisConfig.password ?? "";
     if (username !== "" && password !== "") {
-      return await fetch(fullUrl, {
-        method: method,
+      return await requestUrl({
+        url: fullUrl,
+        method,
         headers: {
           Authorization: "Basic " + btoa(username + ":" + password),
         },
         body: content,
+        throw: false,
       });
     } else if (username === "" && password === "") {
-      return await fetch(fullUrl, {
-        method: method,
+      return await requestUrl({
+        url: fullUrl,
+        method,
         body: content,
+        throw: false,
       });
     } else {
       throw Error(
@@ -118,7 +123,7 @@ export class FakeFsWebdis extends FakeFs {
     const res: Entity[] = [];
     do {
       const command = `SCAN/${cursor}/MATCH/rs:fs:v1:${encodeURIComponent(this.remoteBaseDir + "/")}*:meta/COUNT/1000`;
-      const rsp = (await (await this._fetchCommand("GET", command)).json())[
+      const rsp = (await (await this._fetchCommand("GET", command)).json)[
         "SCAN"
       ];
       // console.debug(rsp);
@@ -137,7 +142,7 @@ export class FakeFsWebdis extends FakeFs {
     let cursor = "0";
     const res: Entity[] = [];
     const command = `SCAN/${cursor}/MATCH/rs:fs:v1:${encodeURIComponent(this.remoteBaseDir + "/")}*:meta/COUNT/10`; // fewer keys
-    const rsp = (await (await this._fetchCommand("GET", command)).json())[
+    const rsp = (await (await this._fetchCommand("GET", command)).json)[
       "SCAN"
     ];
     // console.debug(rsp);
@@ -160,7 +165,7 @@ export class FakeFsWebdis extends FakeFs {
   async _statFromRaw(key: string): Promise<Entity> {
     // console.debug(`_statFromRaw on ${key}`);
     const command = `HGETALL/${key}:meta`;
-    const rsp = (await (await this._fetchCommand("GET", command)).json())[
+    const rsp = (await (await this._fetchCommand("GET", command)).json)[
       "HGETALL"
     ];
     // console.debug(`rsp: ${JSON.stringify(rsp, null, 2)}`);
@@ -187,7 +192,7 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command = `${command}/ctime/${ctime}`;
     }
-    const rsp = (await (await this._fetchCommand("GET", command)).json())[
+    const rsp = (await (await this._fetchCommand("GET", command)).json)[
       "HSET"
     ];
     return await this.stat(key);
@@ -209,14 +214,14 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command1 = `${command1}/ctime/${ctime}`;
     }
-    const rsp1 = (await (await this._fetchCommand("GET", command1)).json())[
+    const rsp1 = (await (await this._fetchCommand("GET", command1)).json)[
       "HSET"
     ];
 
     // content
     const command2 = `SET/${fullKey}:content`;
     const rsp2 = (
-      await (await this._fetchCommand("PUT", command2, content)).json()
+      await (await this._fetchCommand("PUT", command2, content)).json
     )["SET"];
 
     // fetch meta
@@ -226,7 +231,7 @@ export class FakeFsWebdis extends FakeFs {
   async readFile(key: string): Promise<ArrayBuffer> {
     const fullKey = getWebdisPath(key, this.remoteBaseDir);
     const command = `GET/${fullKey}:content?type=${DEFAULT_CONTENT_TYPE}`;
-    const rsp = await (await this._fetchCommand("GET", command)).arrayBuffer();
+    const rsp = await (await this._fetchCommand("GET", command)).arrayBuffer;
     return rsp;
   }
 
@@ -242,16 +247,16 @@ export class FakeFsWebdis extends FakeFs {
   async rm(key: string): Promise<void> {
     const fullKey = getWebdisPath(key, this.remoteBaseDir);
     const command = `DEL/${fullKey}:meta/${fullKey}:content`;
-    const rsp = (await (await this._fetchCommand("PUT", command)).json())[
+    const rsp = (await (await this._fetchCommand("PUT", command)).json)[
       "DEL"
     ];
   }
 
   async checkConnect(callbackFunc?: any): Promise<boolean> {
     try {
-      const k = await (
+      const k = (
         await this._fetchCommand("GET", "PING/helloworld")
-      ).json();
+      ).json;
       if (!isEqual(k, { PING: "helloworld" })) {
         throw Error(`no correct ping response`);
       }

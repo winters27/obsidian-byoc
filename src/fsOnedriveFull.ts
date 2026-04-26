@@ -158,7 +158,7 @@ export const setConfigBySuccessfullAuthInplace = async (
   authRes: AccessCodeResponseSuccessfulType,
   saveUpdatedConfigFunc: () => Promise<any> | undefined
 ) => {
-  console.info("start updating local info of OneDrive Full token");
+  console.debug("start updating local info of OneDrive Full token");
   config.accessToken = authRes.access_token;
   config.accessTokenExpiresAtTime =
     Date.now() + authRes.expires_in * 1000 - 5 * 60 * 1000;
@@ -170,7 +170,7 @@ export const setConfigBySuccessfullAuthInplace = async (
   if (saveUpdatedConfigFunc !== undefined) {
     await saveUpdatedConfigFunc();
   }
-  console.info("finish updating local info of OneDrive Full token");
+  console.debug("finish updating local info of OneDrive Full token");
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +318,7 @@ class OneDriveFullAuthProvider {
     this.config.accessTokenExpiresAtTime =
       Date.now() + success.expires_in * 1000 - 120_000;
     await this.saveFunc();
-    console.info("OneDrive Full accessToken refreshed");
+    console.debug("OneDrive Full accessToken refreshed");
     return this.config.accessToken;
   }
 }
@@ -465,7 +465,7 @@ export class FakeFsOnedriveFull extends FakeFs {
         this.vaultFolderExists = true;
       } catch {
         // Create it
-        console.info(`OneDrive Full: creating /${this.remoteBaseDir}`);
+        console.debug(`OneDrive Full: creating /${this.remoteBaseDir}`);
         await this._postJson("/drive/root/children", {
           name: this.remoteBaseDir,
           folder: {},

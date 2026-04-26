@@ -112,8 +112,8 @@ export const sendAuthReq = async (
   //   code: authCode,
   //   codeVerifier: verifier, // PKCE Code Verifier
   // });
-  // console.info('authResponse')
-  // console.info(authResponse)
+  // console.debug('authResponse')
+  // console.debug(authResponse)
   // return authResponse;
 
   // Because of the CORS problem,
@@ -138,7 +138,7 @@ export const sendAuthReq = async (
     });
 
     const rsp2 = JSON.parse(rsp1);
-    // console.info(rsp2);
+    // console.debug(rsp2);
 
     if (rsp2.error !== undefined) {
       return rsp2 as AccessCodeResponseFailedType;
@@ -172,7 +172,7 @@ export const sendRefreshTokenReq = async (
     });
 
     const rsp2 = JSON.parse(rsp1);
-    // console.info(rsp2);
+    // console.debug(rsp2);
 
     if (rsp2.error !== undefined) {
       return rsp2 as AccessCodeResponseFailedType;
@@ -190,7 +190,7 @@ export const setConfigBySuccessfullAuthInplace = async (
   authRes: AccessCodeResponseSuccessfulType,
   saveUpdatedConfigFunc: () => Promise<any> | undefined
 ) => {
-  console.info("start updating local info of OneDrive token");
+  console.debug("start updating local info of OneDrive token");
   config.accessToken = authRes.access_token;
   config.accessTokenExpiresAtTime =
     Date.now() + authRes.expires_in - 5 * 60 * 1000;
@@ -204,7 +204,7 @@ export const setConfigBySuccessfullAuthInplace = async (
     await saveUpdatedConfigFunc();
   }
 
-  console.info("finish updating local info of Onedrive token");
+  console.debug("finish updating local info of Onedrive token");
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -519,7 +519,7 @@ class MyAuthProvider implements AuthenticationProvider {
       this.onedriveConfig.accessTokenExpiresAtTime =
         currentTs + r2.expires_in * 1000 - 60 * 2 * 1000;
       await this.saveUpdatedConfigFunc();
-      console.info("Onedrive accessToken updated");
+      console.debug("Onedrive accessToken updated");
       return this.onedriveConfig.accessToken;
     }
   }
@@ -572,9 +572,9 @@ export class FakeFsOnedrive extends FakeFs {
     }
 
     // check vault folder
-    // console.info(`checking remote has folder /${this.remoteBaseDir}`);
+    // console.debug(`checking remote has folder /${this.remoteBaseDir}`);
     if (this.vaultFolderExists) {
-      // console.info(`already checked, /${this.remoteBaseDir} exist before`)
+      // console.debug(`already checked, /${this.remoteBaseDir} exist before`)
     } else {
       const k = await this._getJson("/drive/special/approot/children");
       // console.debug(k);
@@ -582,16 +582,16 @@ export class FakeFsOnedrive extends FakeFs {
         (k.value as DriveItem[]).filter((x) => x.name === this.remoteBaseDir)
           .length > 0;
       if (!this.vaultFolderExists) {
-        console.info(`remote does not have folder /${this.remoteBaseDir}`);
+        console.debug(`remote does not have folder /${this.remoteBaseDir}`);
         await this._postJson("/drive/special/approot/children", {
           name: `${this.remoteBaseDir}`,
           folder: {},
           "@microsoft.graph.conflictBehavior": "replace",
         });
-        console.info(`remote folder /${this.remoteBaseDir} created`);
+        console.debug(`remote folder /${this.remoteBaseDir} created`);
         this.vaultFolderExists = true;
       } else {
-        // console.info(`remote folder /${this.remoteBaseDir} exists`);
+        // console.debug(`remote folder /${this.remoteBaseDir} exists`);
       }
     }
   }
@@ -853,14 +853,14 @@ export class FakeFsOnedrive extends FakeFs {
   }
 
   async _statFromRoot(key: string): Promise<Entity> {
-    // console.info(`remotePath=${remotePath}`);
+    // console.debug(`remotePath=${remotePath}`);
     const rsp = await this._getJson(
       `${key}?$select=cTag,eTag,fileSystemInfo,folder,file,name,parentReference,size`
     );
-    // console.info(rsp);
+    // console.debug(rsp);
     const driveItem = rsp as DriveItem;
     const res = fromDriveItemToEntity(driveItem, this.remoteBaseDir);
-    // console.info(res);
+    // console.debug(res);
     return res;
   }
 

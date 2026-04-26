@@ -13,7 +13,7 @@
  * The scope is drive.file — only files created by this app are accessible.
  */
 
-import { request } from "obsidian";
+import { request, requestUrl } from "obsidian";
 import {
   GOOGLEDRIVE_CLIENT_ID,
   GOOGLEDRIVE_CLIENT_SECRET,
@@ -584,10 +584,11 @@ export class FakeFsGoogleDrive extends FakeFs {
     // Optionally revoke the token at Google
     if (this.config.accessToken) {
       try {
-        await fetch(
-          `https://oauth2.googleapis.com/revoke?token=${this.config.accessToken}`,
-          { method: "POST" }
-        );
+        await requestUrl({
+          url: `https://oauth2.googleapis.com/revoke?token=${this.config.accessToken}`,
+          method: "POST",
+          throw: false,
+        });
       } catch {
         // Best effort
       }

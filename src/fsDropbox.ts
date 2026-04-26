@@ -1,6 +1,7 @@
 import { Dropbox, DropboxAuth } from "dropbox";
 import type { DropboxResponse, DropboxResponseError, files } from "dropbox";
 import random from "lodash/random";
+import { requestUrl } from "obsidian";
 import {
   COMMAND_CALLBACK_DROPBOX,
   DROPBOX_APP_KEY,
@@ -113,11 +114,11 @@ export const fixEntityListCasesInplace = (entities: { key?: string }[]) => {
   }
 
   entities.sort((a, b) => a.key!.length - b.key!.length);
-  // console.log(JSON.stringify(entities,null,2));
+  // console.debug(JSON.stringify(entities,null,2));
 
   const caseMapping: Record<string, string> = { "": "" };
   for (const e of entities) {
-    // console.log(`looking for: ${JSON.stringify(e, null, 2)}`);
+    // console.debug(`looking for: ${JSON.stringify(e, null, 2)}`);
 
     let parentFolder = getParentFolder(e.key!);
     if (parentFolder === "/") {
@@ -127,20 +128,20 @@ export const fixEntityListCasesInplace = (entities: { key?: string }[]) => {
     const segs = e.key!.split("/");
     if (e.key!.endsWith("/")) {
       // folder
-      if (caseMapping.hasOwnProperty(parentFolderLower)) {
+      if (Object.prototype.hasOwnProperty.call(caseMapping, parentFolderLower)) {
         const newKey = `${caseMapping[parentFolderLower]}${segs
           .slice(-2)
           .join("/")}`;
         caseMapping[newKey.toLocaleLowerCase()] = newKey;
         e.key = newKey;
-        // console.log(JSON.stringify(caseMapping,null,2));
+        // console.debug(JSON.stringify(caseMapping,null,2));
         // continue;
       } else {
         throw Error(`${parentFolder} doesn't have cases record??`);
       }
     } else {
       // file
-      if (caseMapping.hasOwnProperty(parentFolderLower)) {
+      if (Object.prototype.hasOwnProperty.call(caseMapping, parentFolderLower)) {
         const newKey = `${caseMapping[parentFolderLower]}${segs
           .slice(-1)
           .join("/")}`;
@@ -184,11 +185,11 @@ async function retryReq<T>(
       const err = e as DropboxResponseError<ErrSubType>;
       if (err.status === undefined) {
         // then the err is not DropboxResponseError
-        throw err;
+        throw e instanceof Error ? e : new Error(String(e));
       }
       if (err.status !== 429) {
         // then the err is not "too many requests", give up
-        throw err;
+        throw new Error(`Dropbox API error ${err.status}: ${JSON.stringify(err)}`);
       }
 
       if (idx === waitSeconds.length - 1) {
@@ -277,17 +278,20 @@ export const sendAuthReq = async (
   errorCallBack: any
 ) => {
   try {
-    const resp1 = await fetch("https://api.dropboxapi.com/oauth2/token", {
+    const resp1 = await requestUrl({
+      url: "https://api.dropboxapi.com/oauth2/token",
       method: "POST",
+      contentType: "application/x-www-form-urlencoded",
       body: new URLSearchParams({
         code: authCode,
         grant_type: "authorization_code",
         code_verifier: verifier,
         client_id: appKey,
         redirect_uri: `obsidian://${COMMAND_CALLBACK_DROPBOX}`,
-      }),
+      }).toString(),
+      throw: false,
     });
-    const resp2 = (await resp1.json()) as DropboxSuccessAuthRes;
+    const resp2 = resp1.json as DropboxSuccessAuthRes;
     return resp2;
   } catch (e) {
     console.error(e);
@@ -302,17 +306,20 @@ export const sendRefreshTokenReq = async (
   refreshToken: string
 ) => {
   try {
-    console.info("start auto getting refreshed Dropbox access token.");
-    const resp1 = await fetch("https://api.dropboxapi.com/oauth2/token", {
+    console.debug("start auto getting refreshed Dropbox access token.");
+    const resp1 = await requestUrl({
+      url: "https://api.dropboxapi.com/oauth2/token",
       method: "POST",
+      contentType: "application/x-www-form-urlencoded",
       body: new URLSearchParams({
         grant_type: "refresh_token",
         refresh_token: refreshToken,
         client_id: appKey,
-      }),
+      }).toString(),
+      throw: false,
     });
-    const resp2 = (await resp1.json()) as DropboxSuccessAuthRes;
-    console.info("finish auto getting refreshed Dropbox access token.");
+    const resp2 = resp1.json as DropboxSuccessAuthRes;
+    console.debug("finish auto getting refreshed Dropbox access token.");
     return resp2;
   } catch (e) {
     console.error(e);
@@ -325,7 +332,7 @@ export const setConfigBySuccessfullAuthInplace = async (
   authRes: DropboxSuccessAuthRes,
   saveUpdatedConfigFunc: () => Promise<any> | undefined
 ) => {
-  console.info("start updating local info of Dropbox token");
+  console.debug("start updating local info of Dropbox token");
 
   config.accessToken = authRes.access_token;
   config.accessTokenExpiresInSeconds = Number.parseInt(authRes.expires_in);
@@ -344,7 +351,7 @@ export const setConfigBySuccessfullAuthInplace = async (
     await saveUpdatedConfigFunc();
   }
 
-  console.info("finish updating local info of Dropbox token");
+  console.debug("finish updating local info of Dropbox token");
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -414,9 +421,9 @@ export class FakeFsDropbox extends FakeFs {
     }
 
     // check vault folder
-    // console.info(`checking remote has folder /${this.remoteBaseDir}`);
+    // console.debug(`checking remote has folder /${this.remoteBaseDir}`);
     if (this.vaultFolderExists) {
-      // console.info(`already checked, /${this.remoteBaseDir} exist before`)
+      // console.debug(`already checked, /${this.remoteBaseDir} exist before`)
     } else {
       const res = await this.dropbox.filesListFolder({
         path: "",
@@ -429,7 +436,7 @@ export class FakeFsDropbox extends FakeFs {
         }
       }
       if (!this.vaultFolderExists) {
-        console.info(`remote does not have folder /${this.remoteBaseDir}`);
+        console.debug(`remote does not have folder /${this.remoteBaseDir}`);
 
         if (hasEmojiInText(`/${this.remoteBaseDir}`)) {
           throw new Error(
@@ -440,10 +447,10 @@ export class FakeFsDropbox extends FakeFs {
         await this.dropbox.filesCreateFolderV2({
           path: `/${this.remoteBaseDir}`,
         });
-        console.info(`remote folder /${this.remoteBaseDir} created`);
+        console.debug(`remote folder /${this.remoteBaseDir} created`);
         this.vaultFolderExists = true;
       } else {
-        // console.info(`remote folder /${this.remoteBaseDir} exists`);
+        // console.debug(`remote folder /${this.remoteBaseDir} exists`);
       }
     }
 
@@ -487,7 +494,7 @@ export class FakeFsDropbox extends FakeFs {
     if (res.status !== 200) {
       throw Error(JSON.stringify(res));
     }
-    // console.info(res);
+    // console.debug(res);
 
     const contents = res.result.entries;
     const unifiedContents = contents
@@ -596,13 +603,13 @@ export class FakeFsDropbox extends FakeFs {
       } catch (e: unknown) {
         const err = e as DropboxResponseError<files.CreateFolderError>;
         if (err.status === undefined) {
-          throw err;
+          throw e instanceof Error ? e : new Error(String(e));
         }
         if (err.status === 409) {
           // pass
           this.foldersCreatedBefore?.add(key);
         } else {
-          throw err;
+          throw new Error(`Dropbox createFolder ${err.status}: ${JSON.stringify(err)}`);
         }
       }
     }

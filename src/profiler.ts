@@ -115,7 +115,7 @@ export class Profiler {
           ) / 10.0;
       }
       let res = `${" ".repeat(indent)}[${label}]: ${millsec}ms`;
-      if (this.breakPoints[i].hasOwnProperty("size")) {
+      if (Object.prototype.hasOwnProperty.call(this.breakPoints[i], "size")) {
         const size = this.breakPoints[i].size as number;
         res += `, size=${size}`;
       }

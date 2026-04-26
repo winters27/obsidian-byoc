@@ -246,7 +246,7 @@ export default class BYOCPlugin extends Plugin {
 
   async syncRun(triggerSource: SyncTriggerSourceType = "manual") {
     if (this.awaitingFolderSelection) {
-      console.info(`[BYOC] syncRun skipped (${triggerSource}): awaiting remote folder selection`);
+      console.debug(`[BYOC] syncRun skipped (${triggerSource}): awaiting remote folder selection`);
       if (triggerSource === "manual") {
         new Notice("Pick a remote folder in BYOC settings before syncing.");
       }
@@ -423,7 +423,7 @@ export default class BYOCPlugin extends Plugin {
   }
 
   async onload() {
-    console.info(`loading plugin ${this.manifest.id} (BYOC)`);
+    console.debug(`loading plugin ${this.manifest.id} (BYOC)`);
 
     const { iconSvgSyncWait, iconSvgSyncRunning, iconSvgLogs } = getIconSvg();
     addIcon(iconNameSyncWait, iconSvgSyncWait);
@@ -452,7 +452,7 @@ export default class BYOCPlugin extends Plugin {
     const migrationRan = await runMigration(this, this.settings);
     if (migrationRan) {
       await this.saveSettings();
-      console.info(`[BYOC] Migration complete. Version: ${this.settings.migrationVersion}`);
+      console.debug(`[BYOC] Migration complete. Version: ${this.settings.migrationVersion}`);
     }
 
     const profileID: string = this.getCurrProfileID();
@@ -896,7 +896,7 @@ export default class BYOCPlugin extends Plugin {
   }
 
   async onunload() {
-    console.info(`unloading plugin ${this.manifest.id}`);
+    console.debug(`unloading plugin ${this.manifest.id}`);
     this.syncRibbon = undefined;
     if (this.appContainerObserver !== undefined) {
       this.appContainerObserver.disconnect();
@@ -1075,7 +1075,7 @@ export default class BYOCPlugin extends Plugin {
     } else {
       actions.appendChild(btn);
     }
-    console.info("[BYOC] Mobile sync button: injected into mobile navbar");
+    console.debug("[BYOC] Mobile sync button: injected into mobile navbar");
     return true;
   }
 
@@ -1093,7 +1093,7 @@ export default class BYOCPlugin extends Plugin {
   enableSyncOnMobileResume() {
     if (!Platform.isMobile) return;
 
-    console.info("[BYOC] Mobile resume sync: registering visibilitychange handler");
+    console.debug("[BYOC] Mobile resume sync: registering visibilitychange handler");
 
     const RESUME_DEBOUNCE_MS = 3000;
     let resumeTimer: number | undefined;
@@ -1102,7 +1102,7 @@ export default class BYOCPlugin extends Plugin {
       activeWindow.clearTimeout(resumeTimer);
       resumeTimer = activeWindow.setTimeout(() => {
         if (!this.isSyncing) {
-          console.info("[BYOC] Mobile resume sync: triggering syncRun");
+          console.debug("[BYOC] Mobile resume sync: triggering syncRun");
           this.syncRun("manual");
         }
       }, RESUME_DEBOUNCE_MS);
@@ -1119,7 +1119,7 @@ export default class BYOCPlugin extends Plugin {
     if ((this.settings.initRunAfterMilliseconds ?? 0) <= 0) {
       this.app.workspace.onLayoutReady(() => {
         if (!this.isSyncing) {
-          console.info("[BYOC] Mobile cold-start sync: triggering initial syncRun");
+          console.debug("[BYOC] Mobile cold-start sync: triggering initial syncRun");
           activeWindow.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
         }
       });

@@ -51,7 +51,7 @@ if (VALID_REQURL) {
         transformedHeaders["accept"] ?? transformedHeaders["content-type"];
 
       const retractedHeaders = { ...transformedHeaders };
-      if (retractedHeaders.hasOwnProperty("authorization")) {
+      if (Object.prototype.hasOwnProperty.call(retractedHeaders, "authorization")) {
         retractedHeaders["authorization"] = "<retracted>";
       }
 
@@ -92,7 +92,7 @@ if (VALID_REQURL) {
       const rspHeaders = objKeyToLower({ ...r.headers });
       // console.debug(`rspHeaders: ${JSON.stringify(rspHeaders, null, 2)}`);
       for (const key in rspHeaders) {
-        if (rspHeaders.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(rspHeaders, key)) {
           // avoid the error:
           // Failed to read the 'headers' property from 'ResponseInit': String contains non ISO-8859-1 code point.
           // const possibleNonAscii = [
@@ -312,7 +312,7 @@ export class FakeFsWebdav extends FakeFs {
             : AuthType.Password,
       });
     } else {
-      console.info("no password");
+      console.debug("no password");
       this.client = createClient(this.webdavConfig.address, {
         headers: headers,
       });
@@ -324,12 +324,12 @@ export class FakeFsWebdav extends FakeFs {
     } else {
       const res = await this.client.exists(`/${this.remoteBaseDir}/`);
       if (res) {
-        // console.info("remote vault folder exits!");
+        // console.debug("remote vault folder exits!");
         this.vaultFolderExists = true;
       } else {
-        console.info("remote vault folder not exists, creating");
+        console.debug("remote vault folder not exists, creating");
         await this.client.createDirectory(`/${this.remoteBaseDir}/`);
-        console.info("remote vault folder created!");
+        console.debug("remote vault folder created!");
         this.vaultFolderExists = true;
       }
     }
@@ -345,7 +345,7 @@ export class FakeFsWebdav extends FakeFs {
       this.webdavConfig.manualRecursive = true;
       if (this.saveUpdatedConfigFunc !== undefined) {
         await this.saveUpdatedConfigFunc();
-        console.info(
+        console.debug(
           `webdav depth="auto_???" is changed to ${this.webdavConfig.depth}`
         );
       }
@@ -678,7 +678,7 @@ export class FakeFsWebdav extends FakeFs {
     await this.client.putFileContents(key, content, {
       overwrite: true,
       onUploadProgress: (progress: any) => {
-        console.info(`Uploaded ${progress.loaded} bytes of ${progress.total}`);
+        console.debug(`Uploaded ${progress.loaded} bytes of ${progress.total}`);
       },
     });
     const k = await this._statFromRoot(key);
@@ -919,7 +919,7 @@ export class FakeFsWebdav extends FakeFs {
     try {
       const remoteFileName = getWebdavPath(key, this.remoteBaseDir);
       await this.client.deleteFile(remoteFileName);
-      // console.info(`delete ${remoteFileName} succeeded`);
+      // console.debug(`delete ${remoteFileName} succeeded`);
     } catch (err) {
       console.error("some error while deleting");
       console.error(err);

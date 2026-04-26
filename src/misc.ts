@@ -24,7 +24,7 @@ export const isHiddenPath = (item: string, dot = true, underscore = true) => {
   }
   const k = path.posix.normalize(item); // TODO: only unix path now
   const k2 = k.split("/"); // TODO: only unix path now
-  // console.info(k2)
+  // console.debug(k2)
   for (const singlePart of k2) {
     if (singlePart === "." || singlePart === ".." || singlePart === "") {
       continue;
@@ -69,14 +69,14 @@ export const getFolderLevels = (x: string, addEndingSlash = false) => {
 };
 
 export const mkdirpInVault = async (thePath: string, vault: Vault) => {
-  // console.info(thePath);
+  // console.debug(thePath);
   const foldersToBuild = getFolderLevels(thePath);
-  // console.info(foldersToBuild);
+  // console.debug(foldersToBuild);
   for (const folder of foldersToBuild) {
     const r = await vault.adapter.exists(folder);
-    // console.info(r);
+    // console.debug(r);
     if (!r) {
-      console.info(`mkdir ${folder}`);
+      console.debug(`mkdir ${folder}`);
       await vault.adapter.mkdir(folder);
     }
   }
@@ -542,11 +542,11 @@ export const delay = (ms: number) =>
  */
 export const fixEntityListCasesInplace = (entities: { keyRaw: string }[]) => {
   entities.sort((a, b) => a.keyRaw.length - b.keyRaw.length);
-  // console.log(JSON.stringify(entities,null,2));
+  // console.debug(JSON.stringify(entities,null,2));
 
   const caseMapping: Record<string, string> = { "": "" };
   for (const e of entities) {
-    // console.log(`looking for: ${JSON.stringify(e, null, 2)}`);
+    // console.debug(`looking for: ${JSON.stringify(e, null, 2)}`);
 
     let parentFolder = getParentFolder(e.keyRaw);
     if (parentFolder === "/") {
@@ -556,19 +556,19 @@ export const fixEntityListCasesInplace = (entities: { keyRaw: string }[]) => {
     const segs = e.keyRaw.split("/");
     if (e.keyRaw.endsWith("/")) {
       // folder
-      if (caseMapping.hasOwnProperty(parentFolderLower)) {
+      if (Object.prototype.hasOwnProperty.call(caseMapping, parentFolderLower)) {
         const newKeyRaw = `${caseMapping[parentFolderLower]}${segs
           .slice(-2)
           .join("/")}`;
         caseMapping[newKeyRaw.toLocaleLowerCase()] = newKeyRaw;
         e.keyRaw = newKeyRaw;
-        // console.log(JSON.stringify(caseMapping,null,2));
+        // console.debug(JSON.stringify(caseMapping,null,2));
       } else {
         throw Error(`${parentFolder} doesn't have cases record??`);
       }
     } else {
       // file
-      if (caseMapping.hasOwnProperty(parentFolderLower)) {
+      if (Object.prototype.hasOwnProperty.call(caseMapping, parentFolderLower)) {
         const newKeyRaw = `${caseMapping[parentFolderLower]}${segs
           .slice(-1)
           .join("/")}`;
@@ -609,7 +609,7 @@ export const roughSizeOfObject = (object: any) => {
         if (!objectList.includes(value)) {
           objectList.push(value);
           for (const prop in value) {
-            if (value.hasOwnProperty(prop)) {
+            if (Object.prototype.hasOwnProperty.call(value, prop)) {
               stack.push(value[prop]);
             }
           }
@@ -784,6 +784,10 @@ export const retryFetch = async (
     if (idx !== 0) {
       console.warn(`${prefix}retry attempt ${idx + 1} at ${Date.now()}`);
     }
+    // retryFetch is a Response-shaped wrapper used by Box and Google Drive
+    // for streaming uploads/downloads. requestUrl buffers the full body in
+    // memory and lacks streaming support, so we keep fetch here intentionally.
+    // eslint-disable-next-line obsidianmd/platform
     const resp = await fetch(input, init);
     if (resp.status !== 429 || idx === waitSeconds.length - 1) {
       if (resp.status === 429 && idx === waitSeconds.length - 1) {

@@ -1415,7 +1415,7 @@ export class BYOCSettingTab extends PluginSettingTab {
               realVal > 0
             ) {
               const intervalID = activeWindow.setInterval(() => {
-                console.info("auto run from settings.ts");
+                console.debug("auto run from settings.ts");
                 this.plugin.syncRun("auto");
               }, realVal);
               this.plugin.autoRunIntervalID = intervalID;
@@ -2028,7 +2028,7 @@ export class BYOCSettingTab extends PluginSettingTab {
           .onChange(async (val: string) => {
             this.plugin.settings.currLogLevel = val;
             await this.plugin.saveSettings();
-            console.info(`the log level is changed to ${val}`);
+            console.debug(`the log level is changed to ${val}`);
           });
       });
 
@@ -2039,7 +2039,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         button.setButtonText(t("settings_outputsettingsconsole_button"));
         button.onClick(async () => {
           const c = messyConfigToNormal(await this.plugin.loadData());
-          console.info(c);
+          console.debug(c);
           new Notice(t("settings_outputsettingsconsole_notice"));
         });
       });

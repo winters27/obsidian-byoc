@@ -47,7 +47,7 @@ async function readLegacyConfig(
       return null;
     }
 
-    console.info("[BYOC Migration] Successfully read legacy remotely-save config.");
+    console.debug("[BYOC Migration] Successfully read legacy remotely-save config.");
     return decoded;
   } catch (err) {
     console.warn("[BYOC Migration] Failed to read legacy config:", err);
@@ -71,7 +71,7 @@ async function backupCurrentConfig(plugin: Plugin): Promise<void> {
     if (exists) {
       const raw = await plugin.app.vault.adapter.read(dataPath);
       await plugin.app.vault.adapter.write(backupPath, raw);
-      console.info(`[BYOC Migration] Backed up data.json → ${backupPath}`);
+      console.debug(`[BYOC Migration] Backed up data.json → ${backupPath}`);
     }
   } catch (err) {
     console.warn("[BYOC Migration] Failed to create backup:", err);
@@ -165,7 +165,7 @@ function extractProConfigs(
           ...((current as any) || {}),
           ...cloneDeep(incoming),
         };
-        console.info(
+        console.debug(
           `[BYOC Migration] Promoted pro.${proKey} config to top-level.`
         );
       }
@@ -174,7 +174,7 @@ function extractProConfigs(
 
   // Also check if pro had feature flags we can learn from
   if (pro.enabledProFeatures && Array.isArray(pro.enabledProFeatures)) {
-    console.info(
+    console.debug(
       `[BYOC Migration] Legacy pro features detected: ${pro.enabledProFeatures.join(", ")}. All features enabled in BYOC by default.`
     );
   }
@@ -227,7 +227,7 @@ function mergeLegacyIntoSettings(
           current[key] = cloneDeep(value);
         }
       }
-      console.info(
+      console.debug(
         `[BYOC Migration] Merged legacy ${provider} credentials.`
       );
     }
@@ -296,7 +296,7 @@ export async function runMigration(
     return false;
   }
 
-  console.info(
+  console.debug(
     `[BYOC Migration] Running migration v${currentVersion} → v${CURRENT_MIGRATION_VERSION}`
   );
 
@@ -322,12 +322,12 @@ export async function runMigration(
       "[BYOC] Migrated settings from Remotely Save. Your old config is backed up.",
       8000
     );
-    console.info("[BYOC Migration] Migration from remotely-save complete.");
+    console.debug("[BYOC Migration] Migration from remotely-save complete.");
   } else {
     // No legacy config found, but still strip expiry timers
     // in case user manually copied settings
     stripCredentialExpiry(settings);
-    console.info("[BYOC Migration] No legacy config found. Applied defaults.");
+    console.debug("[BYOC Migration] No legacy config found. Applied defaults.");
   }
 
   // Step 6: Stamp migration version

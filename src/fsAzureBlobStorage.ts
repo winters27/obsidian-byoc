@@ -4,6 +4,7 @@
  * No OAuth needed — users provide a Container SAS URL directly.
  */
 
+import { requestUrl } from "obsidian";
 import type { AzureBlobStorageConfig, Entity } from "./baseTypes";
 import { DEFAULT_CONTENT_TYPE } from "./baseTypes";
 import { FakeFs } from "./fsAll";
@@ -110,14 +111,14 @@ export class FakeFsAzureBlobStorage extends FakeFs {
         listUrl += `&marker=${encodeURIComponent(marker)}`;
       }
 
-      const resp = await fetch(listUrl);
-      if (!resp.ok) {
+      const resp = await requestUrl({ url: listUrl, throw: false });
+      if (resp.status < 200 || resp.status >= 300) {
         throw new Error(
-          `[BYOC] Azure Blob list failed: ${resp.status} ${resp.statusText}`
+          `[BYOC] Azure Blob list failed: ${resp.status}`
         );
       }
 
-      const text = await resp.text();
+      const text = resp.text;
       const parser = new DOMParser();
       const xml = parser.parseFromString(text, "text/xml");
 
@@ -164,17 +165,18 @@ export class FakeFsAzureBlobStorage extends FakeFs {
 
   async stat(key: string): Promise<Entity> {
     const url = this.blobUrl(key);
-    const resp = await fetch(url, { method: "HEAD" });
-    if (!resp.ok) {
+    const resp = await requestUrl({ url, method: "HEAD", throw: false });
+    if (resp.status < 200 || resp.status >= 300) {
       throw new Error(
         `[BYOC] Azure Blob stat failed for '${key}': ${resp.status}`
       );
     }
 
-    const size = parseInt(resp.headers.get("content-length") ?? "0", 10);
-    const lastModified = resp.headers.get("last-modified");
+    const headers = resp.headers;
+    const size = parseInt(headers["content-length"] ?? "0", 10);
+    const lastModified = headers["last-modified"];
     const mtime = lastModified ? new Date(lastModified).getTime() : 0;
-    const etag = resp.headers.get("etag") ?? undefined;
+    const etag = headers["etag"] ?? undefined;
 
     return {
       keyRaw: key,
@@ -206,13 +208,15 @@ export class FakeFsAzureBlobStorage extends FakeFs {
       "Content-Type": DEFAULT_CONTENT_TYPE,
     };
 
-    const resp = await fetch(url, {
+    const resp = await requestUrl({
+      url,
       method: "PUT",
-      headers: headers,
-      body: null,
+      headers,
+      body: "",
+      throw: false,
     });
 
-    if (!resp.ok) {
+    if (resp.status < 200 || resp.status >= 300) {
       throw new Error(
         `[BYOC] Azure Blob mkdir failed for '${folderKey}': ${resp.status}`
       );
@@ -240,16 +244,17 @@ export class FakeFsAzureBlobStorage extends FakeFs {
       "Content-Length": `${content.byteLength}`,
     };
 
-    const resp = await fetch(url, {
+    const resp = await requestUrl({
+      url,
       method: "PUT",
-      headers: headers,
+      headers,
       body: content,
+      throw: false,
     });
 
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
+    if (resp.status < 200 || resp.status >= 300) {
       throw new Error(
-        `[BYOC] Azure Blob writeFile failed for '${key}': ${resp.status} ${errText}`
+        `[BYOC] Azure Blob writeFile failed for '${key}': ${resp.status} ${resp.text}`
       );
     }
 
@@ -264,15 +269,15 @@ export class FakeFsAzureBlobStorage extends FakeFs {
 
   async readFile(key: string): Promise<ArrayBuffer> {
     const url = this.blobUrl(key);
-    const resp = await fetch(url);
+    const resp = await requestUrl({ url, throw: false });
 
-    if (!resp.ok) {
+    if (resp.status < 200 || resp.status >= 300) {
       throw new Error(
         `[BYOC] Azure Blob readFile failed for '${key}': ${resp.status}`
       );
     }
 
-    return await resp.arrayBuffer();
+    return resp.arrayBuffer;
   }
 
   async rename(key1: string, key2: string): Promise<void> {
@@ -287,9 +292,9 @@ export class FakeFsAzureBlobStorage extends FakeFs {
 
   async rm(key: string): Promise<void> {
     const url = this.blobUrl(key);
-    const resp = await fetch(url, { method: "DELETE" });
+    const resp = await requestUrl({ url, method: "DELETE", throw: false });
 
-    if (!resp.ok && resp.status !== 404) {
+    if ((resp.status < 200 || resp.status >= 300) && resp.status !== 404) {
       throw new Error(
         `[BYOC] Azure Blob rm failed for '${key}': ${resp.status}`
       );

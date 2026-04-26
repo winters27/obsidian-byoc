@@ -6,18 +6,18 @@ import {
   COMMAND_URI,
   COMMAND_URI_LEGACY,
   type QRExportType,
-  type RemotelySavePluginSettings,
+  type BYOCPluginSettings,
   type UriParams,
 } from "./baseTypes";
 import { getShrinkedSettings as getShrinkedSettingsOnedrive } from "./fsOnedrive";
 
 export const exportQrCodeUri = async (
-  settings: RemotelySavePluginSettings,
+  settings: BYOCPluginSettings,
   currentVaultName: string,
   pluginVersion: string,
   exportFields: QRExportType
 ) => {
-  let settings2: Partial<RemotelySavePluginSettings> = {};
+  let settings2: Partial<BYOCPluginSettings> = {};
 
   if (exportFields === "basic_and_advanced") {
     settings2 = cloneDeep(settings);
@@ -67,7 +67,7 @@ export const exportQrCodeUri = async (
   const vault = encodeURIComponent(currentVaultName);
   const version = encodeURIComponent(pluginVersion);
   const rawUri = `obsidian://${COMMAND_URI}?func=settings&version=${version}&vault=${vault}&data=${data}`;
-  // console.info(uri)
+  // console.debug(uri)
   const imgUri = await QRCode.toDataURL(rawUri);
   return {
     rawUri,
@@ -78,7 +78,7 @@ export const exportQrCodeUri = async (
 export interface ProcessQrCodeResultType {
   status: "error" | "ok";
   message: string;
-  result?: RemotelySavePluginSettings;
+  result?: BYOCPluginSettings;
 }
 
 /**
@@ -128,7 +128,7 @@ export const importQrCodeUri = (
     };
   }
 
-  let settings = {} as RemotelySavePluginSettings;
+  let settings = {} as BYOCPluginSettings;
   try {
     settings = JSON.parse(params.data);
   } catch (e) {

@@ -34,6 +34,10 @@ export default defineConfig([
         "error",
         { fixToUnknown: false },
       ],
+      // BYOC is a brand acronym ("Bring Your Own Cloud") and provider names
+      // (OneDrive, pCloud, WebDAV, etc.) are proper nouns. The sentence-case
+      // rule fights both. We'll handle individual cases inline.
+      "obsidianmd/ui/sentence-case": "off",
     },
   },
 ]);

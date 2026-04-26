@@ -69,11 +69,14 @@ export const sendAuthReq = async (
       client_secret: clientSecret,
     };
     // console.debug(k);
-    const resp1 = await fetch(`https://${hostname}/oauth2_token`, {
+    const resp1 = await requestUrl({
+      url: `https://${hostname}/oauth2_token`,
       method: "POST",
-      body: new URLSearchParams(k),
+      contentType: "application/x-www-form-urlencoded",
+      body: new URLSearchParams(k).toString(),
+      throw: false,
     });
-    const resp2: AuthResSucc = await resp1.json();
+    const resp2: AuthResSucc = resp1.json as AuthResSucc;
     // console.debug(resp2);
     if (resp2?.result !== 0) {
       throw Error(`result is not 0 (success) in the end`);
@@ -111,7 +114,7 @@ export const setConfigBySuccessfullAuthInplace = async (
 
   await saveUpdatedConfigFunc?.();
 
-  console.info("finish updating local info of pCloud token");
+  console.debug("finish updating local info of pCloud token");
 };
 
 interface PCloudEntity extends Entity {
@@ -334,7 +337,8 @@ export class FakeFsPCloud extends FakeFs {
     }
     // pCloud SDK reads locationid from global scope; coerce string→number
     // because URL callback params always arrive as strings.
-    (global as any).locationid =
+    // eslint-disable-next-line obsidianmd/prefer-active-doc, no-restricted-globals
+    (globalThis as { locationid?: number }).locationid =
       typeof this.pCloudConfig.locationid === "string"
         ? parseInt(this.pCloudConfig.locationid, 10)
         : (this.pCloudConfig.locationid ?? 1);
@@ -571,6 +575,9 @@ async _getAccessToken() {
       const timeoutMs = 300; // just a random reasonable number
       const id = activeWindow.setTimeout(() => controller.abort(), timeoutMs);
       try {
+        // requestUrl has no abort signal support; we deliberately use fetch
+        // here so we can abort the hung empty-file request after 300ms.
+        // eslint-disable-next-line obsidianmd/platform
         const rsp = await fetch(apiUrl, {
           method: "PUT",
           body: content,
