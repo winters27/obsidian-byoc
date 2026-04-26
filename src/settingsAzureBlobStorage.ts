@@ -3,6 +3,7 @@ import { type App, Notice, Setting } from "obsidian";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
+import { setSvgTitle } from "./misc";
 
 export const generateAzureBlobStorageSettingsPart = (
   containerEl: HTMLElement,
@@ -18,7 +19,7 @@ export const generateAzureBlobStorageSettingsPart = (
     "azureblobstorage-hide",
     plugin.settings.serviceType !== "azureblobstorage"
   );
-  azureBlobStorageDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_AZURE} <span>Azure Blob Storage</span>`;
+  setSvgTitle(new Setting(azureBlobStorageDiv).setHeading().nameEl, SVG_AZURE, "Azure Blob Storage");
 
   const azureDescDiv = azureBlobStorageDiv.createEl("div", {
     cls: "settings-long-desc",

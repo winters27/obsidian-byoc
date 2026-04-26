@@ -1,5 +1,6 @@
 ﻿import { SVG_PCLOUD } from './icons';
 import cloneDeep from "lodash/cloneDeep";
+import { setSvgTitle } from "./misc";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
@@ -33,7 +34,7 @@ class PCloudAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_PCLOUD} <span style="vertical-align: middle;">Connect pCloud Account</span>`;
+    setSvgTitle(this.titleEl, SVG_PCLOUD, "Connect pCloud Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
@@ -71,7 +72,7 @@ class PCloudRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_PCLOUD} <span style="vertical-align: middle;">Revoke pCloud Account</span>`;
+    setSvgTitle(this.titleEl, SVG_PCLOUD, "Revoke pCloud Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -126,7 +127,7 @@ export const generatePCloudSettingsPart = (
 ) => {
   const pCloudDiv = containerEl.createEl("div", { cls: "pcloud-hide" });
   pCloudDiv.toggleClass("pcloud-hide", plugin.settings.serviceType !== "pcloud");
-  pCloudDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_PCLOUD} <span>${t("settings_pcloud")}</span>`;
+  setSvgTitle(new Setting(pCloudDiv).setHeading().nameEl, SVG_PCLOUD, "${t(\"settings_pcloud\")}");
 
   const pCloudNotShowUpHintSetting = new Setting(pCloudDiv);
   pCloudNotShowUpHintSetting.settingEl.addClass("pcloud-allow-to-use-hide");

@@ -1,4 +1,5 @@
 import { SVG_KOOFR } from './icons';
+import { setSvgTitle } from "./misc";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_KOOFR_CONFIG } from "./fsKoofr";
@@ -33,7 +34,7 @@ class KoofrAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_KOOFR} <span style="vertical-align: middle;">Connect Koofr Account</span>`;
+    setSvgTitle(this.titleEl, SVG_KOOFR, "Connect Koofr Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
@@ -70,7 +71,7 @@ class KoofrRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_KOOFR} <span style="vertical-align: middle;">Revoke Koofr Account</span>`;
+    setSvgTitle(this.titleEl, SVG_KOOFR, "Revoke Koofr Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -124,7 +125,7 @@ export const generateKoofrSettingsPart = (
 ) => {
   const koofrDiv = containerEl.createEl("div", { cls: "koofr-hide" });
   koofrDiv.toggleClass("koofr-hide", plugin.settings.serviceType !== "koofr");
-  koofrDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_KOOFR} <span>${t("settings_koofr")}</span>`;
+  setSvgTitle(new Setting(koofrDiv).setHeading().nameEl, SVG_KOOFR, "${t(\"settings_koofr\")}");
 
   const koofrNotShowUpHintSetting = new Setting(koofrDiv);
   koofrNotShowUpHintSetting.settingEl.addClass("koofr-allow-to-use-hide");

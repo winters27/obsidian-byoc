@@ -1,4 +1,5 @@
 import { SVG_ONEDRIVE } from './icons';
+import { setSvgTitle } from "./misc";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import {
@@ -36,7 +37,7 @@ class OnedrivefullAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Connect OneDrive (Full) Account</span>`;
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Connect OneDrive (Full) Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
@@ -87,7 +88,7 @@ class OnedrivefullRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Revoke OneDrive (Full) Account</span>`;
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive (Full) Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -146,7 +147,7 @@ export const generateOnedriveFullSettingsPart = (
     "onedrivefull-hide",
     plugin.settings.serviceType !== "onedrivefull"
   );
-  onedriveFullDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_ONEDRIVE} <span>${t("settings_onedrivefull")}</span>`;
+  setSvgTitle(new Setting(onedriveFullDiv).setHeading().nameEl, SVG_ONEDRIVE, "${t(\"settings_onedrivefull\")}");
 
   const onedriveFullNotShowUpHintSetting = new Setting(onedriveFullDiv);
   onedriveFullNotShowUpHintSetting.settingEl.addClass(

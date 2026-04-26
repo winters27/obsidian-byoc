@@ -237,6 +237,22 @@ export const setToString = (a: Set<string>, delimiter = ",") => {
   return [...a].join(delimiter);
 };
 
+/**
+ * Render a provider modal/heading title with the provider's SVG icon
+ * followed by a text label. Replaces unsafe `el.innerHTML = `${SVG} <span>${label}</span>``
+ * patterns with safe DOMParser-based construction.
+ */
+export const setSvgTitle = (el: HTMLElement, svgString: string, label: string) => {
+  el.empty();
+  const doc = new DOMParser().parseFromString(svgString, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root && root.tagName.toLowerCase() === "svg") {
+    el.appendChild(root);
+  }
+  const span = el.createSpan({ text: label });
+  span.addClass("byoc-svg-title-label");
+};
+
 export const extractSvgSub = (x: string, subEl = "rect") => {
   const parser = new DOMParser();
   const dom = parser.parseFromString(x, "image/svg+xml");
@@ -522,6 +538,9 @@ export const compareVersion = (x: string | null, y: string | null) => {
  */
 export const stringToFragment = (string: string) => {
   const wrapper = activeDocument.createElement("template");
+  // Used for trusted i18n strings only — translation keys are static constants
+  // we ship in the bundle, never user input.
+  // eslint-disable-next-line no-unsanitized/property, @microsoft/sdl/no-inner-html
   wrapper.innerHTML = string;
   return wrapper.content;
 };

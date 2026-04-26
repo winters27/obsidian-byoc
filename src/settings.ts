@@ -496,23 +496,18 @@ function setProviderHeadingSvg(setting: Setting, svgString: string, label: strin
   setting.nameEl.createSpan({ text: label });
 }
 
-const getEyesElements = () => {
-  const eyeEl = createElement(Eye);
-  const eyeOffEl = createElement(EyeOff);
-  return {
-    eye: eyeEl.outerHTML,
-    eyeOff: eyeOffEl.outerHTML,
-  };
+const setHiderIcon = (hider: Element, showEye: boolean) => {
+  hider.empty();
+  hider.appendChild(createElement(showEye ? Eye : EyeOff));
 };
 
 export const wrapTextWithPasswordHide = (text: TextComponent) => {
-  const { eye, eyeOff } = getEyesElements();
   const hider = text.inputEl.insertAdjacentElement("afterend", createSpan())!;
   // the init type of hider is "hidden" === eyeOff === password
-  hider.innerHTML = eyeOff;
+  setHiderIcon(hider, false);
   hider.addEventListener("click", (e) => {
     const isText = text.inputEl.getAttribute("type") === "text";
-    hider.innerHTML = isText ? eyeOff : eye;
+    setHiderIcon(hider, !isText);
     text.inputEl.setAttribute("type", isText ? "password" : "text");
     text.inputEl.focus();
   });

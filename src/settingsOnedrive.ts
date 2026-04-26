@@ -9,7 +9,7 @@ import {
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
-import { stringToFragment } from "./misc";
+import { stringToFragment , setSvgTitle } from "./misc";
 import {
   openFolderPickerForProvider,
   renderFolderBreadcrumb,
@@ -39,7 +39,7 @@ class OnedriveAuthModal extends Modal {
 
   async onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Connect OneDrive Account</span>`;
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Connect OneDrive Account");
     const { contentEl } = this;
     const t = this.t;
 
@@ -95,7 +95,7 @@ class OnedriveRevokeAuthModal extends Modal {
 
   async onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_ONEDRIVE} <span style="vertical-align: middle;">Revoke OneDrive Account</span>`;
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive Account");
     const t = this.t;
     const { contentEl } = this;
 
@@ -156,7 +156,7 @@ export const generateOnedriveSettingsPart = (
     "onedrive-hide",
     plugin.settings.serviceType !== "onedrive"
   );
-  onedriveDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_ONEDRIVE} <span>${t("settings_onedrive")}</span>`;
+  setSvgTitle(new Setting(onedriveDiv).setHeading().nameEl, SVG_ONEDRIVE, "${t(\"settings_onedrive\")}");
 
   const onedriveNotShowUpHintSetting = new Setting(onedriveDiv);
   onedriveNotShowUpHintSetting.settingEl.addClass("onedrive-allow-to-use-hide");

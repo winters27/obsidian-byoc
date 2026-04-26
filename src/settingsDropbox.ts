@@ -1,4 +1,5 @@
 import { SVG_DROPBOX } from './icons';
+import { setSvgTitle } from "./misc";
 import { DROPBOX_APP_KEY } from './baseTypes';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Platform, Setting } from "obsidian";
@@ -40,7 +41,7 @@ class DropboxAuthModal extends Modal {
 
   async onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
-    this.titleEl.innerHTML = `${SVG_DROPBOX} <span style="vertical-align: middle;">Connect Dropbox Account</span>`;
+    setSvgTitle(this.titleEl, SVG_DROPBOX, "Connect Dropbox Account");
     const { contentEl } = this;
     const t = this.t;
 
@@ -184,7 +185,7 @@ class DropboxRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_DROPBOX} <span style="vertical-align: middle;">Revoke Dropbox Account</span>`;
+    setSvgTitle(this.titleEl, SVG_DROPBOX, "Revoke Dropbox Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -244,7 +245,7 @@ export const generateDropboxSettingsPart = (
     "dropbox-hide",
     plugin.settings.serviceType !== "dropbox"
   );
-  dropboxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_DROPBOX} <span>${t("settings_dropbox")}</span>`;
+  setSvgTitle(new Setting(dropboxDiv).setHeading().nameEl, SVG_DROPBOX, "${t(\"settings_dropbox\")}");
 
   const dropboxNotShowUpHintSetting = new Setting(dropboxDiv);
   dropboxNotShowUpHintSetting.settingEl.addClass("dropbox-allow-to-use-hide");

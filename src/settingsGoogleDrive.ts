@@ -1,4 +1,5 @@
 import { SVG_GDRIVE } from './icons';
+import { setSvgTitle } from "./misc";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import {
@@ -33,7 +34,7 @@ class GoogleDriveAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_GDRIVE} <span style="vertical-align: middle;">Connect Google Drive Account</span>`;
+    setSvgTitle(this.titleEl, SVG_GDRIVE, "Connect Google Drive Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const authUrl = generateAuthUrl();
@@ -71,7 +72,7 @@ class GoogleDriveRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_GDRIVE} <span style="vertical-align: middle;">Revoke Google Drive Account</span>`;
+    setSvgTitle(this.titleEl, SVG_GDRIVE, "Revoke Google Drive Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -128,7 +129,7 @@ export const generateGoogleDriveSettingsPart = (
     "googledrive-hide",
     plugin.settings.serviceType !== "googledrive"
   );
-  googleDriveDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_GDRIVE} <span>${t("settings_googledrive")}</span>`;
+  setSvgTitle(new Setting(googleDriveDiv).setHeading().nameEl, SVG_GDRIVE, "${t(\"settings_googledrive\")}");
 
   const googleDriveNotShowUpHintSetting = new Setting(googleDriveDiv);
   googleDriveNotShowUpHintSetting.settingEl.addClass(

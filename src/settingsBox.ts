@@ -1,4 +1,5 @@
 import { SVG_BOX } from './icons';
+import { setSvgTitle } from "./misc";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_BOX_CONFIG } from "./fsBox";
@@ -33,7 +34,7 @@ class BoxAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_BOX} <span style="vertical-align: middle;">Connect Box Account</span>`;
+    setSvgTitle(this.titleEl, SVG_BOX, "Connect Box Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
@@ -73,7 +74,7 @@ class BoxRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_BOX} <span style="vertical-align: middle;">Revoke Box Account</span>`;
+    setSvgTitle(this.titleEl, SVG_BOX, "Revoke Box Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -129,7 +130,7 @@ export const generateBoxSettingsPart = (
 ) => {
   const boxDiv = containerEl.createEl("div", { cls: "box-hide" });
   boxDiv.toggleClass("box-hide", plugin.settings.serviceType !== "box");
-  boxDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_BOX} <span>Box</span>`;
+  setSvgTitle(new Setting(boxDiv).setHeading().nameEl, SVG_BOX, "Box");
 
   const boxNotShowUpHintSetting = new Setting(boxDiv);
   boxNotShowUpHintSetting.settingEl.addClass("box-allow-to-use-hide");

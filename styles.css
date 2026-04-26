@@ -681,3 +681,7 @@ h2.byoc-section-heading::before {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+.byoc-svg-title-label {
+  vertical-align: middle;
+}

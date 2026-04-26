@@ -1,4 +1,5 @@
 import { SVG_YANDEX } from './icons';
+import { setSvgTitle } from "./misc";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_YANDEXDISK_CONFIG } from "./fsYandexDisk";
@@ -33,7 +34,7 @@ class YandexDiskAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_YANDEX} <span style="vertical-align: middle;">Connect Yandex Disk Account</span>`;
+    setSvgTitle(this.titleEl, SVG_YANDEX, "Connect Yandex Disk Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
@@ -70,7 +71,7 @@ class YandexDiskRevokeAuthModal extends Modal {
   }
 
   async onOpen() {
-    this.titleEl.innerHTML = `${SVG_YANDEX} <span style="vertical-align: middle;">Revoke Yandex Disk Account</span>`;
+    setSvgTitle(this.titleEl, SVG_YANDEX, "Revoke Yandex Disk Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;
@@ -127,7 +128,7 @@ export const generateYandexDiskSettingsPart = (
     "yandexdisk-hide",
     plugin.settings.serviceType !== "yandexdisk"
   );
-  yandexDiskDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_YANDEX} <span>${t("settings_yandexdisk")}</span>`;
+  setSvgTitle(new Setting(yandexDiskDiv).setHeading().nameEl, SVG_YANDEX, "${t(\"settings_yandexdisk\")}");
 
   const yandexDiskNotShowUpHintSetting = new Setting(yandexDiskDiv);
   yandexDiskNotShowUpHintSetting.settingEl.addClass("yandexdisk-allow-to-use-hide");
