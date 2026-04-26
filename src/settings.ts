@@ -83,7 +83,7 @@ class PasswordModal extends Modal {
   onOpen() {
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -161,7 +161,7 @@ class EncryptionMethodModal extends Modal {
   onOpen() {
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -209,7 +209,7 @@ export class ChangeRemoteBaseDirModal extends Modal {
   onOpen() {
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -300,7 +300,7 @@ class ChangeS3RemotePrefixModal extends Modal {
   onOpen() {
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -384,7 +384,7 @@ class SyncConfigDirModal extends Modal {
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -434,7 +434,7 @@ export class ExportSettingsQrCodeModal extends Modal {
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -537,7 +537,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     containerEl.empty();
     containerEl.addClass("byoc-settings");
 
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 
@@ -803,8 +803,8 @@ export class BYOCSettingTab extends PluginSettingTab {
             () => this.plugin.saveSettings()
           );
           const errors = { msg: "" };
-          const res = await client.checkConnect((err: any) => {
-            errors.msg = err;
+          const res = await client.checkConnect((err: unknown) => {
+            errors.msg = typeof err === "string" ? err : err instanceof Error ? err.message : String(err);
           });
           if (res) {
             new Notice(t("settings_s3_connect_succ"));
@@ -1019,7 +1019,7 @@ export class BYOCSettingTab extends PluginSettingTab {
             () => this.plugin.saveSettings()
           );
           const errors = { msg: "" };
-          const res = await client.checkConnect((err: any) => {
+          const res = await client.checkConnect((err: unknown) => {
             errors.msg = `${err}`;
           });
           if (res) {
@@ -1126,7 +1126,7 @@ export class BYOCSettingTab extends PluginSettingTab {
             () => this.plugin.saveSettings()
           );
           const errors = { msg: "" };
-          const res = await client.checkConnect((err: any) => {
+          const res = await client.checkConnect((err: unknown) => {
             errors.msg = `${err}`;
           });
           if (res) {

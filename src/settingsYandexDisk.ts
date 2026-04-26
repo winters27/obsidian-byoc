@@ -17,14 +17,14 @@ class YandexDiskAuthModal extends Modal {
   readonly authDiv: HTMLDivElement;
   readonly revokeAuthDiv: HTMLDivElement;
   readonly revokeAuthSetting: Setting;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
     authDiv: HTMLDivElement,
     revokeAuthDiv: HTMLDivElement,
     revokeAuthSetting: Setting,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -56,13 +56,13 @@ class YandexDiskRevokeAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
   readonly authDiv: HTMLDivElement;
   readonly revokeAuthDiv: HTMLDivElement;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
     authDiv: HTMLDivElement,
     revokeAuthDiv: HTMLDivElement,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -119,10 +119,10 @@ class YandexDiskRevokeAuthModal extends Modal {
 
 export const generateYandexDiskSettingsPart = (
   containerEl: HTMLElement,
-  t: (x: TransItemType, vars?: any) => string,
+  t: (x: TransItemType, vars?: Record<string, string>) => string,
   app: App,
   plugin: RemotelySavePlugin,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   const yandexDiskDiv = containerEl.createEl("div", { cls: "yandexdisk-hide" });
   yandexDiskDiv.toggleClass(
@@ -225,7 +225,7 @@ export const generateYandexDiskSettingsPart = (
           plugin.saveSettings()
         );
         const errors = { msg: "" };
-        const res = await client.checkConnect((err: any) => {
+        const res = await client.checkConnect((err: unknown) => {
           errors.msg = `${err}`;
         });
         if (res) {

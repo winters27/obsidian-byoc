@@ -275,7 +275,7 @@ export const sendAuthReq = async (
   appKey: string,
   verifier: string,
   authCode: string,
-  errorCallBack: any
+  errorCallBack: (e: unknown) => void | Promise<void>
 ) => {
   try {
     const resp1 = await requestUrl({
@@ -330,7 +330,7 @@ export const sendRefreshTokenReq = async (
 export const setConfigBySuccessfullAuthInplace = async (
   config: DropboxConfig,
   authRes: DropboxSuccessAuthRes,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   console.debug("start updating local info of Dropbox token");
 
@@ -362,7 +362,7 @@ export class FakeFsDropbox extends FakeFs {
   kind: "dropbox";
   dropboxConfig: DropboxConfig;
   remoteBaseDir: string;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
   dropbox!: Dropbox;
   vaultFolderExists: boolean;
   foldersCreatedBefore: Set<string>;
@@ -370,7 +370,7 @@ export class FakeFsDropbox extends FakeFs {
   constructor(
     dropboxConfig: DropboxConfig,
     vaultName: string,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     super();
     this.kind = "dropbox";
@@ -760,7 +760,7 @@ export class FakeFsDropbox extends FakeFs {
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
       await this._init();
       const results = await this._statFromRoot(`/${this.remoteBaseDir}`);
@@ -782,13 +782,12 @@ export class FakeFsDropbox extends FakeFs {
     return acct.result.name.display_name;
   }
 
-  async revokeAuth() {
+  async revokeAuth(): Promise<void> {
     try {
       await this._init();
       await this.dropbox.authTokenRevoke();
-      return true;
     } catch (e) {
-      return false;
+      console.warn("dropbox revokeAuth failed:", e);
     }
   }
 

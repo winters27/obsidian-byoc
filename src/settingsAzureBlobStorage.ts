@@ -7,10 +7,10 @@ import type RemotelySavePlugin from "./main";
 
 export const generateAzureBlobStorageSettingsPart = (
   containerEl: HTMLElement,
-  t: (x: TransItemType, vars?: any) => string,
+  t: (x: TransItemType, vars?: Record<string, string>) => string,
   app: App,
   plugin: RemotelySavePlugin,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   const azureBlobStorageDiv = containerEl.createEl("div", {
     cls: "azureblobstorage-hide",
@@ -117,7 +117,7 @@ export const generateAzureBlobStorageSettingsPart = (
           plugin.saveSettings()
         );
         const errors = { msg: "" };
-        const res = await client.checkConnect((err: any) => {
+        const res = await client.checkConnect((err: unknown) => {
           errors.msg = `${err}`;
         });
         if (res) {

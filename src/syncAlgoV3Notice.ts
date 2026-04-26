@@ -18,7 +18,7 @@ export class SyncAlgoV3Modal extends Modal {
   }
   onOpen() {
     const { contentEl } = this;
-    const t = (x: TransItemType, vars?: any) => {
+    const t = (x: TransItemType, vars?: Record<string, string>) => {
       return this.plugin.i18n.t(x, vars);
     };
 

@@ -815,7 +815,7 @@ export class FakeFsS3 extends FakeFs {
     // (await this._walkFromRoot(remoteFileName)).map(...)
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
       // const results = await this.s3Client.send(
       //   new HeadBucketCommand({ Bucket: this.s3Config.s3BucketName })
@@ -838,12 +838,13 @@ export class FakeFsS3 extends FakeFs {
       if (results.$metadata.httpStatusCode !== 200) {
         throw Error(`not 200 httpStatusCode`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.debug(err);
       if (callbackFunc !== undefined) {
         if (this.s3Config.s3Endpoint.contains(this.s3Config.s3BucketName)) {
+          const wrapped = err instanceof Error ? err : new Error(String(err));
           const err2 = new AggregateError([
-            err,
+            wrapped,
             new Error(
               "Maybe you've included the bucket name inside the endpoint setting. Please remove the bucket name and try again."
             ),

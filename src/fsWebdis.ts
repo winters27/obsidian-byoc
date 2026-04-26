@@ -56,12 +56,12 @@ export class FakeFsWebdis extends FakeFs {
   kind: "webdis";
   webdisConfig: WebdisConfig;
   remoteBaseDir: string;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
 
   constructor(
     webdisConfig: WebdisConfig,
     vaultName: string,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     super();
     this.kind = "webdis";
@@ -252,7 +252,7 @@ export class FakeFsWebdis extends FakeFs {
     ];
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
       const k = (
         await this._fetchCommand("GET", "PING/helloworld")
@@ -260,7 +260,7 @@ export class FakeFsWebdis extends FakeFs {
       if (!isEqual(k, { PING: "helloworld" })) {
         throw Error(`no correct ping response`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       callbackFunc?.(err);
       return false;
@@ -273,7 +273,7 @@ export class FakeFsWebdis extends FakeFs {
     return this.webdisConfig.username || "<no usernme>";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 

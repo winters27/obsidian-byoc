@@ -48,7 +48,7 @@ export function generateAuthUrl(): string {
 
 export async function sendAuthReq(
   code: string,
-  errorCallBack: (e: any) => Promise<void>
+  errorCallBack: (e: unknown) => Promise<void>
 ): Promise<any> {
   try {
     const rsp = await request({
@@ -117,14 +117,14 @@ export class FakeFsKoofr extends FakeFs {
   kind = "koofr";
   private config: KoofrConfig;
   private vaultName: string;
-  private saveFunc: () => Promise<any>;
+  private saveFunc: () => Promise<void>;
   private remoteBaseDir: string;
   private apiBase: string;
 
   constructor(
     config: KoofrConfig,
     vaultName: string,
-    saveFunc: () => Promise<any>
+    saveFunc: () => Promise<void>
   ) {
     super();
     this.config = config;
@@ -345,7 +345,7 @@ export class FakeFsKoofr extends FakeFs {
         `/api/v2/mounts/${mountID}/files/folder?path=${encodeURIComponent(parentPath)}`,
         { name: folderName }
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Already exists is fine
       if (!String(e).includes("409") && !String(e).includes("AlreadyExists")) {
         throw e;
@@ -436,13 +436,13 @@ export class FakeFsKoofr extends FakeFs {
       await this._delete(
         `${this.apiBase}/api/v2/mounts/${mountID}/files/remove?path=${encodeURIComponent(remotePath)}`
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 404 = already gone
       if (!String(e).includes("404") && !String(e).includes("NotFound")) throw e;
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
@@ -451,7 +451,7 @@ export class FakeFsKoofr extends FakeFs {
     return `${res.firstName ?? ""} ${res.lastName ?? ""}`.trim() || "Koofr User";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     this.config.accessToken = "";
     this.config.refreshToken = "";
     this.config.mountID = "";

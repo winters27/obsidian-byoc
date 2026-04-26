@@ -301,7 +301,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
@@ -312,7 +312,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
     return `Azure Blob: ${this.config.containerName || "container"}`;
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     // SAS tokens don't have a revoke flow — user regenerates on Azure portal
     this.config.containerSasUrl = "";
     this.config.containerName = "";

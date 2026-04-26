@@ -48,7 +48,7 @@ export function generateAuthUrl(): string {
 
 export async function sendAuthReq(
   code: string,
-  errorCallBack: (e: any) => Promise<void>
+  errorCallBack: (e: unknown) => Promise<void>
 ): Promise<any> {
   try {
     const rsp = await request({
@@ -224,14 +224,14 @@ export class FakeFsBox extends FakeFs {
   kind = "box";
   private config: BoxConfig;
   private vaultName: string;
-  private saveFunc: () => Promise<any>;
+  private saveFunc: () => Promise<void>;
   private pathResolver: BoxPathResolver;
   private remoteBaseDir: string;
 
   constructor(
     config: BoxConfig,
     vaultName: string,
-    saveFunc: () => Promise<any>
+    saveFunc: () => Promise<void>
   ) {
     super();
     this.config = config;
@@ -617,7 +617,7 @@ export class FakeFsBox extends FakeFs {
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
@@ -626,7 +626,7 @@ export class FakeFsBox extends FakeFs {
     return res.name || "Box User";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     this.config.accessToken = "";
     this.config.refreshToken = "";
     await this.saveFunc();

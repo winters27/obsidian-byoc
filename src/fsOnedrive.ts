@@ -103,7 +103,7 @@ export const sendAuthReq = async (
   authority: string,
   authCode: string,
   verifier: string,
-  errorCallBack: any
+  errorCallBack: (e: unknown) => void | Promise<void>
 ) => {
   // // original code snippets for references
   // const authResponse = await pca.acquireTokenByCode({
@@ -188,7 +188,7 @@ export const sendRefreshTokenReq = async (
 export const setConfigBySuccessfullAuthInplace = async (
   config: OnedriveConfig,
   authRes: AccessCodeResponseSuccessfulType,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   console.debug("start updating local info of OneDrive token");
   config.accessToken = authRes.access_token;
@@ -479,10 +479,10 @@ ${constructFromDriveItemToEntityError(x)}`
 // to adapt to the required interface
 class MyAuthProvider implements AuthenticationProvider {
   onedriveConfig: OnedriveConfig;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
   constructor(
     onedriveConfig: OnedriveConfig,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     this.onedriveConfig = onedriveConfig;
     this.saveUpdatedConfigFunc = saveUpdatedConfigFunc;
@@ -544,13 +544,13 @@ export class FakeFsOnedrive extends FakeFs {
   remoteBaseDir: string;
   vaultFolderExists: boolean;
   authGetter: MyAuthProvider;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
   foldersCreatedBefore: Set<string>;
 
   constructor(
     onedriveConfig: OnedriveConfig,
     vaultName: string,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     super();
     this.kind = "onedrive";
@@ -1107,7 +1107,7 @@ export class FakeFsOnedrive extends FakeFs {
     await this._deleteJson(remoteFileName);
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
       const k = await this.getUserDisplayName();
       if (k === "<unknown display name>") {

@@ -26,7 +26,7 @@ import { FakeFsOnedriveFull } from "./fsOnedriveFull";
 export function getClient(
   settings: BYOCPluginSettings,
   vaultName: string,
-  saveUpdatedConfigFunc: () => Promise<any>
+  saveUpdatedConfigFunc: () => Promise<void>
 ): FakeFs {
   switch (settings.serviceType) {
     case "s3":

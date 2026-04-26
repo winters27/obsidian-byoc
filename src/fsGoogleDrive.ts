@@ -61,7 +61,7 @@ export function generateAuthUrl(): string {
 
 export async function sendAuthReq(
   code: string,
-  errorCallBack: (e: any) => Promise<void>
+  errorCallBack: (e: unknown) => Promise<void>
 ): Promise<any> {
   try {
     const rsp = await request({
@@ -142,7 +142,7 @@ export class FakeFsGoogleDrive extends FakeFs {
   kind = "googledrive";
   private config: GoogleDriveConfig;
   private vaultName: string;
-  private saveFunc: () => Promise<any>;
+  private saveFunc: () => Promise<void>;
   private remoteBaseDir: string;
   private baseFolderId: string | null = null;
   // Cache folder name -> id mappings
@@ -151,7 +151,7 @@ export class FakeFsGoogleDrive extends FakeFs {
   constructor(
     config: GoogleDriveConfig,
     vaultName: string,
-    saveFunc: () => Promise<any>
+    saveFunc: () => Promise<void>
   ) {
     super();
     this.config = config;
@@ -567,7 +567,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     await this._delete(`/files/${file.id}`);
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
@@ -580,7 +580,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     }
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     // Optionally revoke the token at Google
     if (this.config.accessToken) {
       try {

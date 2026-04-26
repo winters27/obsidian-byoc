@@ -94,7 +94,7 @@ export const sendAuthReq = async (
   authority: string,
   authCode: string,
   verifier: string,
-  errorCallBack: any
+  errorCallBack: (e: unknown) => void | Promise<void>
 ) => {
   try {
     const rsp1 = await request({
@@ -156,7 +156,7 @@ export const sendRefreshTokenReq = async (
 export const setConfigBySuccessfullAuthInplace = async (
   config: OnedriveFullConfig,
   authRes: AccessCodeResponseSuccessfulType,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   console.debug("start updating local info of OneDrive Full token");
   config.accessToken = authRes.access_token;
@@ -283,9 +283,9 @@ const fromDriveItemToEntity = (
 
 class OneDriveFullAuthProvider {
   config: OnedriveFullConfig;
-  saveFunc: () => Promise<any>;
+  saveFunc: () => Promise<void>;
 
-  constructor(config: OnedriveFullConfig, saveFunc: () => Promise<any>) {
+  constructor(config: OnedriveFullConfig, saveFunc: () => Promise<void>) {
     this.config = config;
     this.saveFunc = saveFunc;
   }
@@ -333,13 +333,13 @@ export class FakeFsOnedriveFull extends FakeFs {
   remoteBaseDir: string;
   vaultFolderExists: boolean;
   auth: OneDriveFullAuthProvider;
-  saveFunc: () => Promise<any>;
+  saveFunc: () => Promise<void>;
   foldersCreated: Set<string>;
 
   constructor(
     config: OnedriveFullConfig,
     vaultName: string,
-    saveFunc: () => Promise<any>
+    saveFunc: () => Promise<void>
   ) {
     super();
     this.kind = "onedrivefull";
@@ -674,7 +674,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     await this._deleteJson(getOnedrivePath(key, this.remoteBaseDir));
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
       const name = await this.getUserDisplayName();
       if (name === "<unknown>") throw Error("unknown display name");
@@ -691,7 +691,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     return res.displayName || "<unknown>";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     throw new Error("Visit https://account.live.com/consent/Manage to revoke.");
   }
 

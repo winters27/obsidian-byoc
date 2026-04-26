@@ -20,12 +20,12 @@ import {
 
 class GoogleDriveAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
 
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -58,12 +58,12 @@ class GoogleDriveAuthModal extends Modal {
 
 class GoogleDriveRevokeAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
 
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -116,10 +116,10 @@ class GoogleDriveRevokeAuthModal extends Modal {
 
 export const generateGoogleDriveSettingsPart = (
   containerEl: HTMLElement,
-  t: (x: TransItemType, vars?: any) => string,
+  t: (x: TransItemType, vars?: Record<string, string>) => string,
   app: App,
   plugin: RemotelySavePlugin,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   const googleDriveDiv = containerEl.createEl("div", {
     cls: "googledrive-hide",
@@ -223,7 +223,7 @@ export const generateGoogleDriveSettingsPart = (
           plugin.saveSettings()
         );
         const errors = { msg: "" };
-        const res = await client.checkConnect((err: any) => {
+        const res = await client.checkConnect((err: unknown) => {
           errors.msg = `${err}`;
         });
         if (res) {

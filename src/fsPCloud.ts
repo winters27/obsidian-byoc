@@ -58,7 +58,7 @@ interface AuthResSucc {
 export const sendAuthReq = async (
   hostname: string,
   authCode: string,
-  errorCallBack: any
+  errorCallBack: (e: unknown) => void | Promise<void>
 ) => {
   const clientID = PCLOUD_CLIENT_ID ?? "";
   const clientSecret = PCLOUD_CLIENT_SECRET ?? "";
@@ -97,7 +97,7 @@ export const setConfigBySuccessfullAuthInplace = async (
   config: PCloudConfig,
   authAllowFirstRes: AuthAllowFirstRes,
   authRes: AuthResSucc | undefined,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   if (authRes === undefined) {
     throw Error(
@@ -297,7 +297,7 @@ export class FakeFsPCloud extends FakeFs {
   pCloudConfig: PCloudConfig;
   remoteBaseDir: string;
   vaultFolderExists: boolean;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
 
   keyToPCloudEntity: Record<string, PCloudEntity>;
   baseDirID: number;
@@ -307,7 +307,7 @@ export class FakeFsPCloud extends FakeFs {
   constructor(
     pCloudConfig: PCloudConfig,
     vaultName: string,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     super();
     this.kind = "pcloud";
@@ -652,7 +652,7 @@ async _getAccessToken() {
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     // if we can init, we can connect
     try {
       await this._init();
@@ -677,7 +677,7 @@ async _getAccessToken() {
     return (info.email as string) ?? "pCloud user";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     await this._init();
     throw new Error("Method not implemented.");
   }

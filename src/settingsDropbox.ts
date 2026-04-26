@@ -22,14 +22,14 @@ class DropboxAuthModal extends Modal {
   readonly authDiv: HTMLDivElement;
   readonly revokeAuthDiv: HTMLDivElement;
   readonly revokeAuthSetting: Setting;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
     authDiv: HTMLDivElement,
     revokeAuthDiv: HTMLDivElement,
     revokeAuthSetting: Setting,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -170,13 +170,13 @@ class DropboxRevokeAuthModal extends Modal {
   readonly plugin: RemotelySavePlugin;
   readonly authDiv: HTMLDivElement;
   readonly revokeAuthDiv: HTMLDivElement;
-  readonly t: (x: TransItemType, vars?: any) => string;
+  readonly t: (x: TransItemType, vars?: Record<string, string>) => string;
   constructor(
     app: App,
     plugin: RemotelySavePlugin,
     authDiv: HTMLDivElement,
     revokeAuthDiv: HTMLDivElement,
-    t: (x: TransItemType, vars?: any) => string
+    t: (x: TransItemType, vars?: Record<string, string>) => string
   ) {
     super(app);
     this.plugin = plugin;
@@ -236,10 +236,10 @@ class DropboxRevokeAuthModal extends Modal {
 
 export const generateDropboxSettingsPart = (
   containerEl: HTMLElement,
-  t: (x: TransItemType, vars?: any) => string,
+  t: (x: TransItemType, vars?: Record<string, string>) => string,
   app: App,
   plugin: RemotelySavePlugin,
-  saveUpdatedConfigFunc: () => Promise<any> | undefined
+  saveUpdatedConfigFunc: () => Promise<void> | undefined
 ) => {
   const dropboxDiv = containerEl.createEl("div", { cls: "dropbox-hide" });
   dropboxDiv.toggleClass(
@@ -342,7 +342,7 @@ export const generateDropboxSettingsPart = (
           plugin.saveSettings()
         );
         const errors = { msg: "" };
-        const res = await client.checkConnect((err: any) => {
+        const res = await client.checkConnect((err: unknown) => {
           errors.msg = `${err}`;
         });
         if (res) {

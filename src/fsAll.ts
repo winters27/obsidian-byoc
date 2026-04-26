@@ -64,7 +64,7 @@ export abstract class FakeFs {
     }
   }
   abstract getUserDisplayName(): Promise<string>;
-  abstract revokeAuth(): Promise<any>;
+  abstract revokeAuth(): Promise<void>;
   abstract allowEmptyFile(): boolean;
 
   /**

@@ -181,7 +181,7 @@ export class FakeFsLocal extends FakeFs {
       }
     }
   }
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return true;
   }
 
@@ -189,7 +189,7 @@ export class FakeFsLocal extends FakeFs {
     throw new Error("Method not implemented.");
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     throw new Error("Method not implemented.");
   }
 

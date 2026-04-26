@@ -491,9 +491,10 @@ export async function syncer(
     await notifyFunc(triggerSource, 8); // finish
     await statusBarFunc(triggerSource, 8, true);
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("BYOC Sync Error: ", err);
-    await errNotifyFunc(triggerSource, err);
+    const errAsError = err instanceof Error ? err : new Error(String(err));
+    await errNotifyFunc(triggerSource, errAsError);
     await statusBarFunc(triggerSource, 8, false);
   } finally {
     await markIsSyncingFunc(false);

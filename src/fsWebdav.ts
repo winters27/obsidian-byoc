@@ -258,7 +258,7 @@ export class FakeFsWebdav extends FakeFs {
   remoteBaseDir: string;
   client!: WebDAVClient;
   vaultFolderExists: boolean;
-  saveUpdatedConfigFunc: () => Promise<any>;
+  saveUpdatedConfigFunc: () => Promise<void>;
 
   supportApachePartial: boolean;
   supportSabrePartial: boolean;
@@ -268,7 +268,7 @@ export class FakeFsWebdav extends FakeFs {
   constructor(
     webdavConfig: WebdavConfig,
     vaultName: string,
-    saveUpdatedConfigFunc: () => Promise<any>
+    saveUpdatedConfigFunc: () => Promise<void>
   ) {
     super();
     this.kind = "webdav";
@@ -926,7 +926,7 @@ export class FakeFsWebdav extends FakeFs {
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     if (
       !(
         this.webdavConfig.address.startsWith("http://") ||

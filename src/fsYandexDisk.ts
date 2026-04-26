@@ -47,7 +47,7 @@ export function generateAuthUrl(): string {
 
 export async function sendAuthReq(
   code: string,
-  errorCallBack: (e: any) => Promise<void>
+  errorCallBack: (e: unknown) => Promise<void>
 ): Promise<any> {
   try {
     const rsp = await request({
@@ -126,13 +126,13 @@ export class FakeFsYandexDisk extends FakeFs {
   kind = "yandexdisk";
   private config: YandexDiskConfig;
   private vaultName: string;
-  private saveFunc: () => Promise<any>;
+  private saveFunc: () => Promise<void>;
   private remoteBaseDir: string;
 
   constructor(
     config: YandexDiskConfig,
     vaultName: string,
-    saveFunc: () => Promise<any>
+    saveFunc: () => Promise<void>
   ) {
     super();
     this.config = config;
@@ -355,7 +355,7 @@ export class FakeFsYandexDisk extends FakeFs {
       await this._put(
         `/resources?path=${encodeURIComponent(remotePath)}`
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 409 = already exists, that's fine
       if (!String(e).includes("409")) throw e;
     }
@@ -439,13 +439,13 @@ export class FakeFsYandexDisk extends FakeFs {
       await this._delete(
         `/resources?path=${encodeURIComponent(remotePath)}&permanently=true`
       );
-    } catch (e: any) {
+    } catch (e: unknown) {
       // 404 = already gone
       if (!String(e).includes("404")) throw e;
     }
   }
 
-  async checkConnect(callbackFunc?: any): Promise<boolean> {
+  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
@@ -454,7 +454,7 @@ export class FakeFsYandexDisk extends FakeFs {
     return res.user?.display_name || res.user?.login || "Yandex Disk User";
   }
 
-  async revokeAuth(): Promise<any> {
+  async revokeAuth(): Promise<void> {
     this.config.accessToken = "";
     this.config.refreshToken = "";
     await this.saveFunc();

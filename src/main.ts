@@ -197,7 +197,7 @@ const getIconSvg = () => {
 };
 
 const getStatusBarShortMsgFromSyncSource = (
-  t: (x: TransItemType, vars?: any) => string,
+  t: (x: TransItemType, vars?: Record<string, string>) => string,
   s: SyncTriggerSourceType | undefined
 ) => {
   if (s === undefined) return "";
@@ -280,7 +280,7 @@ export default class BYOCPlugin extends Plugin {
       this.settings.encryptionMethod ?? "rclone-base64"
     );
 
-    const t = (x: TransItemType, vars?: any) => this.i18n.t(x, vars);
+    const t = (x: TransItemType, vars?: Record<string, string>) => this.i18n.t(x, vars);
     const profileID = this.getCurrProfileID();
 
     const getProtectError = (
@@ -294,9 +294,9 @@ export default class BYOCPlugin extends Plugin {
       }
       const percent = percentNum.toFixed(1);
       return t("syncrun_abort_protectmodifypercentage", {
-        protectModifyPercentage,
-        realModifyDeleteCount,
-        allFilesCount,
+        protectModifyPercentage: String(protectModifyPercentage),
+        realModifyDeleteCount: String(realModifyDeleteCount),
+        allFilesCount: String(allFilesCount),
         percent,
       });
     };
@@ -461,7 +461,7 @@ export default class BYOCPlugin extends Plugin {
       this.settings.lang = lang;
       await this.saveSettings();
     });
-    const t = (x: TransItemType, vars?: any) => this.i18n.t(x, vars);
+    const t = (x: TransItemType, vars?: Record<string, string>) => this.i18n.t(x, vars);
 
     // NOTE: Credential expiry check removed in BYOC.
     // Credentials persist until manually revoked.
@@ -474,8 +474,9 @@ export default class BYOCPlugin extends Plugin {
 
     try {
       await this.prepareDBAndVaultRandomID(vaultBasePath, vaultRandomIDFromOldConfigFile, profileID);
-    } catch (err: any) {
-      new Notice(err?.message ?? "error of prepareDBAndVaultRandomID", 10 * 1000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "error of prepareDBAndVaultRandomID";
+      new Notice(msg, 10 * 1000);
       throw err;
     }
 
@@ -1248,7 +1249,7 @@ export default class BYOCPlugin extends Plugin {
 
   enableCheckingFileStat() {
     this.app.workspace.onLayoutReady(() => {
-      const t = (x: TransItemType, vars?: any) => this.i18n.t(x, vars);
+      const t = (x: TransItemType, vars?: Record<string, string>) => this.i18n.t(x, vars);
       this.registerEvent(
         this.app.workspace.on("file-menu", (menu, file) => {
           if (file instanceof TFolder) return;
@@ -1273,7 +1274,7 @@ export default class BYOCPlugin extends Plugin {
   }
 
   setCurrSyncMsg(
-    t: (x: TransItemType, vars?: any) => string,
+    t: (x: TransItemType, vars?: Record<string, string>) => string,
     s: SyncTriggerSourceType,
     i: number,
     totalCount: number,
@@ -1297,7 +1298,7 @@ export default class BYOCPlugin extends Plugin {
     lastFailedSyncMillis: number | null | undefined
   ) {
     if (this.statusBarElement === undefined) return;
-    const t = (x: TransItemType, vars?: any) => this.i18n.t(x, vars);
+    const t = (x: TransItemType, vars?: Record<string, string>) => this.i18n.t(x, vars);
 
     if (syncStatus === "syncing") {
       this.statusBarElement.setText("BYOC ⟳");
