@@ -9,7 +9,7 @@ import {
   Setting,
   requireApiVersion,
 } from "obsidian";
-import type { TextComponent } from "obsidian";
+import type { DropdownComponent, TextComponent } from "obsidian";
 import type {
   CipherMethodType,
   ConflictActionType,
@@ -1228,8 +1228,7 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     // we need to create chooser
     // after all service-div-s being created
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let serviceChooserDropdownComponent: any = null;
+    let serviceChooserDropdownComponent: DropdownComponent | null = null;
     new Setting(serviceChooserDiv)
       .setName(t("settings_chooseservice"))
       .setDesc(t("settings_chooseservice_desc"))
@@ -1338,8 +1337,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       const badgesContainer = serviceChooserDiv.createDiv({ cls: "byoc-linked-providers-badges" });
       badgesContainer.createSpan({ text: "Linked", cls: "byoc-linked-label" });
       for (const p of linkedProviders) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rawT = t(`settings_chooseservice_${p}` as any);
+        const rawT = t(`settings_chooseservice_${p}`);
         const badge = badgesContainer.createSpan({ cls: "byoc-linked-badge", text: rawT });
         badge.onclick = () => {
           if (serviceChooserDropdownComponent) {
