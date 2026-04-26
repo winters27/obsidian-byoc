@@ -32,6 +32,48 @@ export const DEFAULT_YANDEXDISK_CONFIG: YandexDiskConfig = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Yandex API response types
+////////////////////////////////////////////////////////////////////////////////
+
+interface YandexOAuthRes {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}
+
+interface YandexResource {
+  path: string;
+  type: string;
+  size?: number;
+  modified?: string;
+  created?: string;
+  name?: string;
+}
+
+interface YandexResourceList {
+  path?: string;
+  type?: string;
+  size?: number;
+  modified?: string;
+  created?: string;
+  _embedded?: { items?: YandexResource[]; total?: number };
+}
+
+interface YandexFlatFileList {
+  items?: YandexResource[];
+}
+
+interface YandexUploadInfo {
+  href?: string;
+}
+
+interface YandexUserInfo {
+  user?: { display_name?: string; login?: string };
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // OAuth2 Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -45,11 +87,10 @@ export function generateAuthUrl(): string {
   return `${YANDEX_AUTH_URL}?${params.toString()}`;
 }
 
- 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>
-): Promise<any> {
+): Promise<YandexOAuthRes> {
   try {
     const rsp = await request({
       url: YANDEX_TOKEN_URL,
@@ -63,15 +104,15 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp);
+    return JSON.parse(rsp) as YandexOAuthRes;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- external OAuth response shape
-async function refreshAccessToken(refreshToken: string): Promise<any> {
+async function refreshAccessToken(refreshToken: string): Promise<YandexOAuthRes> {
   const rsp = await request({
     url: YANDEX_TOKEN_URL,
     method: "POST",
@@ -83,20 +124,19 @@ async function refreshAccessToken(refreshToken: string): Promise<any> {
       client_secret: YANDEXDISK_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp);
+  return JSON.parse(rsp) as YandexOAuthRes;
 }
 
 export async function setConfigBySuccessfullAuthInplace(
   config: YandexDiskConfig,
-  authRes: Record<string, unknown>,
+  authRes: YandexOAuthRes,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  const r = authRes as unknown as { access_token: string; refresh_token?: string; expires_in?: number };
-  config.accessToken = r.access_token;
-  config.refreshToken = r.refresh_token || config.refreshToken;
-  config.accessTokenExpiresInMs = (r.expires_in ?? 31536000) * 1000;
+  config.accessToken = authRes.access_token;
+  config.refreshToken = authRes.refresh_token ?? config.refreshToken;
+  config.accessTokenExpiresInMs = (authRes.expires_in ?? 31536000) * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + (r.expires_in ?? 31536000) * 1000 - 300_000;
+    Date.now() + (authRes.expires_in ?? 31536000) * 1000 - 300_000;
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
 }
@@ -124,6 +164,14 @@ function normalizeKey(path: string, remoteBaseDir: string): string {
 ////////////////////////////////////////////////////////////////////////////////
 // The Client
 ////////////////////////////////////////////////////////////////////////////////
+
+interface RequestOpts {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  contentType?: string;
+  body?: string;
+}
 
 export class FakeFsYandexDisk extends FakeFs {
   kind = "yandexdisk";
@@ -158,7 +206,7 @@ export class FakeFsYandexDisk extends FakeFs {
     ) {
       const res = await refreshAccessToken(this.config.refreshToken);
       if (res.error) {
-        throw Error(`[BYOC] Yandex refresh error: ${res.error_description}`);
+        throw Error(`[BYOC] Yandex refresh error: ${res.error_description ?? res.error}`);
       }
       this.config.accessToken = res.access_token;
       if (res.refresh_token) this.config.refreshToken = res.refresh_token;
@@ -169,8 +217,8 @@ export class FakeFsYandexDisk extends FakeFs {
 
     return this.config.accessToken;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _getJson(url: string): Promise<any> {
+
+  private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
     return JSON.parse(
@@ -179,13 +227,13 @@ export class FakeFsYandexDisk extends FakeFs {
         method: "GET",
         headers: { Authorization: `OAuth ${token}` },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _put(url: string, body?: any): Promise<any> {
+
+  private async _put<T = unknown>(url: string, body?: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
-    const opts: any = {
+    const opts: RequestOpts = {
       url: fullUrl,
       method: "PUT",
       headers: { Authorization: `OAuth ${token}` },
@@ -195,7 +243,7 @@ export class FakeFsYandexDisk extends FakeFs {
       opts.body = JSON.stringify(body);
     }
     const rsp = await request(opts);
-    return rsp ? JSON.parse(rsp) : {};
+    return (rsp ? JSON.parse(rsp) : {}) as T;
   }
 
   private async _delete(url: string): Promise<void> {
@@ -222,13 +270,14 @@ export class FakeFsYandexDisk extends FakeFs {
   }
 
   async listFoldersAtRoot(): Promise<string[]> {
-    const res = await this._getJson(
+    const res = await this._getJson<YandexResourceList>(
       `/resources?path=${encodeURIComponent("disk:/")}&limit=1000&fields=_embedded.items.name,_embedded.items.type`
     );
-    return (res._embedded?.items || [])
-      .filter((item: any) => item.type === "dir")
-      .map((item: any) => item.name as string)
-      .sort((a: string, b: string) => a.localeCompare(b));
+    return (res._embedded?.items ?? [])
+      .filter((item) => item.type === "dir")
+      .map((item) => item.name ?? "")
+      .filter((n) => n)
+      .sort((a, b) => a.localeCompare(b));
   }
 
   async createFolderAtRoot(name: string): Promise<void> {
@@ -241,27 +290,15 @@ export class FakeFsYandexDisk extends FakeFs {
     await this.ensureBaseDir();
 
     const entities: Entity[] = [];
-    let offset = 0;
     const limit = 1000;
-
-    while (true) {
-      const path = encodeURIComponent(`disk:/${this.remoteBaseDir}`);
-      const _res = await this._getJson(
-        `/resources?path=${path}&limit=${limit}&offset=${offset}&fields=_embedded.items.path,_embedded.items.type,_embedded.items.size,_embedded.items.modified,_embedded.items.created,_embedded.total`
-      );
-
-      // Yandex Disk /resources returns embedded items for folders
-      // We need to use /resources/files for a flat listing
-      break; // We'll use the flat files endpoint instead
-    }
 
     // Use flat file listing — much more efficient
     let flatOffset = 0;
-    while (true) {
-      const res = await this._getJson(
+    for (;;) {
+      const res = await this._getJson<YandexFlatFileList>(
         `/resources/files?limit=${limit}&offset=${flatOffset}&fields=items.path,items.type,items.size,items.modified,items.created`
       );
-      const items = res.items || [];
+      const items = res.items ?? [];
 
       for (const item of items) {
         let key = normalizeKey(item.path, this.remoteBaseDir);
@@ -305,11 +342,11 @@ export class FakeFsYandexDisk extends FakeFs {
     folderPath: string,
     entities: Entity[]
   ): Promise<void> {
-    const res = await this._getJson(
+    const res = await this._getJson<YandexResourceList>(
       `/resources?path=${encodeURIComponent(folderPath)}&limit=1000&fields=_embedded.items.path,_embedded.items.type,_embedded.items.size,_embedded.items.modified,_embedded.items.created`
     );
 
-    const items = res._embedded?.items || [];
+    const items = res._embedded?.items ?? [];
     for (const item of items) {
       if (item.type === "dir") {
         let key = normalizeKey(item.path, this.remoteBaseDir);
@@ -333,7 +370,7 @@ export class FakeFsYandexDisk extends FakeFs {
 
   async stat(key: string): Promise<Entity> {
     const remotePath = getRemotePath(key, this.remoteBaseDir);
-    const res = await this._getJson(
+    const res = await this._getJson<YandexResource>(
       `/resources?path=${encodeURIComponent(remotePath)}&fields=path,type,size,modified,created`
     );
 
@@ -374,7 +411,7 @@ export class FakeFsYandexDisk extends FakeFs {
     const remotePath = getRemotePath(key, this.remoteBaseDir);
 
     // Step 1: Get upload URL from Yandex
-    const uploadInfo = await this._getJson(
+    const uploadInfo = await this._getJson<YandexUploadInfo>(
       `/resources/upload?path=${encodeURIComponent(remotePath)}&overwrite=true`
     );
 
@@ -405,7 +442,7 @@ export class FakeFsYandexDisk extends FakeFs {
     const remotePath = getRemotePath(key, this.remoteBaseDir);
 
     // Step 1: Get download URL
-    const downloadInfo = await this._getJson(
+    const downloadInfo = await this._getJson<YandexUploadInfo>(
       `/resources/download?path=${encodeURIComponent(remotePath)}`
     );
 
@@ -453,8 +490,8 @@ export class FakeFsYandexDisk extends FakeFs {
   }
 
   async getUserDisplayName(): Promise<string> {
-    const res = await this._getJson("");
-    return res.user?.display_name || res.user?.login || "Yandex Disk User";
+    const res = await this._getJson<YandexUserInfo>("");
+    return res.user?.display_name ?? res.user?.login ?? "Yandex Disk User";
   }
 
   async revokeAuth(): Promise<void> {

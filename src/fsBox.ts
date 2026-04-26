@@ -31,6 +31,44 @@ export const DEFAULT_BOX_CONFIG: BoxConfig = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Box API response types
+////////////////////////////////////////////////////////////////////////////////
+
+interface BoxPathEntry {
+  id?: string;
+  name: string;
+  type?: string;
+}
+
+interface BoxItem {
+  id: string;
+  name: string;
+  type: string;
+  size?: number;
+  modified_at?: string;
+  created_at?: string;
+  etag?: string;
+  path_collection?: { entries: BoxPathEntry[] };
+}
+
+interface BoxItemList {
+  entries?: BoxItem[];
+  total_count?: number;
+}
+
+interface BoxOAuthRes {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  error?: string;
+  error_description?: string;
+}
+
+interface BoxUser {
+  name?: string;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // OAuth2 Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -43,11 +81,10 @@ export function generateAuthUrl(): string {
   return `${BOX_AUTH_URL}?${params.toString()}`;
 }
 
- 
 export async function sendAuthReq(
   code: string,
   errorCallBack: (e: unknown) => Promise<void>
-): Promise<any> {
+): Promise<BoxOAuthRes> {
   try {
     const rsp = await request({
       url: BOX_TOKEN_URL,
@@ -61,17 +98,17 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp);
+    return JSON.parse(rsp) as BoxOAuthRes;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 }
 
- 
 async function refreshAccessToken(
   refreshToken: string
-): Promise<any> {
+): Promise<BoxOAuthRes> {
   const rsp = await request({
     url: BOX_TOKEN_URL,
     method: "POST",
@@ -83,26 +120,19 @@ async function refreshAccessToken(
       client_secret: BOX_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp);
-}
-
-interface BoxOAuthRes {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
+  return JSON.parse(rsp) as BoxOAuthRes;
 }
 
 export async function setConfigBySuccessfullAuthInplace(
   config: BoxConfig,
-  authRes: Record<string, unknown>,
+  authRes: BoxOAuthRes,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  const r = authRes as unknown as BoxOAuthRes;
-  config.accessToken = r.access_token;
-  config.refreshToken = r.refresh_token;
-  config.accessTokenExpiresInMs = r.expires_in * 1000;
+  config.accessToken = authRes.access_token;
+  config.refreshToken = authRes.refresh_token;
+  config.accessTokenExpiresInMs = authRes.expires_in * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + r.expires_in * 1000 - 300_000;
+    Date.now() + authRes.expires_in * 1000 - 300_000;
   // BYOC: No forced expiry
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
@@ -111,6 +141,9 @@ export async function setConfigBySuccessfullAuthInplace(
 ////////////////////////////////////////////////////////////////////////////////
 // Internal Helpers
 ////////////////////////////////////////////////////////////////////////////////
+
+type GetJsonFn = <T>(url: string) => Promise<T>;
+type PostJsonFn = <T>(url: string, body: unknown) => Promise<T>;
 
 /**
  * Box uses folder IDs, not paths. We need to resolve a path to a folder ID.
@@ -121,9 +154,9 @@ class BoxPathResolver {
 
   async resolve(
     path: string,
-    getJson: (url: string) => Promise<any>,
+    getJson: GetJsonFn,
     createIfMissing = false,
-    postJson?: (url: string, body: unknown) => Promise<unknown>
+    postJson?: PostJsonFn
   ): Promise<string> {
     if (path === "" || path === "/") return "0";
 
@@ -146,23 +179,21 @@ class BoxPathResolver {
 
       // Search for folder in parent
       const searchUrl = `${BOX_API}/folders/${parentId}/items?fields=id,name,type&limit=1000`;
-      const res = await getJson(searchUrl);
-      const entries = res.entries || [];
+      const res = await getJson<BoxItemList>(searchUrl);
+      const entries = res.entries ?? [];
 
-      const match = entries.find(
-        (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === seg && e.type === "folder"
-      );
+      const match = entries.find((e) => e.name === seg && e.type === "folder");
 
       if (match) {
         parentId = match.id;
         this.cache.set(partialPath, parentId);
       } else if (createIfMissing && postJson) {
         // Create the folder
-        const created = await postJson(`${BOX_API}/folders`, {
+        const created = await postJson<BoxItem>(`${BOX_API}/folders`, {
           name: seg,
           parent: { id: parentId },
         });
-        parentId = (created as { id: string }).id;
+        parentId = created.id;
         this.cache.set(partialPath, parentId);
       } else {
         throw Error(`[BYOC] Box: folder '${seg}' not found in parent ${parentId}`);
@@ -177,7 +208,7 @@ class BoxPathResolver {
   }
 }
 
-function fromBoxItemToEntity(item: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }, baseDirPrefix: string): Entity {
+function fromBoxItemToEntity(item: BoxItem, baseDirPrefix: string): Entity {
   let key = "";
 
   // Build the key from path_collection
@@ -259,7 +290,7 @@ export class FakeFsBox extends FakeFs {
     // Refresh
     const res = await refreshAccessToken(this.config.refreshToken);
     if (res.error) {
-      throw Error(`[BYOC] Box refresh error: ${res.error_description}`);
+      throw Error(`[BYOC] Box refresh error: ${res.error_description ?? res.error}`);
     }
     this.config.accessToken = res.access_token;
     this.config.refreshToken = res.refresh_token;
@@ -269,8 +300,8 @@ export class FakeFsBox extends FakeFs {
     await this.saveFunc();
     return this.config.accessToken;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _getJson(url: string): Promise<any> {
+
+  private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return JSON.parse(
@@ -279,10 +310,10 @@ export class FakeFsBox extends FakeFs {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _postJson(url: string, body: any): Promise<any> {
+
+  private async _postJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return JSON.parse(
@@ -293,10 +324,10 @@ export class FakeFsBox extends FakeFs {
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
-  private async _putJson(url: string, body: any): Promise<any> {
+
+  private async _putJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return JSON.parse(
@@ -307,7 +338,7 @@ export class FakeFsBox extends FakeFs {
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
       })
-    );
+    ) as T;
   }
 
   private async _delete(url: string): Promise<void> {
@@ -334,16 +365,16 @@ export class FakeFsBox extends FakeFs {
   private async listFolder(
     folderId: string,
     pathPrefix: string
-  ): Promise<any[]> {
-    const items: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }[] = [];
+  ): Promise<BoxItem[]> {
+    const items: BoxItem[] = [];
     let offset = 0;
     const limit = 1000;
 
-    while (true) {
-      const res = await this._getJson(
+    for (;;) {
+      const res = await this._getJson<BoxItemList>(
         `${BOX_API}/folders/${folderId}/items?fields=id,name,type,size,modified_at,created_at,etag,path_collection&limit=${limit}&offset=${offset}`
       );
-      const entries = res.entries || [];
+      const entries = res.entries ?? [];
       for (const entry of entries) {
         items.push(entry);
         if (entry.type === "folder") {
@@ -363,13 +394,13 @@ export class FakeFsBox extends FakeFs {
   }
 
   async listFoldersAtRoot(): Promise<string[]> {
-    const res = await this._getJson(
+    const res = await this._getJson<BoxItemList>(
       `${BOX_API}/folders/0/items?fields=id,name,type&limit=1000`
     );
-    return (res.entries || [])
-      .filter((e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.type === "folder")
-      .map((e: any) => e.name as string)
-      .sort((a: string, b: string) => a.localeCompare(b));
+    return (res.entries ?? [])
+      .filter((e) => e.type === "folder")
+      .map((e) => e.name)
+      .sort((a, b) => a.localeCompare(b));
   }
 
   async createFolderAtRoot(name: string): Promise<void> {
@@ -388,10 +419,10 @@ export class FakeFsBox extends FakeFs {
       // Build key from the item — we need to resolve relative to our base
       let key = "";
       if (item.path_collection?.entries) {
-        const parts = item.path_collection.entries.map((e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name);
+        const parts = item.path_collection.entries.map((e) => e.name);
         parts.push(item.name);
         // Remove "All Files" and the base dir prefix
-        const fullPath = parts.filter((n: string) => n !== "All Files").join("/");
+        const fullPath = parts.filter((n) => n !== "All Files").join("/");
         if (fullPath.startsWith(`${this.remoteBaseDir}/`)) {
           key = fullPath.slice(this.remoteBaseDir.length + 1);
         } else {
@@ -427,7 +458,7 @@ export class FakeFsBox extends FakeFs {
         `${this.remoteBaseDir}/${key.replace(/\/+$/, "")}`,
         (u) => this._getJson(u)
       );
-      const res = await this._getJson(
+      const res = await this._getJson<BoxItem>(
         `${BOX_API}/folders/${folderId}?fields=id,name,type,size,modified_at,created_at`
       );
       return fromBoxItemToEntity(res, this.remoteBaseDir);
@@ -446,11 +477,11 @@ export class FakeFsBox extends FakeFs {
       (u) => this._getJson(u)
     );
 
-    const res = await this._getJson(
+    const res = await this._getJson<BoxItemList>(
       `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type,size,modified_at,created_at,etag`
     );
-    const match = (res.entries || []).find(
-      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
+    const match = (res.entries ?? []).find(
+      (e) => e.name === fileName && e.type === "file"
     );
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found`);
 
@@ -500,11 +531,11 @@ export class FakeFsBox extends FakeFs {
     // Check if file already exists (for overwrite)
     let existingFileId: string | null = null;
     try {
-      const res = await this._getJson(
+      const res = await this._getJson<BoxItemList>(
         `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type&limit=1000`
       );
-      const match = (res.entries || []).find(
-        (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
+      const match = (res.entries ?? []).find(
+        (e) => e.name === fileName && e.type === "file"
       );
       if (match) existingFileId = match.id;
     } catch {
@@ -566,11 +597,11 @@ export class FakeFsBox extends FakeFs {
       (u) => this._getJson(u)
     );
 
-    const res = await this._getJson(
+    const res = await this._getJson<BoxItemList>(
       `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type&limit=1000`
     );
-    const match = (res.entries || []).find(
-      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === fileName && e.type === "file"
+    const match = (res.entries ?? []).find(
+      (e) => e.name === fileName && e.type === "file"
     );
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found for read`);
 
@@ -607,12 +638,12 @@ export class FakeFsBox extends FakeFs {
       (u) => this._getJson(u)
     );
 
-    const res = await this._getJson(
+    const res = await this._getJson<BoxItemList>(
       `${BOX_API}/folders/${parentFolderId}/items?fields=id,name,type&limit=1000`
     );
     const itemType = isFolder ? "folder" : "file";
-    const match = (res.entries || []).find(
-      (e: { id: string; name: string; type: string; size?: number; modified_at?: string; created_at?: string; etag?: string; path_collection?: { entries: { name: string }[] } }) => e.name === name && e.type === itemType
+    const match = (res.entries ?? []).find(
+      (e) => e.name === name && e.type === itemType
     );
     if (!match) return; // Already gone
 
@@ -628,8 +659,8 @@ export class FakeFsBox extends FakeFs {
   }
 
   async getUserDisplayName(): Promise<string> {
-    const res = await this._getJson(`${BOX_API}/users/me?fields=name`);
-    return res.name || "Box User";
+    const res = await this._getJson<BoxUser>(`${BOX_API}/users/me?fields=name`);
+    return res.name ?? "Box User";
   }
 
   async revokeAuth(): Promise<void> {
