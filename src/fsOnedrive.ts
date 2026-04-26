@@ -137,17 +137,12 @@ export const sendAuthReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1);
-    // console.debug(rsp2);
-
-    if (rsp2.error !== undefined) {
-      return rsp2 as AccessCodeResponseFailedType;
-    } else {
-      return rsp2 as AccessCodeResponseSuccessfulType;
-    }
+    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    return rsp2;
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
+    throw e;
   }
 };
 
@@ -155,7 +150,7 @@ export const sendRefreshTokenReq = async (
   clientID: string,
   authority: string,
   refreshToken: string
-) => {
+): Promise<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType> => {
   // also use Obsidian request to bypass CORS issue.
   try {
     const rsp1 = await request({
@@ -171,14 +166,8 @@ export const sendRefreshTokenReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1);
-    // console.debug(rsp2);
-
-    if (rsp2.error !== undefined) {
-      return rsp2 as AccessCodeResponseFailedType;
-    } else {
-      return rsp2 as AccessCodeResponseSuccessfulType;
-    }
+    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    return rsp2;
   } catch (e) {
     console.error(e);
     throw e;
@@ -576,10 +565,10 @@ export class FakeFsOnedrive extends FakeFs {
     if (this.vaultFolderExists) {
       // console.debug(`already checked, /${this.remoteBaseDir} exist before`)
     } else {
-      const k = await this._getJson("/drive/special/approot/children");
+      const k = await this._getJson<{ value: DriveItem[] }>("/drive/special/approot/children");
       // console.debug(k);
       this.vaultFolderExists =
-        (k.value as DriveItem[]).filter((x) => x.name === this.remoteBaseDir)
+        k.value.filter((x) => x.name === this.remoteBaseDir)
           .length > 0;
       if (!this.vaultFolderExists) {
         console.debug(`remote does not have folder /${this.remoteBaseDir}`);
@@ -616,7 +605,7 @@ export class FakeFsOnedrive extends FakeFs {
     return theUrl;
   }
 
-  async _getJson(pathFragOrig: string) {
+  async _getJson<T = unknown>(pathFragOrig: string): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`getJson, theUrl=${theUrl}`);
     return JSON.parse(
@@ -629,11 +618,10 @@ export class FakeFsOnedrive extends FakeFs {
           "Cache-Control": "no-cache",
         },
       })
-    );
+    ) as T;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API payload
-  async _postJson(pathFragOrig: string, payload: any) {
+  async _postJson<T = unknown>(pathFragOrig: string, payload: unknown): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`postJson, theUrl=${theUrl}`);
     return JSON.parse(
@@ -646,11 +634,10 @@ export class FakeFsOnedrive extends FakeFs {
           Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
         },
       })
-    );
+    ) as T;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API payload
-  async _patchJson(pathFragOrig: string, payload: any) {
+  async _patchJson<T = unknown>(pathFragOrig: string, payload: unknown): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`patchJson, theUrl=${theUrl}`);
     return JSON.parse(
@@ -663,7 +650,7 @@ export class FakeFsOnedrive extends FakeFs {
           Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
         },
       })
-    );
+    ) as T;
   }
 
   async _deleteJson(pathFragOrig: string) {
@@ -690,33 +677,17 @@ export class FakeFsOnedrive extends FakeFs {
   async _putArrayBuffer(pathFragOrig: string, payload: ArrayBuffer) {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`putArrayBuffer, theUrl=${theUrl}`);
-    // TODO:
     // 20220401: On Android, requestUrl has issue that text becomes base64.
-    // Use fetch everywhere instead!
-    // biome-ignore lint/correctness/noConstantCondition: hard code
-    if (false /*VALID_REQURL*/) {
-      const res = await requestUrl({
-        url: theUrl,
-        method: "PUT",
-        body: payload,
-        contentType: DEFAULT_CONTENT_TYPE,
-        headers: {
-          "Content-Type": DEFAULT_CONTENT_TYPE,
-          Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
-        },
-      });
-      return res.json as DriveItem | UploadSession;
-    } else {
-      const res = await retryFetch(theUrl, {
-        method: "PUT",
-        body: payload,
-        headers: {
-          "Content-Type": DEFAULT_CONTENT_TYPE,
-          Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
-        },
-      });
-      return (await res.json()) as DriveItem | UploadSession;
-    }
+    // Use fetch everywhere instead.
+    const res = await retryFetch(theUrl, {
+      method: "PUT",
+      body: payload,
+      headers: {
+        "Content-Type": DEFAULT_CONTENT_TYPE,
+        Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
+      },
+    });
+    return (await res.json()) as DriveItem | UploadSession;
   }
 
   /**
@@ -741,43 +712,25 @@ export class FakeFsOnedrive extends FakeFs {
       }, len=${rangeEnd - rangeStart}, size=${size}`
     );
     // NO AUTH HEADER here!
-    // TODO:
     // 20220401: On Android, requestUrl has issue that text becomes base64.
-    // Use fetch everywhere instead!
-    // biome-ignore lint/correctness/noConstantCondition: hard code
-    if (false /*VALID_REQURL*/) {
-      const res = await requestUrl({
-        url: theUrl,
-        method: "PUT",
-        body: payload.slice(rangeStart, rangeEnd).buffer,
-        contentType: DEFAULT_CONTENT_TYPE,
-        headers: {
-          // no "Content-Length" allowed here
-          "Content-Range": `bytes ${rangeStart}-${rangeEnd - 1}/${size}`,
-          /* "Cache-Control": "no-cache", not allowed here!!! */
-        },
-      });
-      return res.json as DriveItem | UploadSession;
-    } else {
-      const res = await retryFetch(theUrl, {
-        method: "PUT",
-        body: payload.slice(rangeStart, rangeEnd).buffer,
-        headers: {
-          "Content-Length": `${rangeEnd - rangeStart}`,
-          "Content-Range": `bytes ${rangeStart}-${rangeEnd - 1}/${size}`,
-          "Content-Type": DEFAULT_CONTENT_TYPE,
-          /* "Cache-Control": "no-cache", not allowed here!!! */
-        },
-      });
-      return (await res.json()) as DriveItem | UploadSession;
-    }
+    // Use fetch everywhere instead.
+    const res = await retryFetch(theUrl, {
+      method: "PUT",
+      body: payload.slice(rangeStart, rangeEnd).buffer,
+      headers: {
+        "Content-Length": `${rangeEnd - rangeStart}`,
+        "Content-Range": `bytes ${rangeStart}-${rangeEnd - 1}/${size}`,
+        "Content-Type": DEFAULT_CONTENT_TYPE,
+      },
+    });
+    return (await res.json()) as DriveItem | UploadSession;
   }
 
   async listFoldersAtRoot(): Promise<string[]> {
-    const k = await this._getJson("/drive/special/approot/children");
-    return (k.value as DriveItem[])
-      .filter((x: DriveItem) => "folder" in x)
-      .map((x: DriveItem) => x.name!)
+    const k = await this._getJson<{ value: DriveItem[] }>("/drive/special/approot/children");
+    return k.value
+      .filter((x) => "folder" in x)
+      .map((x) => x.name!)
       .sort((a, b) => a.localeCompare(b));
   }
 
@@ -796,22 +749,28 @@ export class FakeFsOnedrive extends FakeFs {
   async walk(): Promise<Entity[]> {
     await this._init();
 
+    type DeltaResponse = {
+      value: DriveItem[];
+      "@odata.nextLink"?: string;
+      "@odata.deltaLink"?: string;
+    };
+
     const NEXT_LINK_KEY = "@odata.nextLink";
     const DELTA_LINK_KEY = "@odata.deltaLink";
 
-    let res = await this._getJson(
+    let res = await this._getJson<DeltaResponse>(
       `/drive/special/approot:/${this.remoteBaseDir}:/delta`
     );
-    const driveItems = res.value as DriveItem[];
+    const driveItems = res.value;
     // console.debug(driveItems);
 
-    while (NEXT_LINK_KEY in res) {
-      res = await this._getJson(res[NEXT_LINK_KEY]);
-      driveItems.push(...cloneDeep(res.value as DriveItem[]));
+    while (res[NEXT_LINK_KEY]) {
+      res = await this._getJson<DeltaResponse>(res[NEXT_LINK_KEY]);
+      driveItems.push(...cloneDeep(res.value));
     }
 
     // lastly we should have delta link?
-    if (DELTA_LINK_KEY in res) {
+    if (res[DELTA_LINK_KEY]) {
       this.onedriveConfig.deltaLink = res[DELTA_LINK_KEY];
       await this.saveUpdatedConfigFunc();
     }
@@ -827,16 +786,21 @@ export class FakeFsOnedrive extends FakeFs {
   async walkPartial(): Promise<Entity[]> {
     await this._init();
 
+    type DeltaResponse = {
+      value: DriveItem[];
+      "@odata.deltaLink"?: string;
+    };
+
     const DELTA_LINK_KEY = "@odata.deltaLink";
 
-    const res = await this._getJson(
+    const res = await this._getJson<DeltaResponse>(
       `/drive/special/approot:/${this.remoteBaseDir}:/delta`
     );
-    const driveItems = res.value as DriveItem[];
+    const driveItems = res.value;
     // console.debug(driveItems);
 
     // lastly we should have delta link?
-    if (DELTA_LINK_KEY in res) {
+    if (res[DELTA_LINK_KEY]) {
       this.onedriveConfig.deltaLink = res[DELTA_LINK_KEY];
       await this.saveUpdatedConfigFunc();
     }
@@ -856,13 +820,10 @@ export class FakeFsOnedrive extends FakeFs {
 
   async _statFromRoot(key: string): Promise<Entity> {
     // console.debug(`remotePath=${remotePath}`);
-    const rsp = await this._getJson(
+    const rsp = await this._getJson<DriveItem>(
       `${key}?$select=cTag,eTag,fileSystemInfo,folder,file,name,parentReference,size`
     );
-    // console.debug(rsp);
-    const driveItem = rsp as DriveItem;
-    const res = fromDriveItemToEntity(driveItem, this.remoteBaseDir);
-    // console.debug(res);
+    const res = fromDriveItemToEntity(rsp, this.remoteBaseDir);
     return res;
   }
 
@@ -1010,7 +971,7 @@ export class FakeFsOnedrive extends FakeFs {
           },
         };
       }
-      const s: UploadSession = await this._postJson(
+      const s = await this._postJson<UploadSession>(
         `${key}:/createUploadSession`,
         playload
       );
@@ -1050,12 +1011,23 @@ export class FakeFsOnedrive extends FakeFs {
   }
 
   async _readFileFromRoot(key: string): Promise<ArrayBuffer> {
-    const rsp = await this._getJson(
+    const rsp = await this._getJson<{ "@microsoft.graph.downloadUrl"?: string }>(
       `${key}?$select=@microsoft.graph.downloadUrl`
     );
-    const downloadUrl: string = rsp["@microsoft.graph.downloadUrl"];
-    // biome-ignore lint/correctness/noConstantCondition: <explanation>
-    if (false /*VALID_REQURL*/) {
+    const downloadUrl = rsp["@microsoft.graph.downloadUrl"];
+    if (!downloadUrl) {
+      throw Error(`OneDrive: no downloadUrl for ${key}`);
+    }
+    // so strange, sometimes (!!!)
+    // we cannot download the file because of CORS
+    try {
+      // cannot set no-cache here, will have cors error
+      const content = await (
+        await retryFetch(downloadUrl, { cache: "no-store" })
+      ).arrayBuffer();
+      return content;
+    } catch {
+      // let's try again to bypass the CORS
       const content = (
         await requestUrl({
           url: downloadUrl,
@@ -1063,25 +1035,6 @@ export class FakeFsOnedrive extends FakeFs {
         })
       ).arrayBuffer;
       return content;
-    } else {
-      // so strange, sometimes (!!!)
-      // we cannot download the file because of CORS
-      try {
-        // cannot set no-cache here, will have cors error
-        const content = await (
-          await retryFetch(downloadUrl, { cache: "no-store" })
-        ).arrayBuffer();
-        return content;
-      } catch (e) {
-        // let's try again to bypass the CORS
-        const content = (
-          await requestUrl({
-            url: downloadUrl,
-            headers: { "Cache-Control": "no-cache" },
-          })
-        ).arrayBuffer;
-        return content;
-      }
     }
   }
 
@@ -1126,8 +1079,8 @@ export class FakeFsOnedrive extends FakeFs {
 
   async getUserDisplayName() {
     await this._init();
-    const res: User = await this._getJson("/me?$select=displayName");
-    return res.displayName || "<unknown display name>";
+    const res = await this._getJson<User>("/me?$select=displayName");
+    return res.displayName ?? "<unknown display name>";
   }
 
   /**

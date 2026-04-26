@@ -123,18 +123,14 @@ export class FakeFsWebdis extends FakeFs {
     const res: Entity[] = [];
     do {
       const command = `SCAN/${cursor}/MATCH/rs:fs:v1:${encodeURIComponent(this.remoteBaseDir + "/")}*:meta/COUNT/1000`;
-      const rsp = (await (await this._fetchCommand("GET", command)).json)[
-        "SCAN"
-      ];
-      // console.debug(rsp);
+      const json = (await this._fetchCommand("GET", command)).json as { SCAN: [string, string[]] };
+      const rsp = json.SCAN;
       cursor = rsp[0];
       for (const fullKeyWithMeta of rsp[1]) {
         const realKey = getOrigPath(fullKeyWithMeta, this.remoteBaseDir);
         res.push(await this.stat(realKey));
       }
     } while (cursor !== "0");
-    // console.debug(`walk res:`);
-    // console.debug(res);
     return res;
   }
 
@@ -142,18 +138,13 @@ export class FakeFsWebdis extends FakeFs {
     let cursor = "0";
     const res: Entity[] = [];
     const command = `SCAN/${cursor}/MATCH/rs:fs:v1:${encodeURIComponent(this.remoteBaseDir + "/")}*:meta/COUNT/10`; // fewer keys
-    const rsp = (await (await this._fetchCommand("GET", command)).json)[
-      "SCAN"
-    ];
-    // console.debug(rsp);
+    const json = (await this._fetchCommand("GET", command)).json as { SCAN: [string, string[]] };
+    const rsp = json.SCAN;
     cursor = rsp[0];
     for (const fullKeyWithMeta of rsp[1]) {
       const realKey = getOrigPath(fullKeyWithMeta, this.remoteBaseDir);
       res.push(await this.stat(realKey));
     }
-    // no need to loop over cursor
-    // console.debug(`walk res:`);
-    // console.debug(res);
     return res;
   }
 
@@ -163,12 +154,9 @@ export class FakeFsWebdis extends FakeFs {
   }
 
   async _statFromRaw(key: string): Promise<Entity> {
-    // console.debug(`_statFromRaw on ${key}`);
     const command = `HGETALL/${key}:meta`;
-    const rsp = (await (await this._fetchCommand("GET", command)).json)[
-      "HGETALL"
-    ];
-    // console.debug(`rsp: ${JSON.stringify(rsp, null, 2)}`);
+    const json = (await this._fetchCommand("GET", command)).json as { HGETALL: Record<string, string> };
+    const rsp = json.HGETALL;
     if (isEqual(rsp, {})) {
       // empty!
       throw Error(`key ${key} doesn't exist!`);
@@ -192,9 +180,7 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command = `${command}/ctime/${ctime}`;
     }
-    const _rsp = (await (await this._fetchCommand("GET", command)).json)[
-      "HSET"
-    ];
+    await this._fetchCommand("GET", command);
     return await this.stat(key);
   }
 
@@ -214,15 +200,11 @@ export class FakeFsWebdis extends FakeFs {
     if (ctime !== undefined && ctime !== 0) {
       command1 = `${command1}/ctime/${ctime}`;
     }
-    const _rsp1 = (await (await this._fetchCommand("GET", command1)).json)[
-      "HSET"
-    ];
+    await this._fetchCommand("GET", command1);
 
     // content
     const command2 = `SET/${fullKey}:content`;
-    const _rsp2 = (
-      await (await this._fetchCommand("PUT", command2, content)).json
-    )["SET"];
+    await this._fetchCommand("PUT", command2, content);
 
     // fetch meta
     return await this.stat(key);
@@ -231,7 +213,7 @@ export class FakeFsWebdis extends FakeFs {
   async readFile(key: string): Promise<ArrayBuffer> {
     const fullKey = getWebdisPath(key, this.remoteBaseDir);
     const command = `GET/${fullKey}:content?type=${DEFAULT_CONTENT_TYPE}`;
-    const rsp = await (await this._fetchCommand("GET", command)).arrayBuffer;
+    const rsp = (await this._fetchCommand("GET", command)).arrayBuffer;
     return rsp;
   }
 
@@ -247,14 +229,12 @@ export class FakeFsWebdis extends FakeFs {
   async rm(key: string): Promise<void> {
     const fullKey = getWebdisPath(key, this.remoteBaseDir);
     const command = `DEL/${fullKey}:meta/${fullKey}:content`;
-    const _rsp = (await (await this._fetchCommand("PUT", command)).json)[
-      "DEL"
-    ];
+    await this._fetchCommand("PUT", command);
   }
 
   async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     try {
-      const k = (
+      const k: unknown = (
         await this._fetchCommand("GET", "PING/helloworld")
       ).json;
       if (!isEqual(k, { PING: "helloworld" })) {
