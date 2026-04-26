@@ -24,7 +24,7 @@ declare global {
 // These globals are injected by webpack's DefinePlugin at build time, not
 // related to popout windows. The activeWindow/activeDocument rule doesn't
 // apply to module-load-time constants.
-/* eslint-disable obsidianmd/prefer-active-doc, no-restricted-globals */
+/* eslint-disable obsidianmd/prefer-active-doc */
 export const DROPBOX_APP_KEY = globalThis.DEFAULT_DROPBOX_APP_KEY || "";
 export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "";
 export const ONEDRIVE_AUTHORITY = globalThis.DEFAULT_ONEDRIVE_AUTHORITY || "https://login.microsoftonline.com/consumers/";
@@ -38,7 +38,7 @@ export const YANDEXDISK_CLIENT_ID = globalThis.DEFAULT_YANDEXDISK_CLIENT_ID || "
 export const YANDEXDISK_CLIENT_SECRET = globalThis.DEFAULT_YANDEXDISK_CLIENT_SECRET || "";
 export const KOOFR_CLIENT_ID = globalThis.DEFAULT_KOOFR_CLIENT_ID || "";
 export const KOOFR_CLIENT_SECRET = globalThis.DEFAULT_KOOFR_CLIENT_SECRET || "";
-/* eslint-enable obsidianmd/prefer-active-doc, no-restricted-globals */
+/* eslint-enable obsidianmd/prefer-active-doc */
 
 export const DEFAULT_CONTENT_TYPE = "application/octet-stream";
 

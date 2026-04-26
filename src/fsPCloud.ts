@@ -337,7 +337,7 @@ export class FakeFsPCloud extends FakeFs {
     }
     // pCloud SDK reads locationid from global scope; coerce string→number
     // because URL callback params always arrive as strings.
-    // eslint-disable-next-line obsidianmd/prefer-active-doc, no-restricted-globals
+    // eslint-disable-next-line obsidianmd/prefer-active-doc
     (globalThis as { locationid?: number }).locationid =
       typeof this.pCloudConfig.locationid === "string"
         ? parseInt(this.pCloudConfig.locationid, 10)
@@ -577,7 +577,7 @@ async _getAccessToken() {
       try {
         // requestUrl has no abort signal support; we deliberately use fetch
         // here so we can abort the hung empty-file request after 300ms.
-        // eslint-disable-next-line obsidianmd/platform
+         
         const rsp = await fetch(apiUrl, {
           method: "PUT",
           body: content,

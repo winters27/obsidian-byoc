@@ -87,16 +87,23 @@ async function refreshAccessToken(
   return JSON.parse(rsp);
 }
 
+interface BoxOAuthRes {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}
+
 export async function setConfigBySuccessfullAuthInplace(
   config: BoxConfig,
-  authRes: any,
+  authRes: Record<string, unknown>,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  config.accessToken = authRes.access_token;
-  config.refreshToken = authRes.refresh_token;
-  config.accessTokenExpiresInMs = authRes.expires_in * 1000;
+  const r = authRes as unknown as BoxOAuthRes;
+  config.accessToken = r.access_token;
+  config.refreshToken = r.refresh_token;
+  config.accessTokenExpiresInMs = r.expires_in * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + authRes.expires_in * 1000 - 300_000;
+    Date.now() + r.expires_in * 1000 - 300_000;
   // BYOC: No forced expiry
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
@@ -117,7 +124,7 @@ class BoxPathResolver {
     path: string,
     getJson: (url: string) => Promise<any>,
     createIfMissing = false,
-    postJson?: (url: string, body: any) => Promise<any>
+    postJson?: (url: string, body: unknown) => Promise<unknown>
   ): Promise<string> {
     if (path === "" || path === "/") return "0";
 
@@ -156,7 +163,7 @@ class BoxPathResolver {
           name: seg,
           parent: { id: parentId },
         });
-        parentId = created.id;
+        parentId = (created as { id: string }).id;
         this.cache.set(partialPath, parentId);
       } else {
         throw Error(`[BYOC] Box: folder '${seg}' not found in parent ${parentId}`);
@@ -264,6 +271,9 @@ export class FakeFsBox extends FakeFs {
     return this.config.accessToken;
   }
 
+   
+
+
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
@@ -275,6 +285,9 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
+
+   
+
 
   private async _postJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();
@@ -289,6 +302,9 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
+
+   
+
 
   private async _putJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();

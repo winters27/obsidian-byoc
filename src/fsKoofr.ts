@@ -70,6 +70,7 @@ export async function sendAuthReq(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- external OAuth response shape
 async function refreshAccessToken(refreshToken: string): Promise<any> {
   const rsp = await request({
     url: KOOFR_TOKEN_URL,
@@ -87,14 +88,15 @@ async function refreshAccessToken(refreshToken: string): Promise<any> {
 
 export async function setConfigBySuccessfullAuthInplace(
   config: KoofrConfig,
-  authRes: any,
+  authRes: Record<string, unknown>,
   saveFunc: () => Promise<void>
 ): Promise<void> {
-  config.accessToken = authRes.access_token;
-  config.refreshToken = authRes.refresh_token || config.refreshToken;
-  config.accessTokenExpiresInMs = (authRes.expires_in ?? 3600) * 1000;
+  const r = authRes as unknown as { access_token: string; refresh_token?: string; expires_in?: number };
+  config.accessToken = r.access_token;
+  config.refreshToken = r.refresh_token || config.refreshToken;
+  config.accessTokenExpiresInMs = (r.expires_in ?? 3600) * 1000;
   config.accessTokenExpiresAtTimeMs =
-    Date.now() + (authRes.expires_in ?? 3600) * 1000 - 300_000;
+    Date.now() + (r.expires_in ?? 3600) * 1000 - 300_000;
   config.credentialsShouldBeDeletedAtTimeMs = 0;
   await saveFunc();
 }
@@ -174,6 +176,9 @@ export class FakeFsKoofr extends FakeFs {
     throw Error("[BYOC] Koofr: no mounts found");
   }
 
+   
+
+
   private async _getJson(path: string): Promise<any> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
@@ -188,6 +193,9 @@ export class FakeFsKoofr extends FakeFs {
       })
     );
   }
+
+   
+
 
   private async _postJson(path: string, body?: any): Promise<any> {
     const token = await this.ensureToken();

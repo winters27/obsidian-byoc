@@ -571,7 +571,7 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as any).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         const self = this;
         setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => self.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
@@ -611,7 +611,7 @@ export default class BYOCPlugin extends Plugin {
           this.oauth2Info.verifier,
           async (e: any) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${e}`); return; }
         );
-        if ((rsp as any).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
+        if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         const self = this;
         setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => self.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());

@@ -506,7 +506,7 @@ class MyAuthProvider implements AuthenticationProvider {
         this.onedriveConfig.authority,
         this.onedriveConfig.refreshToken
       );
-      if ((r as any).error !== undefined) {
+      if ((r as { error?: unknown }).error !== undefined) {
         const r2 = r as AccessCodeResponseFailedType;
         throw Error(
           `Error while refreshing accessToken: ${r2.error}, ${r2.error_codes}: ${r2.error_description}`

@@ -130,11 +130,12 @@ function stripCredentialExpiry(settings: BYOCPluginSettings): void {
  * legacy plugin and promotes them to top-level fields in BYOC settings.
  */
 function extractProConfigs(
-  legacyConfig: Record<string, any>,
+  legacyConfig: Record<string, unknown>,
   settings: BYOCPluginSettings
 ): void {
-  const pro = legacyConfig.pro;
-  if (!pro || typeof pro !== "object") return;
+  const proRaw = legacyConfig.pro;
+  if (!proRaw || typeof proRaw !== "object") return;
+  const pro = proRaw as Record<string, unknown>;
 
   // The pro object could contain nested provider configs
   // Map known pro fields to their BYOC top-level equivalents
@@ -186,7 +187,7 @@ function extractProConfigs(
  * empty/default in BYOC but have real data in the legacy config.
  */
 function mergeLegacyIntoSettings(
-  legacyConfig: Record<string, any>,
+  legacyConfig: Record<string, unknown>,
   settings: BYOCPluginSettings
 ): void {
   // Core provider configs that exist at top level in both old and new
@@ -199,8 +200,9 @@ function mergeLegacyIntoSettings(
   ] as const;
 
   for (const provider of directProviders) {
-    const legacy = legacyConfig[provider];
-    if (!legacy || typeof legacy !== "object") continue;
+    const legacyRaw = legacyConfig[provider];
+    if (!legacyRaw || typeof legacyRaw !== "object") continue;
+    const legacy = legacyRaw as Record<string, unknown>;
 
     const current = settings[provider] as Record<string, any>;
     if (!current) continue;

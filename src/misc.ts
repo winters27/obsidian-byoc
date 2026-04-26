@@ -787,7 +787,7 @@ export const retryFetch = async (
     // retryFetch is a Response-shaped wrapper used by Box and Google Drive
     // for streaming uploads/downloads. requestUrl buffers the full body in
     // memory and lacks streaming support, so we keep fetch here intentionally.
-    // eslint-disable-next-line obsidianmd/platform
+     
     const resp = await fetch(input, init);
     if (resp.status !== 429 || idx === waitSeconds.length - 1) {
       if (resp.status === 429 && idx === waitSeconds.length - 1) {

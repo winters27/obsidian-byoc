@@ -1,7 +1,7 @@
 import type { Vault } from "obsidian";
 
 /** SyncPlanType — local stub; full type defined in Batch 2 sync engine */
-type SyncPlanType = Record<string, any>;
+type SyncPlanType = Record<string, unknown>;
 import {
   DEFAULT_DEBUG_FOLDER,
   DEFAULT_PROFILER_RESULT_FILE_PREFIX,
@@ -24,7 +24,8 @@ const getSubsetOfSyncPlan = (x: string, onlyChange: boolean) => {
       if (key === "/$@meta") {
         return true;
       }
-      return val.change === undefined || val.change === true;
+      const v = val as { change?: unknown };
+      return v.change === undefined || v.change === true;
     })
   );
   return JSON.stringify(z, null, 2);

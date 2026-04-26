@@ -7,7 +7,7 @@ export type LocalForage = typeof localforage;
 import { nanoid } from "nanoid";
 
 /** SyncPlanType — local stub; full type defined in Batch 2 sync engine */
-type SyncPlanType = Record<string, any>;
+type SyncPlanType = Record<string, unknown>;
 import type { Entity, SUPPORTED_SERVICES_TYPE } from "./baseTypes";
 import { unixTimeToStr } from "./misc";
 
@@ -520,7 +520,7 @@ export const getLastSuccessSyncTimeByVault = async (
 ): Promise<number | null> => {
   return (await db.simpleKVForMiscTbl.getItem(
     `${vaultRandomID}-lastSuccessSyncMillis`
-  )) as number | null;
+  ));
 };
 
 export const upsertLastFailedSyncTimeByVault = async (
@@ -540,7 +540,7 @@ export const getLastFailedSyncTimeByVault = async (
 ): Promise<number | null> => {
   return (await db.simpleKVForMiscTbl.getItem(
     `${vaultRandomID}-lastFailedSyncMillis`
-  )) as number | null;
+  ));
 };
 
 export const upsertPluginVersionByVault = async (

@@ -305,7 +305,7 @@ class OneDriveFullAuthProvider {
       this.config.authority,
       this.config.refreshToken
     );
-    if ((r as any).error !== undefined) {
+    if ((r as { error?: unknown }).error !== undefined) {
       const err = r as AccessCodeResponseFailedType;
       throw Error(
         `OneDrive Full refresh error: ${err.error}: ${err.error_description}`
@@ -358,6 +358,9 @@ export class FakeFsOnedriveFull extends FakeFs {
     return url;
   }
 
+   
+
+
   private async _getJson(path: string): Promise<any> {
     return JSON.parse(
       await request({
@@ -372,6 +375,9 @@ export class FakeFsOnedriveFull extends FakeFs {
     );
   }
 
+   
+
+
   private async _postJson(path: string, payload: any): Promise<any> {
     return JSON.parse(
       await request({
@@ -385,6 +391,9 @@ export class FakeFsOnedriveFull extends FakeFs {
       })
     );
   }
+
+   
+
 
   private async _patchJson(path: string, payload: any): Promise<any> {
     return JSON.parse(
