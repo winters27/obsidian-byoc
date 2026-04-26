@@ -356,16 +356,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     url = url.replace(/#/g, "%23");
     return url;
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _getJson(path: string): Promise<any> {
     return JSON.parse(
       await request({
@@ -379,16 +370,7 @@ export class FakeFsOnedriveFull extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _postJson(path: string, payload: any): Promise<any> {
     return JSON.parse(
       await request({
@@ -402,16 +384,7 @@ export class FakeFsOnedriveFull extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _patchJson(path: string, payload: any): Promise<any> {
     return JSON.parse(
       await request({

@@ -185,16 +185,7 @@ export class FakeFsGoogleDrive extends FakeFs {
 
     return this.config.accessToken;
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
@@ -206,16 +197,7 @@ export class FakeFsGoogleDrive extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _postJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
@@ -229,16 +211,7 @@ export class FakeFsGoogleDrive extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _patchJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;

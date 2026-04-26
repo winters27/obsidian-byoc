@@ -267,16 +267,7 @@ export class FakeFsBox extends FakeFs {
     await this.saveFunc();
     return this.config.accessToken;
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
@@ -288,16 +279,7 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _postJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
@@ -311,16 +293,7 @@ export class FakeFsBox extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _putJson(url: string, body: any): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;

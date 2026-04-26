@@ -175,16 +175,7 @@ export class FakeFsKoofr extends FakeFs {
     }
     throw Error("[BYOC] Koofr: no mounts found");
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _getJson(path: string): Promise<any> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
@@ -199,16 +190,7 @@ export class FakeFsKoofr extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _postJson(path: string, body?: any): Promise<any> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;

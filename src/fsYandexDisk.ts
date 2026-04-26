@@ -168,16 +168,7 @@ export class FakeFsYandexDisk extends FakeFs {
 
     return this.config.accessToken;
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _getJson(url: string): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
@@ -189,16 +180,7 @@ export class FakeFsYandexDisk extends FakeFs {
       })
     );
   }
-
-   
-
-
-   
-
-
-   
-
-
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- external API response shape
   private async _put(url: string, body?: any): Promise<any> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
