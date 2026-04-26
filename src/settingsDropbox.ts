@@ -46,7 +46,7 @@ class DropboxAuthModal extends Modal {
     const t = this.t;
 
     let needManualPaste = false;
-    const userAgent = window.navigator.userAgent.toLocaleLowerCase() || "";
+    const userAgent = activeWindow.navigator.userAgent.toLocaleLowerCase() || "";
     // Linux may open a second Obsidian instance on protocol redirect,
     // so fall back to manual paste on Linux desktop.
     if (
@@ -83,7 +83,7 @@ class DropboxAuthModal extends Modal {
     }
 
     contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => {
-      el.onclick = () => window.open(authUrl);
+      el.onclick = () => activeWindow.open(authUrl);
     });
 
     contentEl.createEl("p").createEl("a", {

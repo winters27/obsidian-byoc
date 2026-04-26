@@ -229,7 +229,7 @@ export const prepareDBs = async (
       name: DEFAULT_DB_NAME,
       storeName: DEFAULT_TBL_FILE_CONTENT_HISTORY,
     }),
-  } as InternalDBs;
+  };
 
   // try to get vaultRandomID firstly
   let vaultRandomID = "";
@@ -517,10 +517,10 @@ export const upsertLastSuccessSyncTimeByVault = async (
 export const getLastSuccessSyncTimeByVault = async (
   db: InternalDBs,
   vaultRandomID: string
-) => {
+): Promise<number | null> => {
   return (await db.simpleKVForMiscTbl.getItem(
     `${vaultRandomID}-lastSuccessSyncMillis`
-  )) as number | null | undefined;
+  )) as number | null;
 };
 
 export const upsertLastFailedSyncTimeByVault = async (
@@ -537,10 +537,10 @@ export const upsertLastFailedSyncTimeByVault = async (
 export const getLastFailedSyncTimeByVault = async (
   db: InternalDBs,
   vaultRandomID: string
-) => {
+): Promise<number | null> => {
   return (await db.simpleKVForMiscTbl.getItem(
     `${vaultRandomID}-lastFailedSyncMillis`
-  )) as number | null | undefined;
+  )) as number | null;
 };
 
 export const upsertPluginVersionByVault = async (

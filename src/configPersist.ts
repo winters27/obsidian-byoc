@@ -21,7 +21,7 @@ export const messyConfigToNormal = (
   // console.debug(x);
   if (x === null || x === undefined) {
     console.debug("the messy config is null or undefined, skip");
-    return x as any;
+    return x;
   }
   if ("readme" in x && "d" in x) {
     // we should decode

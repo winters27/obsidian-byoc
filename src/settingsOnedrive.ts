@@ -65,7 +65,7 @@ class OnedriveAuthModal extends Modal {
     }
 
     contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => {
-      el.onclick = () => window.open(authUrl);
+      el.onclick = () => activeWindow.open(authUrl);
     });
   }
 

@@ -468,7 +468,7 @@ export class FakeFsWebdav extends FakeFs {
               // we need to load all files including dot,
               // anyway to reduce the resources?
               // glob: "/**" /* avoid dot files by using glob */,
-            })) as FileStat[];
+            }));
             k = k.filter((sub) => stripLeadingPath(sub.filename) !== x);
             return k;
           });
@@ -508,7 +508,7 @@ export class FakeFsWebdav extends FakeFs {
           // anyway to reduce the resources?
           // glob: "/**" /* avoid dot files by using glob */,
         }
-      )) as FileStat[];
+      ));
     }
 
     const result = contents
@@ -526,7 +526,7 @@ export class FakeFsWebdav extends FakeFs {
         deep: false, // partial, no need to recursive here
         details: false /* no need for verbose details here */,
       }
-    )) as FileStat[];
+    ));
     return contents
       .map((x) => fromWebdavItemToEntity(x, this.remoteBaseDir))
       .filter((x) => x.keyRaw !== "/");

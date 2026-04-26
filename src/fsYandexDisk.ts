@@ -282,7 +282,7 @@ export class FakeFsYandexDisk extends FakeFs {
           mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
           size: isFolder ? 0 : (item.size ?? 0),
           sizeRaw: isFolder ? 0 : (item.size ?? 0),
-        } as Entity);
+        });
       }
 
       flatOffset += items.length;
@@ -316,7 +316,7 @@ export class FakeFsYandexDisk extends FakeFs {
           entities.push({
             key, keyRaw: key,
             mtimeSvr: mtime, size: 0, sizeRaw: 0,
-          } as Entity);
+          });
         }
         // Recurse into subfolder
         await this.walkFolders(item.path, entities);
@@ -346,7 +346,7 @@ export class FakeFsYandexDisk extends FakeFs {
       mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
       size: isFolder ? 0 : (res.size ?? 0),
       sizeRaw: isFolder ? 0 : (res.size ?? 0),
-    } as Entity;
+    };
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -359,7 +359,7 @@ export class FakeFsYandexDisk extends FakeFs {
       // 409 = already exists, that's fine
       if (!String(e).includes("409")) throw e;
     }
-    return { key, keyRaw: key, size: 0, sizeRaw: 0 } as Entity;
+    return { key, keyRaw: key, size: 0, sizeRaw: 0 };
   }
 
   async writeFile(
@@ -395,7 +395,7 @@ export class FakeFsYandexDisk extends FakeFs {
       mtimeCli: mtime, ctimeCli: ctime,
       size: content.byteLength,
       sizeRaw: content.byteLength,
-    } as Entity;
+    };
   }
 
   async readFile(key: string): Promise<ArrayBuffer> {

@@ -418,7 +418,7 @@ export default class BYOCPlugin extends Plugin {
     );
 
     fsEncrypt.closeResources();
-    (profiler as Profiler | undefined)?.clear();
+    (profiler)?.clear();
     this.syncEvent?.trigger("SYNC_DONE");
   }
 
@@ -647,7 +647,7 @@ export default class BYOCPlugin extends Plugin {
         async (e: any) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${e}`); throw e; }
       );
       const self = this;
-      await setConfigBySuccessfullAuthInplaceBox(this.settings.box!, authRes, () => self.saveSettings());
+      await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => self.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -655,7 +655,7 @@ export default class BYOCPlugin extends Plugin {
       try {
         const boxClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await boxClient.getUserDisplayName();
-        this.settings.box!.username = username;
+        this.settings.box.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
@@ -683,7 +683,7 @@ export default class BYOCPlugin extends Plugin {
       );
       const self = this;
       await setConfigBySuccessfullAuthInplacePCloud(
-        this.settings.pcloud!,
+        this.settings.pcloud,
         inputParams as unknown as AuthAllowFirstResPCloud,
         authRes,
         () => self.saveSettings()
@@ -698,7 +698,7 @@ export default class BYOCPlugin extends Plugin {
       try {
         const pcloudClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await pcloudClient.getUserDisplayName();
-        this.settings.pcloud!.username = username;
+        this.settings.pcloud.username = username;
         await this.saveSettings();
         self.settingTab?.display();
       } catch (_) { /* username display is non-critical */ }
@@ -730,7 +730,7 @@ export default class BYOCPlugin extends Plugin {
         async (e: any) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${e}`); throw e; }
       );
       const self = this;
-      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk!, authRes, () => self.saveSettings());
+      await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => self.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -738,7 +738,7 @@ export default class BYOCPlugin extends Plugin {
       try {
         const yandexClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await yandexClient.getUserDisplayName();
-        this.settings.yandexdisk!.username = username;
+        this.settings.yandexdisk.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
@@ -764,7 +764,7 @@ export default class BYOCPlugin extends Plugin {
         async (e: any) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${e}`); throw e; }
       );
       const self = this;
-      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr!, authRes!, () => self.saveSettings());
+      await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => self.saveSettings());
       this.oauth2Info.verifier = "";
       this.oauth2Info.helperModal?.close();
       this.oauth2Info.helperModal = undefined;
@@ -772,7 +772,7 @@ export default class BYOCPlugin extends Plugin {
       try {
         const koofrClient = getClient(this.settings, this.app.vault.getName(), () => self.saveSettings());
         const username = await koofrClient.getUserDisplayName();
-        this.settings.koofr!.username = username;
+        this.settings.koofr.username = username;
         await this.saveSettings();
       } catch (_) { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
@@ -860,7 +860,7 @@ export default class BYOCPlugin extends Plugin {
       }
 
       this.registerInterval(
-        window.setInterval(async () => {
+        activeWindow.setInterval(async () => {
           if (!this.isSyncing) {
             this.updateLastSyncMsg(
               undefined,
@@ -1040,7 +1040,7 @@ export default class BYOCPlugin extends Plugin {
   enableAutoSyncIfSet() {
     if (this.settings.autoRunEveryMilliseconds != null && this.settings.autoRunEveryMilliseconds > 0) {
       this.app.workspace.onLayoutReady(() => {
-        const intervalID = window.setInterval(() => this.syncRun("auto"), this.settings.autoRunEveryMilliseconds);
+        const intervalID = activeWindow.setInterval(() => this.syncRun("auto"), this.settings.autoRunEveryMilliseconds);
         this.autoRunIntervalID = intervalID;
         this.registerInterval(intervalID);
       });
@@ -1050,7 +1050,7 @@ export default class BYOCPlugin extends Plugin {
   enableInitSyncIfSet() {
     if (this.settings.initRunAfterMilliseconds != null && this.settings.initRunAfterMilliseconds > 0) {
       this.app.workspace.onLayoutReady(() => {
-        window.setTimeout(() => this.syncRun("auto_once_init"), this.settings.initRunAfterMilliseconds);
+        activeWindow.setTimeout(() => this.syncRun("auto_once_init"), this.settings.initRunAfterMilliseconds);
       });
     }
   }
@@ -1066,7 +1066,7 @@ export default class BYOCPlugin extends Plugin {
    * gets a button this frame; a later mutation can re-anchor if needed.
    */
   private _tryInjectSyncButton(btn: HTMLElement): boolean {
-    const actions = document.querySelector(".mobile-navbar-actions");
+    const actions = activeDocument.querySelector(".mobile-navbar-actions");
     if (!actions) return false;
 
     const menuBtn = actions.querySelector(".mobile-navbar-action-menu");
@@ -1099,8 +1099,8 @@ export default class BYOCPlugin extends Plugin {
     let resumeTimer: number | undefined;
 
     const triggerSync = () => {
-      window.clearTimeout(resumeTimer);
-      resumeTimer = window.setTimeout(() => {
+      activeWindow.clearTimeout(resumeTimer);
+      resumeTimer = activeWindow.setTimeout(() => {
         if (!this.isSyncing) {
           console.info("[BYOC] Mobile resume sync: triggering syncRun");
           this.syncRun("manual");
@@ -1110,24 +1110,24 @@ export default class BYOCPlugin extends Plugin {
 
     // Scenario 1: suspend → resume
     const handler = () => {
-      if (document.visibilityState !== "visible") return;
+      if (activeDocument.visibilityState !== "visible") return;
       triggerSync();
     };
-    document.addEventListener("visibilitychange", handler);
+    activeDocument.addEventListener("visibilitychange", handler);
 
     // Scenario 2: kill → cold start (only if user hasn't configured initRunAfterMilliseconds)
     if ((this.settings.initRunAfterMilliseconds ?? 0) <= 0) {
       this.app.workspace.onLayoutReady(() => {
         if (!this.isSyncing) {
           console.info("[BYOC] Mobile cold-start sync: triggering initial syncRun");
-          window.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
+          activeWindow.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
         }
       });
     }
 
     this.register(() => {
-      document.removeEventListener("visibilitychange", handler);
-      window.clearTimeout(resumeTimer);
+      activeDocument.removeEventListener("visibilitychange", handler);
+      activeWindow.clearTimeout(resumeTimer);
     });
   }
 
@@ -1151,7 +1151,7 @@ export default class BYOCPlugin extends Plugin {
 
     // Use Obsidian's native navbar-action styling (icon-only, transparent),
     // and add our own class so we can style the spinning state.
-    const btn = document.createElement("div");
+    const btn = activeDocument.createElement("div");
     btn.addClass("mobile-navbar-action");
     btn.addClass("byoc-mobile-sync");
     btn.setAttribute("aria-label", "Sync vault now");
@@ -1178,7 +1178,7 @@ export default class BYOCPlugin extends Plugin {
       tryInject();
 
       const observer = new MutationObserver(tryInject);
-      observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe(activeDocument.body, { childList: true, subtree: true });
       this.register(() => observer.disconnect());
     });
 
@@ -1347,14 +1347,14 @@ export default class BYOCPlugin extends Plugin {
 
   enableAutoClearOutputToDBHistIfSet() {
     this.app.workspace.onLayoutReady(() => {
-      window.setTimeout(() => clearAllLoggerOutputRecords(this.db), 1000 * 30);
+      activeWindow.setTimeout(() => clearAllLoggerOutputRecords(this.db), 1000 * 30);
     });
   }
 
   enableAutoClearSyncPlanHist() {
     this.app.workspace.onLayoutReady(() => {
-      window.setTimeout(() => clearExpiredSyncPlanRecords(this.db), 1000 * 45);
-      const intervalID = window.setInterval(() => clearExpiredSyncPlanRecords(this.db), 1000 * 60 * 5);
+      activeWindow.setTimeout(() => clearExpiredSyncPlanRecords(this.db), 1000 * 45);
+      const intervalID = activeWindow.setInterval(() => clearExpiredSyncPlanRecords(this.db), 1000 * 60 * 5);
       this.registerInterval(intervalID);
     });
   }

@@ -213,7 +213,7 @@ function fromBoxItemToEntity(item: any, baseDirPrefix: string): Entity {
     size: isFolder ? 0 : (item.size ?? 0),
     sizeRaw: isFolder ? 0 : (item.size ?? 0),
     etag: item.etag,
-  } as Entity;
+  };
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -406,7 +406,7 @@ export class FakeFsBox extends FakeFs {
         size: isFolder ? 0 : (item.size ?? 0),
         sizeRaw: isFolder ? 0 : (item.size ?? 0),
         etag: item.etag,
-      } as Entity;
+      };
     });
   }
 
@@ -455,7 +455,7 @@ export class FakeFsBox extends FakeFs {
       size: match.size ?? 0,
       sizeRaw: match.size ?? 0,
       etag: match.etag,
-    } as Entity;
+    };
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -466,7 +466,7 @@ export class FakeFsBox extends FakeFs {
       true,
       (u, b) => this._postJson(u, b)
     );
-    return { key, keyRaw: key, size: 0, sizeRaw: 0 } as Entity;
+    return { key, keyRaw: key, size: 0, sizeRaw: 0 };
   }
 
   async writeFile(
@@ -543,7 +543,7 @@ export class FakeFsBox extends FakeFs {
       mtimeCli: mtime, ctimeCli: ctime,
       size: content.byteLength,
       sizeRaw: content.byteLength,
-    } as Entity;
+    };
   }
 
   async readFile(key: string): Promise<ArrayBuffer> {

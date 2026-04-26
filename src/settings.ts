@@ -98,7 +98,7 @@ class PasswordModal extends Modal {
       });
 
     [
-      t("modal_password_attn1" as TransItemType),
+      t("modal_password_attn1"),
       t("modal_password_attn2" as TransItemType),
       t("modal_password_attn3" as TransItemType),
       t("modal_password_attn4" as TransItemType),
@@ -486,6 +486,16 @@ export class ExportSettingsQrCodeModal extends Modal {
   }
 }
 
+function setProviderHeadingSvg(setting: Setting, svgString: string, label: string) {
+  setting.nameEl.empty();
+  const doc = new DOMParser().parseFromString(svgString, "image/svg+xml");
+  const root = doc.documentElement;
+  if (root && root.tagName.toLowerCase() === "svg") {
+    setting.nameEl.appendChild(root);
+  }
+  setting.nameEl.createSpan({ text: label });
+}
+
 const getEyesElements = () => {
   const eyeEl = createElement(Eye);
   const eyeOffEl = createElement(EyeOff);
@@ -554,7 +564,7 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const s3Div = containerEl.createEl("div", { cls: "s3-hide" });
     s3Div.toggleClass("s3-hide", this.plugin.settings.serviceType !== "s3");
-    s3Div.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_S3} <span>${t("settings_s3")}</span>`;
+    setProviderHeadingSvg(new Setting(s3Div).setHeading(), SVG_S3, t("settings_s3"));
     s3Div.createEl("p", { text: t("settings_s3_disclaimer"), cls: "s3-disclaimer" });
 
     new Setting(s3Div)
@@ -833,7 +843,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       this.plugin.settings.serviceType !== "webdav"
     );
 
-    webdavDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_WEBDAV} <span>${t("settings_webdav")}</span>`;
+    setProviderHeadingSvg(new Setting(webdavDiv).setHeading(), SVG_WEBDAV, t("settings_webdav"));
     webdavDiv.createEl("p", { text: t("settings_webdav_disclaimer"), cls: "webdav-disclaimer" });
 
     new Setting(webdavDiv)
@@ -1035,7 +1045,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       this.plugin.settings.serviceType !== "webdis"
     );
 
-    webdisDiv.createEl("h2", { cls: "byoc-provider-heading" }).innerHTML = `${SVG_WEBDIS} <span>${t("settings_webdis")}</span>`;
+    setProviderHeadingSvg(new Setting(webdisDiv).setHeading(), SVG_WEBDIS, t("settings_webdis"));
     webdisDiv.createEl("p", { text: t("settings_webdis_disclaimer"), cls: "webdis-disclaimer" });
 
     new Setting(webdisDiv)
@@ -1323,7 +1333,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     //////////////////////////////////////////////////
 
     const basicDiv = containerEl.createEl("div");
-    basicDiv.createEl("h2", { text: t("settings_basic"), cls: "byoc-section-heading" });
+    new Setting(basicDiv).setName(t("settings_basic")).setHeading();
 
     const passwordSetting = new Setting(basicDiv);
     const encryptionMethodSetting = new Setting(basicDiv);
@@ -1397,14 +1407,14 @@ export class BYOCSettingTab extends PluginSettingTab {
               this.plugin.autoRunIntervalID !== undefined
             ) {
               // clear
-              window.clearInterval(this.plugin.autoRunIntervalID);
+              activeWindow.clearInterval(this.plugin.autoRunIntervalID);
               this.plugin.autoRunIntervalID = undefined;
             } else if (
               realVal !== undefined &&
               realVal !== null &&
               realVal > 0
             ) {
-              const intervalID = window.setInterval(() => {
+              const intervalID = activeWindow.setInterval(() => {
                 console.info("auto run from settings.ts");
                 this.plugin.syncRun("auto");
               }, realVal);
@@ -1564,9 +1574,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for advanced settings
     //////////////////////////////////////////////////
     const advDiv = containerEl.createEl("div");
-    advDiv.createEl("h2", {
-      text: t("settings_adv"), cls: "byoc-section-heading"
-    });
+    new Setting(advDiv).setName(t("settings_adv")).setHeading();
 
     new Setting(advDiv)
       .setName(t("settings_concurrency"))
@@ -1829,9 +1837,7 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     // import and export
     const importExportDiv = containerEl.createEl("div");
-    importExportDiv.createEl("h2", {
-      text: t("settings_importexport"), cls: "byoc-section-heading"
-    });
+    new Setting(importExportDiv).setName(t("settings_importexport")).setHeading();
 
     const importExportDivSetting1 = new Setting(importExportDiv)
       .setName(t("settings_export"))
@@ -2009,7 +2015,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     //////////////////////////////////////////////////
 
     const debugDiv = containerEl.createEl("div");
-    debugDiv.createEl("h2", { text: t("settings_debug"), cls: "byoc-section-heading" });
+    new Setting(debugDiv).setName(t("settings_debug")).setHeading();
 
     new Setting(debugDiv)
       .setName(t("settings_debuglevel"))

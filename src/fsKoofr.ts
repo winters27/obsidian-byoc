@@ -267,7 +267,7 @@ export class FakeFsKoofr extends FakeFs {
           key, keyRaw: key,
           mtimeSvr: item.modified ?? 0,
           size: 0, sizeRaw: 0,
-        } as Entity);
+        });
         // Recurse
         await this.listRecursive(mountID, itemPath, entities);
       } else {
@@ -278,7 +278,7 @@ export class FakeFsKoofr extends FakeFs {
           size: item.size ?? 0,
           sizeRaw: item.size ?? 0,
           hash: item.hash,
-        } as Entity);
+        });
       }
     }
   }
@@ -329,7 +329,7 @@ export class FakeFsKoofr extends FakeFs {
       size: isFolder ? 0 : (res.size ?? 0),
       sizeRaw: isFolder ? 0 : (res.size ?? 0),
       hash: res.hash,
-    } as Entity;
+    };
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -352,7 +352,7 @@ export class FakeFsKoofr extends FakeFs {
       }
     }
 
-    return { key, keyRaw: key, size: 0, sizeRaw: 0 } as Entity;
+    return { key, keyRaw: key, size: 0, sizeRaw: 0 };
   }
 
   async writeFile(
@@ -390,7 +390,7 @@ export class FakeFsKoofr extends FakeFs {
       mtimeCli: mtime, ctimeCli: ctime,
       size: content.byteLength,
       sizeRaw: content.byteLength,
-    } as Entity;
+    };
   }
 
   async readFile(key: string): Promise<ArrayBuffer> {

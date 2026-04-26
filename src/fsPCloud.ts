@@ -336,7 +336,7 @@ export class FakeFsPCloud extends FakeFs {
     // because URL callback params always arrive as strings.
     (global as any).locationid =
       typeof this.pCloudConfig.locationid === "string"
-        ? parseInt(this.pCloudConfig.locationid as any, 10)
+        ? parseInt(this.pCloudConfig.locationid, 10)
         : (this.pCloudConfig.locationid ?? 1);
     this.client = pcloudSdk.createClient(token);
   }
@@ -447,8 +447,8 @@ async _getAccessToken() {
 
   async mkdir(
     key: string,
-    mtime?: number | undefined,
-    ctime?: number | undefined
+    mtime?: number  ,
+    ctime?: number  
   ): Promise<Entity> {
     if (!key.endsWith("/")) {
       throw Error(`you should not mkdir on key=${key}`);
@@ -569,7 +569,7 @@ async _getAccessToken() {
       // console.warn(`uploading empty file ${key}`);
       const controller = new AbortController();
       const timeoutMs = 300; // just a random reasonable number
-      const id = setTimeout(() => controller.abort(), timeoutMs);
+      const id = activeWindow.setTimeout(() => controller.abort(), timeoutMs);
       try {
         const rsp = await fetch(apiUrl, {
           method: "PUT",
@@ -580,7 +580,7 @@ async _getAccessToken() {
         // console.warn(`we abort the request of uploading empty file ${key}:`);
         // console.warn(e);
       } finally {
-        clearTimeout(id);
+        activeWindow.clearTimeout(id);
       }
 
       // raw stat here

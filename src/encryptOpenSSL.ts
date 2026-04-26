@@ -13,15 +13,15 @@ const getKeyIVFromPassword = async (
   password: string,
   rounds: number = DEFAULT_ITER
 ) => {
-  const k1 = await window.crypto.subtle.importKey(
+  const k1 = await activeWindow.crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(password).buffer as ArrayBuffer,
+    new TextEncoder().encode(password).buffer,
     { name: "PBKDF2" },
     false,
     ["deriveKey", "deriveBits"]
   );
 
-  const k2 = (await window.crypto.subtle.deriveBits(
+  const k2 = (await activeWindow.crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
       salt: salt as any,
@@ -30,7 +30,7 @@ const getKeyIVFromPassword = async (
     },
     k1,
     256 + 128
-  )) as ArrayBuffer;
+  ));
 
   return k2;
 };
@@ -45,14 +45,14 @@ export const encryptArrayBuffer = async (
   if (saltHex !== "") {
     salt = hexStringToTypedArray(saltHex);
   } else {
-    salt = window.crypto.getRandomValues(new Uint8Array(8));
+    salt = activeWindow.crypto.getRandomValues(new Uint8Array(8));
   }
 
   const derivedKey = await getKeyIVFromPassword(salt, password, rounds);
   const key = derivedKey.slice(0, 32);
   const iv = derivedKey.slice(32, 32 + 16);
 
-  const keyCrypt = await window.crypto.subtle.importKey(
+  const keyCrypt = await activeWindow.crypto.subtle.importKey(
     "raw",
     key,
     { name: "AES-CBC" },
@@ -60,11 +60,11 @@ export const encryptArrayBuffer = async (
     ["encrypt", "decrypt"]
   );
 
-  const enc = (await window.crypto.subtle.encrypt(
+  const enc = (await activeWindow.crypto.subtle.encrypt(
     { name: "AES-CBC", iv },
     keyCrypt,
     arrBuf
-  )) as ArrayBuffer;
+  ));
 
   const prefix = new TextEncoder().encode("Salted__");
 
@@ -88,7 +88,7 @@ export const decryptArrayBuffer = async (
   const key = derivedKey.slice(0, 32);
   const iv = derivedKey.slice(32, 32 + 16);
 
-  const keyCrypt = await window.crypto.subtle.importKey(
+  const keyCrypt = await activeWindow.crypto.subtle.importKey(
     "raw",
     key,
     { name: "AES-CBC" },
@@ -96,11 +96,11 @@ export const decryptArrayBuffer = async (
     ["encrypt", "decrypt"]
   );
 
-  const dec = (await window.crypto.subtle.decrypt(
+  const dec = (await activeWindow.crypto.subtle.decrypt(
     { name: "AES-CBC", iv },
     keyCrypt,
     arrBuf.slice(16)
-  )) as ArrayBuffer;
+  ));
 
   return dec;
 };

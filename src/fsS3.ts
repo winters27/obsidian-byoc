@@ -205,12 +205,12 @@ const getObjectBodyToArrayBuffer = async (
     throw Error(`ObjectBody is undefined and don't know how to deal with it`);
   }
   if (b instanceof Readable) {
-    return (await new Promise((resolve, reject) => {
+    return await new Promise<ArrayBuffer>((resolve, reject) => {
       const chunks: Uint8Array[] = [];
       b.on("data", (chunk) => chunks.push(chunk));
       b.on("error", reject);
       b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks)) as ArrayBuffer));
-    })) as ArrayBuffer;
+    });
   } else if (b instanceof ReadableStream) {
     return await new Response(b, {}).arrayBuffer();
   } else if (b instanceof Blob) {

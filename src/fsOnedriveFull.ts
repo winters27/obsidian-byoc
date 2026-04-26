@@ -274,7 +274,7 @@ const fromDriveItemToEntity = (
     size: isFolder ? 0 : (x.size ?? 0),
     sizeRaw: isFolder ? 0 : (x.size ?? 0),
     synthesizedFile: false,
-  } as Entity;
+  };
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -443,7 +443,7 @@ export class FakeFsOnedriveFull extends FakeFs {
     // Upload session ranges — NO auth header
     const res = await retryFetch(url, {
       method: "PUT",
-      body: data.slice(start, end).buffer as ArrayBuffer,
+      body: data.slice(start, end).buffer,
       headers: {
         "Content-Length": `${end - start}`,
         "Content-Range": `bytes ${start}-${end - 1}/${total}`,
@@ -585,7 +585,7 @@ export class FakeFsOnedriveFull extends FakeFs {
         key, keyRaw: key,
         mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
         size: 0, sizeRaw: 0, synthesizedFile: true,
-      } as Entity;
+      };
     }
 
     const remotePath = getOnedrivePath(key, this.remoteBaseDir);

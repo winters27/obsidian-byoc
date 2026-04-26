@@ -237,7 +237,7 @@ export const setToString = (a: Set<string>, delimiter = ",") => {
 };
 
 export const extractSvgSub = (x: string, subEl = "rect") => {
-  const parser = new window.DOMParser();
+  const parser = new DOMParser();
   const dom = parser.parseFromString(x, "image/svg+xml");
   const svg = dom.querySelector("svg")!;
   svg.setAttribute("viewbox", "0 0 10 10");
@@ -252,7 +252,7 @@ export const extractSvgSub = (x: string, subEl = "rect") => {
  */
 export const getRandomIntInclusive = (min: number, max: number) => {
   const randomBuffer = new Uint32Array(1);
-  window.crypto.getRandomValues(randomBuffer);
+  activeWindow.crypto.getRandomValues(randomBuffer);
   const randomNumber = randomBuffer[0] / (0xffffffff + 1);
   const min2 = Math.ceil(min);
   const max2 = Math.floor(max);
@@ -265,7 +265,7 @@ export const getRandomIntInclusive = (min: number, max: number) => {
  * @returns
  */
 export const getRandomArrayBuffer = (byteLength: number) => {
-  const k = window.crypto.getRandomValues(new Uint8Array(byteLength));
+  const k = activeWindow.crypto.getRandomValues(new Uint8Array(byteLength));
   return bufferToArrayBuffer(k);
 };
 
@@ -347,10 +347,10 @@ export const unixTimeToStr = (x: number | undefined | null, hasMs = false) => {
   }
   if (hasMs) {
     // 1716712162574 => '2024-05-26T16:29:22.574+08:00'
-    return window.moment(x).toISOString(true);
+    return activeWindow.moment(x).toISOString(true);
   } else {
     // 1716712162574 => '2024-05-26T16:29:22+08:00'
-    return window.moment(x).format() as string;
+    return activeWindow.moment(x).format() as string;
   }
 };
 
@@ -520,7 +520,7 @@ export const compareVersion = (x: string | null, y: string | null) => {
  * @returns
  */
 export const stringToFragment = (string: string) => {
-  const wrapper = document.createElement("template");
+  const wrapper = activeDocument.createElement("template");
   wrapper.innerHTML = string;
   return wrapper.content;
 };
@@ -531,7 +531,7 @@ export const stringToFragment = (string: string) => {
  * @returns
  */
 export const delay = (ms: number) =>
-  new Promise((resolve) => setTimeout(resolve, ms));
+  new Promise((resolve) => activeWindow.setTimeout(resolve, ms));
 
 
 
@@ -652,7 +652,7 @@ export const splitFileSizeToChunkRanges = (
 };
 
 export const getSha1 = async (x: ArrayBuffer, stringify: "base64" | "hex") => {
-  const y = await window.crypto.subtle.digest("SHA-1", x);
+  const y = await activeWindow.crypto.subtle.digest("SHA-1", x);
 
   if (stringify === "base64") {
     return arrayBufferToBase64(y);

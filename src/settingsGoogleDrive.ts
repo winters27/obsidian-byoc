@@ -47,7 +47,7 @@ class GoogleDriveAuthModal extends Modal {
       text: "Authorize with Google",
       cls: "mod-cta",
     }, (el) => {
-      el.onclick = () => window.open(authUrl);
+      el.onclick = () => activeWindow.open(authUrl);
     });
   }
 

@@ -81,7 +81,7 @@ const fromDropboxItemToEntity = (
       keyRaw: key,
       size: 0,
       sizeRaw: 0,
-    } as Entity;
+    };
   } else if (x[".tag"] === "file") {
     const mtimeCli = Date.parse(x.client_modified).valueOf();
     const mtimeSvr = Date.parse(x.server_modified).valueOf();
@@ -93,7 +93,7 @@ const fromDropboxItemToEntity = (
       size: x.size,
       sizeRaw: x.size,
       hash: x.content_hash,
-    } as Entity;
+    };
   } else {
     // x[".tag"] === "deleted"
     throw Error("do not support deleted tag");

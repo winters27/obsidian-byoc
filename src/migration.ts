@@ -48,7 +48,7 @@ async function readLegacyConfig(
     }
 
     console.info("[BYOC Migration] Successfully read legacy remotely-save config.");
-    return decoded as Record<string, any>;
+    return decoded;
   } catch (err) {
     console.warn("[BYOC Migration] Failed to read legacy config:", err);
     return null;

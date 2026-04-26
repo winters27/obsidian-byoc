@@ -43,7 +43,7 @@ class KoofrAuthModal extends Modal {
 
     const div2 = contentEl.createDiv();
     t("modal_koofrauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 }
 

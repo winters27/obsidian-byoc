@@ -54,7 +54,7 @@ class OnedrivefullAuthModal extends Modal {
       this.plugin.oauth2Info.verifier = verifier;
 
       const div2 = contentEl.createDiv();
-      contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+      contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 } catch (e) {
       console.error(e);

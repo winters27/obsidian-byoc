@@ -39,7 +39,7 @@ export const DEFAULT_GOOGLEDRIVE_CONFIG: GoogleDriveConfig = {
   refreshToken: "",
   remoteBaseDir: "",
   credentialsShouldBeDeletedAtTimeMs: 0,
-  scope: SCOPES as any,
+  scope: SCOPES,
   kind: "googledrive",
 };
 
@@ -362,7 +362,7 @@ export class FakeFsGoogleDrive extends FakeFs {
           mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
           size: isFolder ? 0 : size,
           sizeRaw: isFolder ? 0 : size,
-        } as Entity);
+        });
 
         if (isFolder) {
           await this.listRecursive(f.id, `${pathPrefix}${f.name}/`, entities);
@@ -408,7 +408,7 @@ export class FakeFsGoogleDrive extends FakeFs {
 
     if (!name) {
       // Stat on root
-      return { key, keyRaw: key, size: 0, sizeRaw: 0 } as Entity;
+      return { key, keyRaw: key, size: 0, sizeRaw: 0 };
     }
 
     const file = await this.findFile(
@@ -434,7 +434,7 @@ export class FakeFsGoogleDrive extends FakeFs {
       mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
       size: isFolder ? 0 : size,
       sizeRaw: isFolder ? 0 : size,
-    } as Entity;
+    };
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -442,7 +442,7 @@ export class FakeFsGoogleDrive extends FakeFs {
     if (name) {
       await this.findOrCreateFolder(name, parentId);
     }
-    return { key, keyRaw: key, size: 0, sizeRaw: 0 } as Entity;
+    return { key, keyRaw: key, size: 0, sizeRaw: 0 };
   }
 
   async writeFile(
@@ -501,7 +501,7 @@ export class FakeFsGoogleDrive extends FakeFs {
       mtimeCli: mtime, ctimeCli: ctime,
       size: content.byteLength,
       sizeRaw: content.byteLength,
-    } as Entity;
+    };
   }
 
   async readFile(key: string): Promise<ArrayBuffer> {

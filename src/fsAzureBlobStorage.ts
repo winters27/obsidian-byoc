@@ -146,7 +146,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
           size: isFolder ? 0 : size,
           sizeRaw: isFolder ? 0 : size,
           etag: etag ?? undefined,
-        } as Entity);
+        });
       }
 
       // Check for continuation
@@ -183,7 +183,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
       size: size,
       sizeRaw: size,
       etag: etag,
-    } as Entity;
+    };
   }
 
   async mkdir(key: string, mtime?: number, ctime?: number): Promise<Entity> {
@@ -194,7 +194,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
         key: key,
         size: 0,
         sizeRaw: 0,
-      } as Entity;
+      };
     }
 
     const folderKey = key.endsWith("/") ? key : `${key}/`;
@@ -223,7 +223,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
       key: folderKey,
       size: 0,
       sizeRaw: 0,
-    } as Entity;
+    };
   }
 
   async writeFile(
@@ -259,7 +259,7 @@ export class FakeFsAzureBlobStorage extends FakeFs {
       mtimeCli: mtime,
       size: content.byteLength,
       sizeRaw: content.byteLength,
-    } as Entity;
+    };
   }
 
   async readFile(key: string): Promise<ArrayBuffer> {

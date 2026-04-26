@@ -45,7 +45,7 @@ class BoxAuthModal extends Modal {
     div2.createEl("p", { text: "1. Click the button below to authorize BYOC within Box." });
     div2.createEl("p", { text: `2. BYOC will authenticate via the obsidian:// protocol.` });
     div2.createEl("p", { text: "3. If prompted, please allow the browser to open Obsidian." });
-    const btn = contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => window.open(authUrl); });
+    const btn = contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
     btn.addClass("mod-cta");
 
 }
