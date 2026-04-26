@@ -203,7 +203,7 @@ async function retryReq<T>(
         );
       }
 
-      const headers = headersToRecord(err.headers);
+      const headers = headersToRecord(err.headers as Headers);
       const svrSec =
         err.error.error.retry_after ||
         Number.parseInt(headers["retry-after"] || "1") ||

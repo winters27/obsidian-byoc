@@ -87,7 +87,7 @@ export function getClient(
       return new FakeFsAzureBlobStorage(settings.azureblobstorage, vaultName);
     default:
       throw new Error(
-        `[BYOC] Cannot init client for unknown serviceType: ${(settings as any).serviceType}`
+        `[BYOC] Cannot init client for unknown serviceType: ${String((settings as { serviceType?: unknown }).serviceType)}`
       );
   }
 }

@@ -38,7 +38,7 @@ async function readLegacyConfig(
     }
 
     const raw = await plugin.app.vault.adapter.read(legacyDataPath);
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Parameters<typeof messyConfigToNormal>[0];
 
     // The legacy plugin uses the same messy encoding (base64url reversed)
     const decoded = messyConfigToNormal(parsed);

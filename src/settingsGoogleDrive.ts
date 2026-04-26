@@ -99,7 +99,7 @@ class GoogleDriveRevokeAuthModal extends Modal {
             );
             await this.plugin.saveSettings();
             new Notice(t("modal_googledriverevokeauth_clean_notice"));
-            (this.plugin as any).settingTab?.display();
+            (this.plugin as { settingTab?: { display: () => void } }).settingTab?.display();
             this.close();
           } catch (err) {
             console.error(err);

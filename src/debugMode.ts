@@ -18,7 +18,7 @@ const getSubsetOfSyncPlan = (x: string, onlyChange: boolean) => {
   if (!onlyChange) {
     return x;
   }
-  const y: SyncPlanType = JSON.parse(x);
+  const y = JSON.parse(x) as SyncPlanType;
   const z: SyncPlanType = Object.fromEntries(
     Object.entries(y).filter(([key, val]) => {
       if (key === "/$@meta") {

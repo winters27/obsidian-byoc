@@ -522,7 +522,6 @@ export class BYOCSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
-    containerEl.style.setProperty("overflow-wrap", "break-word");
 
     containerEl.empty();
     containerEl.addClass("byoc-settings");
@@ -2034,7 +2033,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .addButton(async (button) => {
         button.setButtonText(t("settings_outputsettingsconsole_button"));
         button.onClick(async () => {
-          const c = messyConfigToNormal(await this.plugin.loadData());
+          const c = messyConfigToNormal(await this.plugin.loadData() as Parameters<typeof messyConfigToNormal>[0]);
           console.debug(c);
           new Notice(t("settings_outputsettingsconsole_notice"));
         });

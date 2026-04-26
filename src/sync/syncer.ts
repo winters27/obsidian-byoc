@@ -207,7 +207,7 @@ export async function syncer(
   configDir: string,
   settings: BYOCPluginSettings,
   pluginVersion: string,
-  configSaver: () => Promise<any>,
+  configSaver: () => Promise<unknown>,
   getProtectError: (
     protectModifyPercentage: number,
     realModifyDeleteCount: number,

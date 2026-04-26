@@ -27,14 +27,12 @@ export const messyConfigToNormal = (
     // we should decode
     const y = JSON.parse(
       (
-        base64url.parse(reverseString(x["d"]), {
-          out: Buffer.allocUnsafe as unknown as new (size: number) => { [index: number]: number },
+        base64url.parse(reverseString(x.d), {
+          out: ((size: number) => Buffer.allocUnsafe(size)) as unknown as new (size: number) => { [index: number]: number },
           loose: true,
         }) as Buffer
       ).toString("utf-8")
-    );
-    // console.debug("loading, parsed config is:");
-    // console.debug(y);
+    ) as BYOCPluginSettings;
     return y;
   } else {
     // return as is

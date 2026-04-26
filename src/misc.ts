@@ -3,6 +3,7 @@ import * as path from "path";
 import type { Vault } from "obsidian";
 
 import emojiRegex from "emoji-regex";
+// eslint-disable-next-line no-restricted-imports, import/no-extraneous-dependencies -- moment is bundled with Obsidian; don't add it as a direct dep
 import moment from "moment";
 import { base32 } from "rfc4648";
 import XRegExp from "xregexp";
@@ -422,7 +423,7 @@ export const toText = (x: unknown) => {
     }
     throw new Error("not jsonable");
   } catch {
-    return String(x);
+    return Object.prototype.toString.call(x);
   }
 };
 
@@ -437,10 +438,10 @@ export const statFix = async (vault: Vault, path: string) => {
     throw Error(`${path} doesn't exist cannot run stat`);
   }
   if (s.ctime === undefined || s.ctime === null || Number.isNaN(s.ctime)) {
-    s.ctime = undefined as any; // force assignment
+    (s as { ctime: number | undefined }).ctime = undefined;
   }
   if (s.mtime === undefined || s.mtime === null || Number.isNaN(s.mtime)) {
-    s.mtime = undefined as any; // force assignment
+    (s as { mtime: number | undefined }).mtime = undefined;
   }
   if (
     (s.size === undefined || s.size === null || Number.isNaN(s.size)) &&
@@ -803,7 +804,7 @@ export const retryFetch = async (
     // retryFetch is a Response-shaped wrapper used by Box and Google Drive
     // for streaming uploads/downloads. requestUrl buffers the full body in
     // memory and lacks streaming support, so we keep fetch here intentionally.
-     
+    // eslint-disable-next-line no-restricted-globals -- streaming uploads/downloads need fetch, not requestUrl
     const resp = await fetch(input, init);
     if (resp.status !== 429 || idx === waitSeconds.length - 1) {
       if (resp.status === 429 && idx === waitSeconds.length - 1) {

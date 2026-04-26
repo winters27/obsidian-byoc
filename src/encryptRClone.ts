@@ -153,9 +153,7 @@ export class CipherRclone {
       };
 
       channel.port2.onmessageerror = (event) => {
-        // console.debug("main: receiving error in decryptNameByCallingWorker");
         reject(new Error(`messageerror: ${String(event.data)}`));
-        channel;
       };
 
       // console.debug("main: before postMessage in decryptNameByCallingWorker");

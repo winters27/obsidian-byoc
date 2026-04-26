@@ -1,7 +1,5 @@
 import cloneDeep from "lodash/cloneDeep";
 import QRCode from "qrcode";
-// BYOC: onedrivefull shrinker — stub until provider is implemented in Batch 3
-const getShrinkedSettingsOnedriveFull = (config: any) => cloneDeep(config);
 import {
   COMMAND_URI,
   COMMAND_URI_LEGACY,
@@ -9,6 +7,9 @@ import {
   type BYOCPluginSettings,
   type UriParams,
 } from "./baseTypes";
+
+// BYOC: onedrivefull shrinker — stub until provider is implemented in Batch 3
+const getShrinkedSettingsOnedriveFull = <T>(config: T): T => cloneDeep(config);
 import { getShrinkedSettings as getShrinkedSettingsOnedrive } from "./fsOnedrive";
 
 export const exportQrCodeUri = async (
@@ -101,7 +102,7 @@ export const parseUriByHand = (input: string) => {
 };
 
 export const importQrCodeUri = (
-  inputParams: any,
+  inputParams: unknown,
   currentVaultName: string
 ): ProcessQrCodeResultType => {
   const params = inputParams as UriParams;
@@ -130,10 +131,10 @@ export const importQrCodeUri = (
     };
   }
 
-  let settings = {} as BYOCPluginSettings;
+  let settings: BYOCPluginSettings;
   try {
-    settings = JSON.parse(params.data);
-  } catch (e) {
+    settings = JSON.parse(params.data) as BYOCPluginSettings;
+  } catch {
     return {
       status: "error",
       message: `errors while parsing settings: ${JSON.stringify(inputParams)}`,

@@ -41,7 +41,7 @@ export const serializeMetadataOnRemote = (x: MetadataOnRemote) => {
   const y = x;
 
   if (y["version"] === undefined) {
-    y["version"] === DEFAULT_VERSION_FOR_METADATAONREMOTE;
+    y["version"] = DEFAULT_VERSION_FOR_METADATAONREMOTE;
   }
   if (y["generatedWhen"] === undefined) {
     y["generatedWhen"] = Date.now();
@@ -94,7 +94,7 @@ export const deserializeMetadataOnRemote = (x: string | ArrayBuffer) => {
   try {
     y3 = (
       base64url.parse(reverseString(y2obj.d), {
-        out: Buffer.allocUnsafe as unknown as new (size: number) => { [index: number]: number },
+        out: ((size: number) => Buffer.allocUnsafe(size)) as unknown as new (size: number) => { [index: number]: number },
         loose: true,
       }) as Buffer
     ).toString("utf-8");

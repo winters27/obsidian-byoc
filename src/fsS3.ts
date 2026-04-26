@@ -24,7 +24,8 @@ import {
   type FetchHttpHandlerOptions,
 } from "@smithy/fetch-http-handler";
 // @ts-ignore
-import { requestTimeout } from "@smithy/fetch-http-handler/dist-es/request-timeout";
+import { requestTimeout as _requestTimeoutImpl } from "@smithy/fetch-http-handler/dist-es/request-timeout";
+const requestTimeout = _requestTimeoutImpl as (timeoutInMs?: number) => Promise<never>;
 import { type HttpRequest, HttpResponse } from "@smithy/protocol-http";
 import { buildQueryString } from "@smithy/querystring-builder";
 // biome-ignore lint/suspicious/noShadowRestrictedNames: <explanation>
@@ -91,7 +92,7 @@ class ObsHttpHandler extends FetchHttpHandler {
       urlObj.host = this.reverseProxyNoSignUrl;
       url = urlObj.href;
     }
-    const body =
+    const body: unknown =
       method === "GET" || method === "HEAD" ? undefined : request.body;
 
     const transformedHeaders: Record<string, string> = {};
@@ -108,9 +109,13 @@ class ObsHttpHandler extends FetchHttpHandler {
       contentType = transformedHeaders["content-type"];
     }
 
-    let transformedBody: any = body;
+    let transformedBody: ArrayBuffer | string | undefined;
     if (ArrayBuffer.isView(body)) {
-      transformedBody = bufferToArrayBuffer(body);
+      transformedBody = bufferToArrayBuffer(body) as ArrayBuffer;
+    } else if (typeof body === "string" || body instanceof ArrayBuffer || body === undefined) {
+      transformedBody = body;
+    } else {
+      transformedBody = body as ArrayBuffer;
     }
 
     const param: RequestUrlParam = {
@@ -212,7 +217,7 @@ const getObjectBodyToArrayBuffer = async (
   if (b instanceof Readable) {
     return await new Promise<ArrayBuffer>((resolve, reject) => {
       const chunks: Uint8Array[] = [];
-      b.on("data", (chunk) => chunks.push(chunk));
+      b.on("data", (chunk: Uint8Array) => chunks.push(chunk));
       b.on("error", reject);
       b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks)) as ArrayBuffer));
     });
@@ -260,8 +265,8 @@ const getS3Client = (s3Config: S3Config) => {
   }
 
   s3Client.middlewareStack.add(
-    (next, context) => (args) => {
-      (args.request as any).headers["cache-control"] = "no-cache";
+    (next, _context) => (args) => {
+      (args.request as { headers: Record<string, string> }).headers["cache-control"] = "no-cache";
       return next(args);
     },
     {

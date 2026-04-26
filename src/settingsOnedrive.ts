@@ -229,7 +229,7 @@ export const generateOnedriveSettingsPart = (
         .addOption("error", t("settings_onedrive_emptyfile_error"))
         .setValue(plugin.settings.onedrive.emptyFile)
         .onChange(async (val) => {
-          plugin.settings.onedrive.emptyFile = val as any;
+          plugin.settings.onedrive.emptyFile = val as "skip" | "error";
           await plugin.saveSettings();
         });
     });

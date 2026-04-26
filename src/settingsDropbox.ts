@@ -101,9 +101,9 @@ class DropboxAuthModal extends Modal {
                 DROPBOX_APP_KEY,
                 verifier,
                 authCode,
-                async (e: any) => {
+                async (e: unknown) => {
                   new Notice(t("protocol_dropbox_connect_fail"));
-                  new Notice(`${e}`);
+                  new Notice(`${String(e)}`);
                   throw e;
                 }
               );
