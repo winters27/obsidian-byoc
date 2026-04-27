@@ -1,4 +1,3 @@
-vi.mock("obsidian", () => ({ requestUrl: vi.fn() }));
 import { strict as assert } from "assert";
 import { getOrigPath } from "../src/fsWebdis";
 
