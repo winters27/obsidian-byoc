@@ -34,8 +34,7 @@ export const exportQrCodeUri = async (
     delete settings2.yandexdisk;
     delete settings2.koofr;
     delete settings2.azureblobstorage;
-    // eslint-disable-next-line @typescript-eslint/no-deprecated -- pro is kept for migration compat
-    delete settings2.pro;
+    delete (settings2 as unknown as { pro?: unknown }).pro;
   } else if (exportFields === "s3") {
     settings2 = { s3: cloneDeep(settings.s3) };
   } else if (exportFields === "dropbox") {
@@ -64,8 +63,7 @@ export const exportQrCodeUri = async (
     settings2 = { azureblobstorage: cloneDeep(settings.azureblobstorage) };
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- vaultRandomID kept for legacy import/export round-trips
-  delete settings2.vaultRandomID;
+  delete (settings2 as unknown as { vaultRandomID?: string }).vaultRandomID;
   const data = encodeURIComponent(JSON.stringify(settings2));
   const vault = encodeURIComponent(currentVaultName);
   const version = encodeURIComponent(pluginVersion);

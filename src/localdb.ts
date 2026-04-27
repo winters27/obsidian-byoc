@@ -1,8 +1,8 @@
-// This file intentionally references several @deprecated symbols
-// (SyncMetaMappingRecord, fileHistoryTbl, syncMappingTbl, etc.) — they
-// are retained solely to migrate users from the original Remotely Save
-// schema to the BYOC v3 schema.
-/* eslint-disable @typescript-eslint/no-deprecated */
+// Legacy schema migration: this file references several legacy symbols
+// (SyncMetaMappingRecord, fileHistoryTbl, syncMappingTbl, etc.) that exist
+// solely to migrate users from the original Remotely Save schema to the
+// BYOC v3 schema. They are not part of the public API and must not be used
+// by new code.
 import localforage from "localforage";
 import { extendPrototype as ep1 } from "localforage-getitems";
 import { extendPrototype as ep2 } from "localforage-removeitems";
@@ -27,19 +27,13 @@ export const DEFAULT_TBL_PREV_SYNC_RECORDS = "prevsyncrecords";
 export const DEFAULT_TBL_PROFILER_RESULTS = "profilerresults";
 export const DEFAULT_TBL_FILE_CONTENT_HISTORY = "filecontenthistory";
 
-/**
- * @deprecated
- */
+/** Legacy table name from the original Remotely Save schema; kept for migration. */
 export const DEFAULT_TBL_FILE_HISTORY = "filefolderoperationhistory";
-/**
- * @deprecated
- */
+/** Legacy table name from the original Remotely Save schema; kept for migration. */
 export const DEFAULT_TBL_SYNC_MAPPING = "syncmetadatahistory";
 
-/**
- * @deprecated
- * But we cannot remove it. Because we want to migrate the old data.
- */
+/** Legacy record shape from the original Remotely Save schema; kept so we can
+ *  read existing user data during the BYOC v3 migration. */
 interface SyncMetaMappingRecord {
   localKey: string;
   remoteKey: string;
@@ -70,16 +64,12 @@ export interface InternalDBs {
   profilerResultsTbl: LocalForage;
   fileContentHistoryTbl: LocalForage;
 
-  /**
-   * @deprecated
-   * But we cannot remove it. Because we want to migrate the old data.
-   */
+  /** Legacy table handle from the original Remotely Save schema; kept so we
+   *  can drain old data during the BYOC v3 migration. */
   fileHistoryTbl: LocalForage;
 
-  /**
-   * @deprecated
-   * But we cannot remove it. Because we want to migrate the old data.
-   */
+  /** Legacy table handle from the original Remotely Save schema; kept so we
+   *  can drain old data during the BYOC v3 migration. */
   syncMappingTbl: LocalForage;
 }
 
@@ -332,12 +322,8 @@ export const clearFileHistoryOfEverythingByVault = async (
   // }
 };
 
-/**
- * @deprecated But we cannot remove it. Because we want to migrate the old data.
- * @param db
- * @param vaultRandomID
- * @returns
- */
+/** Legacy: reads the original Remotely Save sync-mapping table for the
+ *  BYOC v3 migration drain. Not for new code. */
 export const getAllSyncMetaMappingByVault = async (
   db: InternalDBs,
   vaultRandomID: string

@@ -33,7 +33,7 @@ class GoogleDriveAuthModal extends Modal {
   }
 
   onOpen() {
-    setSvgTitle(this.titleEl, SVG_GDRIVE, "Connect Google Drive Account");
+    setSvgTitle(this.titleEl, SVG_GDRIVE, "Connect Google Drive account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const authUrl = generateAuthUrl();
@@ -71,7 +71,7 @@ class GoogleDriveRevokeAuthModal extends Modal {
   }
 
   onOpen() {
-    setSvgTitle(this.titleEl, SVG_GDRIVE, "Revoke Google Drive Account");
+    setSvgTitle(this.titleEl, SVG_GDRIVE, "Revoke Google Drive account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
     const { contentEl } = this;

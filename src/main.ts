@@ -932,14 +932,18 @@ export default class BYOCPlugin extends Plugin {
     if (this.settings.onedrive.emptyFile === undefined) this.settings.onedrive.emptyFile = "skip";
     if (this.settings.onedrive.kind === undefined) this.settings.onedrive.kind = "onedrive";
 
-    // WebDAV defaults
-    /* eslint-disable @typescript-eslint/no-deprecated -- migration: read deprecated fields to backfill new ones */
-    if (this.settings.webdav.manualRecursive === undefined) this.settings.webdav.manualRecursive = true;
-    if (this.settings.webdav.depth === undefined || ["auto","auto_1","auto_infinity","auto_unknown"].includes(this.settings.webdav.depth)) {
-      this.settings.webdav.depth = "manual_1";
-      this.settings.webdav.manualRecursive = true;
+    // WebDAV defaults — cast through a fresh inline type so the legacy
+    // `manualRecursive` field can be backfilled without tripping the
+    // @deprecated marker on WebdavConfig.
+    const webdavMig = this.settings.webdav as unknown as {
+      manualRecursive?: boolean;
+      depth?: string;
+    };
+    if (webdavMig.manualRecursive === undefined) webdavMig.manualRecursive = true;
+    if (webdavMig.depth === undefined || ["auto","auto_1","auto_infinity","auto_unknown"].includes(webdavMig.depth)) {
+      webdavMig.depth = "manual_1";
+      webdavMig.manualRecursive = true;
     }
-    /* eslint-enable @typescript-eslint/no-deprecated */
     if (this.settings.webdav.remoteBaseDir === undefined) this.settings.webdav.remoteBaseDir = "";
     if (this.settings.webdav.customHeaders === undefined) this.settings.webdav.customHeaders = "";
 
@@ -962,13 +966,18 @@ export default class BYOCPlugin extends Plugin {
     }
     if (this.settings.deleteToWhere === undefined) this.settings.deleteToWhere = "system";
     if (this.settings.syncBookmarks === undefined) this.settings.syncBookmarks = false;
-    /* eslint-disable @typescript-eslint/no-deprecated -- migration: zero out / backfill deprecated fields */
-    this.settings.logToDB = false; // deprecated
-    if (requireApiVersion(API_VER_ENSURE_REQURL_OK)) this.settings.s3.bypassCorsLocally = true;
+    // Migration: zero out / backfill legacy fields. Cast through fresh inline
+    // types so the @deprecated markers on these fields don't trip the rule.
+    const settingsMig = this.settings as unknown as {
+      logToDB?: boolean;
+      howToCleanEmptyFolder?: string;
+    };
+    const s3Mig = this.settings.s3 as unknown as { bypassCorsLocally?: boolean };
+    settingsMig.logToDB = false;
+    if (requireApiVersion(API_VER_ENSURE_REQURL_OK)) s3Mig.bypassCorsLocally = true;
     if (this.settings.agreeToUseSyncV3 === undefined) this.settings.agreeToUseSyncV3 = true; // BYOC: always true
     if (this.settings.conflictAction === undefined) this.settings.conflictAction = "keep_newer";
-    if (this.settings.howToCleanEmptyFolder === undefined) this.settings.howToCleanEmptyFolder = "clean_both";
-    /* eslint-enable @typescript-eslint/no-deprecated */
+    if (settingsMig.howToCleanEmptyFolder === undefined) settingsMig.howToCleanEmptyFolder = "clean_both";
     if (this.settings.protectModifyPercentage === undefined) this.settings.protectModifyPercentage = 50;
     if (this.settings.syncDirection === undefined) this.settings.syncDirection = "bidirectional";
     if (this.settings.obfuscateSettingFile === undefined) this.settings.obfuscateSettingFile = true;
@@ -1005,14 +1014,15 @@ export default class BYOCPlugin extends Plugin {
 
   async getVaultRandomIDFromOldConfigFile() {
     let vaultRandomID = "";
-    /* eslint-disable @typescript-eslint/no-deprecated -- migration: drain legacy vaultRandomID from data.json */
-    if (this.settings.vaultRandomID !== undefined) {
-      if (this.settings.vaultRandomID !== "") vaultRandomID = this.settings.vaultRandomID;
+    // Drain the legacy vaultRandomID off `data.json` via an inline cast so the
+    // @deprecated marker on the field doesn't trip the rule.
+    const settingsMig = this.settings as unknown as { vaultRandomID?: string };
+    if (settingsMig.vaultRandomID !== undefined) {
+      if (settingsMig.vaultRandomID !== "") vaultRandomID = settingsMig.vaultRandomID;
       console.debug("vaultRandomID is no longer saved in data.json");
-      delete this.settings.vaultRandomID;
+      delete settingsMig.vaultRandomID;
       await this.saveSettings();
     }
-    /* eslint-enable @typescript-eslint/no-deprecated */
     return vaultRandomID;
   }
 

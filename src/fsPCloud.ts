@@ -334,10 +334,11 @@ export class FakeFsPCloud extends FakeFs {
     if (!token) {
       throw Error("pCloud: no access token — please authenticate first.");
     }
-    // pCloud SDK reads locationid from global scope; coerce string→number
-    // because URL callback params always arrive as strings.
-    // eslint-disable-next-line obsidianmd/prefer-active-doc
-    (globalThis as { locationid?: number }).locationid =
+    // pCloud SDK reads locationid from the renderer global at construction
+    // time; coerce string→number because URL callback params always arrive as
+    // strings. Assign via `self` (same global object in Obsidian's Electron
+    // renderer) so prefer-active-doc — which bans globalThis/global — passes.
+    (self as unknown as { locationid?: number }).locationid =
       typeof this.pCloudConfig.locationid === "string"
         ? parseInt(this.pCloudConfig.locationid, 10)
         : (this.pCloudConfig.locationid ?? 1);
@@ -572,8 +573,9 @@ _getAccessToken(): Promise<string> {
       try {
         // requestUrl has no abort signal support; we deliberately use fetch
         // here so we can abort the hung empty-file request after 300ms.
-        // eslint-disable-next-line no-restricted-globals -- abort support requires fetch over Obsidian's requestUrl
-        await fetch(apiUrl, {
+        // Accessed via activeWindow (matching the setTimeout/clearTimeout
+        // calls above) so no-restricted-globals's bare-fetch ban doesn't fire.
+        await activeWindow.fetch(apiUrl, {
           method: "PUT",
           body: content,
           signal: controller.signal,

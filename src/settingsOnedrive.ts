@@ -39,7 +39,7 @@ class OnedriveAuthModal extends Modal {
 
   async onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
-    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Connect OneDrive Account");
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Connect OneDrive account");
     const { contentEl } = this;
     const t = this.t;
 
@@ -95,7 +95,7 @@ class OnedriveRevokeAuthModal extends Modal {
 
   onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
-    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive Account");
+    setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive account");
     const t = this.t;
     const { contentEl } = this;
 

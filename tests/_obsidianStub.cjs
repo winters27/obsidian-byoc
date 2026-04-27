@@ -20,6 +20,7 @@ const stub = {
   TFolder: class {},
   normalizePath: (p) => p,
   requireApiVersion: () => true,
+  moment: require("moment"),
 };
 
 const origResolve = Module._resolveFilename;

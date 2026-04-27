@@ -5,9 +5,7 @@ const path = pathUncast as unknown as PosixPath;
 import type { Vault } from "obsidian";
 
 import emojiRegex from "emoji-regex";
-/* eslint-disable no-restricted-imports -- Vitest requires direct import due to missing obsidian mock wrapper */
-/* eslint-disable import/no-extraneous-dependencies -- Moment is universally provided by the Obsidian runtime */
-import * as moment from "moment";
+import { moment } from "obsidian";
 import { base32 } from "rfc4648";
 import XRegExp from "xregexp";
 

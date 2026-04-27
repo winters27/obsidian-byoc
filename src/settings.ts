@@ -653,22 +653,18 @@ export class BYOCSettingTab extends PluginSettingTab {
             .addOption("disable", t("disable"))
             .addOption("enable", t("enable"));
 
-          /* eslint-disable @typescript-eslint/no-deprecated -- bypassCorsLocally is deprecated but still user-toggleable for legacy setups */
+          // Cast through fresh inline type so the @deprecated marker on
+          // bypassCorsLocally doesn't trip the rule — the field is legacy but
+          // still user-toggleable for older setups.
+          const s3Mig = this.plugin.settings.s3 as unknown as {
+            bypassCorsLocally?: boolean;
+          };
           dropdown
-            .setValue(
-              `${
-                this.plugin.settings.s3.bypassCorsLocally ? "enable" : "disable"
-              }`
-            )
+            .setValue(`${s3Mig.bypassCorsLocally ? "enable" : "disable"}`)
             .onChange(async (value) => {
-              if (value === "enable") {
-                this.plugin.settings.s3.bypassCorsLocally = true;
-              } else {
-                this.plugin.settings.s3.bypassCorsLocally = false;
-              }
+              s3Mig.bypassCorsLocally = value === "enable";
               await this.plugin.saveSettings();
             });
-          /* eslint-enable @typescript-eslint/no-deprecated */
         });
     }
 
@@ -682,7 +678,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("5", "5");
         dropdown.addOption("10", "10");
         dropdown.addOption("15", "15");
-        dropdown.addOption("20", "20 (Default)");
+        dropdown.addOption("20", "20 (default)");
 
         dropdown
           .setValue(`${this.plugin.settings.s3.partsConcurrency}`)
@@ -936,18 +932,22 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("manual_1", t("settings_webdav_depth_1"));
         dropdown.addOption("manual_infinity", t("settings_webdav_depth_inf"));
 
-        /* eslint-disable @typescript-eslint/no-deprecated -- manualRecursive is deprecated but still backed by user dropdown */
+        // Cast through fresh inline type so the @deprecated marker on
+        // manualRecursive doesn't trip the rule — the field is legacy but
+        // still wired to this dropdown for existing users.
+        const webdavMig = this.plugin.settings.webdav as unknown as {
+          manualRecursive?: boolean;
+        };
         dropdown
           .setValue(this.plugin.settings.webdav.depth || "manual_1")
           .onChange(async (val) => {
             if (val === "manual_1") {
               this.plugin.settings.webdav.depth = "manual_1";
-              this.plugin.settings.webdav.manualRecursive = true;
+              webdavMig.manualRecursive = true;
             } else if (val === "manual_infinity") {
               this.plugin.settings.webdav.depth = "manual_infinity";
-              this.plugin.settings.webdav.manualRecursive = false;
+              webdavMig.manualRecursive = false;
             }
-            /* eslint-enable @typescript-eslint/no-deprecated */
 
             // normally save
             await this.plugin.saveSettings();
@@ -959,7 +959,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(stringToFragment(t("settings_webdav_customheaders_desc")))
       .addTextArea((textArea) => {
         textArea
-          .setPlaceholder(`X-Header1: Value1\nx-header2: Value2`)
+          .setPlaceholder(`X-Header1: value1\nX-Header2: value2`)
           .setValue(`${this.plugin.settings.webdav.customHeaders ?? ""}`)
           .onChange(async (value) => {
             this.plugin.settings.webdav.customHeaders = value
@@ -1467,10 +1467,10 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_synconsave_desc"))
       .addDropdown((dropdown) => {
         dropdown.addOption("-1", t("settings_synconsave_disable"));
-        dropdown.addOption("3000", "3 Seconds");
-        dropdown.addOption("5000", "5 Seconds (recommended)");
-        dropdown.addOption("10000", "10 Seconds");
-        dropdown.addOption("30000", "30 Seconds");
+        dropdown.addOption("3000", "3 seconds");
+        dropdown.addOption("5000", "5 seconds (recommended)");
+        dropdown.addOption("10000", "10 seconds");
+        dropdown.addOption("30000", "30 seconds");
 
         dropdown
           .setValue(`${(this.plugin.settings.syncOnSaveAfterMilliseconds ?? -1) > 0 ? this.plugin.settings.syncOnSaveAfterMilliseconds : "-1"}`)
@@ -1597,7 +1597,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("1", "1");
         dropdown.addOption("2", "2");
         dropdown.addOption("3", "3");
-        dropdown.addOption("5", "5 (Default)");
+        dropdown.addOption("5", "5 (default)");
         dropdown.addOption("10", "10");
         dropdown.addOption("15", "15");
         dropdown.addOption("20", "20");

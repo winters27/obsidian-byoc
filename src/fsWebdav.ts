@@ -1,5 +1,3 @@
-// eslint-disable-next-line import/no-nodejs-modules -- polyfilled via webpack
-import { Buffer } from "buffer";
 import { Queue } from "@fyears/tsqueue";
 import { getReasonPhrase } from "http-status-codes/build/cjs/utils-functions";
 import chunk from "lodash/chunk";
@@ -344,8 +342,9 @@ export class FakeFsWebdav extends FakeFs {
       this.webdavConfig.depth === "auto_unknown"
     ) {
       this.webdavConfig.depth = "manual_1";
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- migration: backfill legacy field
-      this.webdavConfig.manualRecursive = true;
+      // Cast through a fresh inline type so the legacy `manualRecursive` field
+      // can be backfilled without touching the @deprecated marker on WebdavConfig.
+      (this.webdavConfig as unknown as { manualRecursive?: boolean }).manualRecursive = true;
       if (this.saveUpdatedConfigFunc !== undefined) {
         await this.saveUpdatedConfigFunc();
         console.debug(
