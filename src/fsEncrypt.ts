@@ -161,7 +161,7 @@ export class FakeFsEncrypt extends FakeFs {
           ok: true,
           reason: "password_matched",
         };
-      } catch (error) {
+      } catch {
         return {
           ok: false,
           reason: "password_or_method_not_matched_or_remote_not_encrypted",
@@ -418,10 +418,11 @@ export class FakeFsEncrypt extends FakeFs {
     return await this.innerFs.checkConnect(callbackFunc);
   }
 
-  async closeResources() {
+  closeResources(): Promise<void> {
     if (this.method === "rclone-base64" && this.cipherRClone !== undefined) {
       this.cipherRClone.closeResources();
     }
+    return Promise.resolve();
   }
 
   async encryptEntity(input: Entity): Promise<Entity> {
@@ -542,7 +543,7 @@ export class FakeFsEncrypt extends FakeFs {
           } else {
             throw Error(`cannot decrypt name=${name}`);
           }
-        } catch (error) {
+        } catch {
           throw Error(`cannot decrypt name=${name}`);
         }
       } else if (name.startsWith(openssl.MAGIC_ENCRYPTED_PREFIX_BASE64URL)) {
@@ -556,7 +557,7 @@ export class FakeFsEncrypt extends FakeFs {
           } else {
             throw Error(`cannot decrypt name=${name}`);
           }
-        } catch (error) {
+        } catch {
           throw Error(`cannot decrypt name=${name}`);
         }
       } else {

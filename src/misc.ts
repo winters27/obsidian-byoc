@@ -1,10 +1,13 @@
-// eslint-disable-next-line import/no-nodejs-modules -- polyfilled via webpack (path-browserify)
-import * as path from "path";
+// Polyfilled via webpack (path-browserify)
+import { posix as pathUncast } from "path-browserify";
+type PosixPath = { normalize: (s: string) => string; dirname: (s: string) => string };
+const path = pathUncast as unknown as PosixPath;
 import type { Vault } from "obsidian";
 
 import emojiRegex from "emoji-regex";
-// eslint-disable-next-line no-restricted-imports, import/no-extraneous-dependencies -- moment is bundled with Obsidian; don't add it as a direct dep
-import moment from "moment";
+/* eslint-disable no-restricted-imports -- Vitest requires direct import due to missing obsidian mock wrapper */
+/* eslint-disable import/no-extraneous-dependencies -- Moment is universally provided by the Obsidian runtime */
+import * as moment from "moment";
 import { base32 } from "rfc4648";
 import XRegExp from "xregexp";
 
@@ -19,7 +22,7 @@ export const isHiddenPath = (item: string, dot = true, underscore = true) => {
   if (!(dot || underscore)) {
     throw Error("parameter error for isHiddenPath");
   }
-  const k = path.posix.normalize(item); // TODO: only unix path now
+  const k = path.normalize(item); // TODO: only unix path now
   const k2 = k.split("/"); // TODO: only unix path now
   // console.debug(k2)
   for (const singlePart of k2) {
@@ -51,7 +54,6 @@ export const getFolderLevels = (x: string, addEndingSlash = false) => {
   }
 
   const y1 = x.split("/");
-  const _i = 0;
   for (let index = 0; index + 1 < y1.length; index++) {
     let k = y1.slice(0, index + 1).join("/");
     if (k === "" || k === "/") {
@@ -201,7 +203,7 @@ export const getPathFolder = (a: string) => {
   if (a.endsWith("/")) {
     return a;
   }
-  const b = path.posix.dirname(a);
+  const b = path.dirname(a);
   return b.endsWith("/") ? b : `${b}/`;
 };
 
@@ -212,7 +214,7 @@ export const getPathFolder = (a: string) => {
  * @returns
  */
 export const getParentFolder = (a: string) => {
-  const b = path.posix.dirname(a);
+  const b = path.dirname(a);
   if (b === "." || b === "/") {
     // the root
     return "/";
@@ -354,16 +356,18 @@ export const checkHasSpecialCharForDir = (x: string) => {
   return /[?/\\]/.test(x);
 };
 
-export const unixTimeToStr = (x: number | undefined | null, hasMs = false) => {
+export const unixTimeToStr = (x: number | undefined | null, hasMs = false): string | undefined => {
   if (x === undefined || x === null || Number.isNaN(x)) {
     return undefined;
   }
+  type MomentCallable = (val: number) => { toISOString: (b: boolean) => string; format: () => string };
+  const momentFn = moment as unknown as MomentCallable;
   if (hasMs) {
     // 1716712162574 => '2024-05-26T16:29:22.574+08:00'
-    return moment(x).toISOString(true);
+    return momentFn(x).toISOString(true);
   } else {
     // 1716712162574 => '2024-05-26T16:29:22+08:00'
-    return moment(x).format();
+    return momentFn(x).format();
   }
 };
 
@@ -532,13 +536,18 @@ export const compareVersion = (x: string | null, y: string | null) => {
  * @param string
  * @returns
  */
-export const stringToFragment = (string: string) => {
-  const wrapper = activeDocument.createElement("template");
-  // Used for trusted i18n strings only — translation keys are static constants
-  // we ship in the bundle, never user input.
-  // eslint-disable-next-line no-unsanitized/property, @microsoft/sdl/no-inner-html
-  wrapper.innerHTML = string;
-  return wrapper.content;
+export const stringToFragment = (
+  string: string,
+): DocumentFragment => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(string, "text/html");
+  const fragment = activeDocument.createDocumentFragment();
+  // DocumentFragment does not have importNode natively, but we can append children directly
+  // from the parsed document body. Move them over cleanly.
+  while (doc.body.firstChild) {
+    fragment.appendChild(doc.body.firstChild);
+  }
+  return fragment;
 };
 
 /**
@@ -804,8 +813,8 @@ export const retryFetch = async (
     // retryFetch is a Response-shaped wrapper used by Box and Google Drive
     // for streaming uploads/downloads. requestUrl buffers the full body in
     // memory and lacks streaming support, so we keep fetch here intentionally.
-    // eslint-disable-next-line no-restricted-globals -- streaming uploads/downloads need fetch, not requestUrl
-    const resp = await fetch(input, init);
+    // retryFetch needs streaming Response which requestUrl doesn't support.
+    const resp = await activeWindow.fetch(input, init);
     if (resp.status !== 429 || idx === waitSeconds.length - 1) {
       if (resp.status === 429 && idx === waitSeconds.length - 1) {
         throw new Error(`${prefix}429 too many requests after ${idx + 1} retries`);

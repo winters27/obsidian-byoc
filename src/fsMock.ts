@@ -1,6 +1,9 @@
 import type { Entity } from "./baseTypes";
 import { FakeFs } from "./fsAll";
 
+const notImplemented = () =>
+  Promise.reject(new Error("Method not implemented."));
+
 export class FakeFsMock extends FakeFs {
   kind: "mock";
 
@@ -9,53 +12,53 @@ export class FakeFsMock extends FakeFs {
     this.kind = "mock";
   }
 
-  async walk(): Promise<Entity[]> {
-    throw new Error("Method not implemented.");
+  walk(): Promise<Entity[]> {
+    return notImplemented();
   }
 
   async walkPartial(): Promise<Entity[]> {
     return await this.walk();
   }
 
-  async stat(key: string): Promise<Entity> {
-    throw new Error("Method not implemented.");
+  stat(key: string): Promise<Entity> {
+    return notImplemented();
   }
 
-  async mkdir(key: string, mtime: number, ctime: number): Promise<Entity> {
-    throw new Error("Method not implemented.");
+  mkdir(key: string, mtime: number, ctime: number): Promise<Entity> {
+    return notImplemented();
   }
 
-  async writeFile(
+  writeFile(
     key: string,
     content: ArrayBuffer,
     mtime: number,
     ctime: number
   ): Promise<Entity> {
-    throw new Error("Method not implemented.");
+    return notImplemented();
   }
 
-  async readFile(key: string): Promise<ArrayBuffer> {
-    throw new Error("Method not implemented.");
+  readFile(key: string): Promise<ArrayBuffer> {
+    return notImplemented();
   }
 
-  async rename(key1: string, key2: string): Promise<void> {
-    throw new Error("Method not implemented.");
+  rename(key1: string, key2: string): Promise<void> {
+    return notImplemented();
   }
 
-  async rm(key: string): Promise<void> {
-    throw new Error("Method not implemented.");
+  rm(key: string): Promise<void> {
+    return notImplemented();
   }
 
   async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
     return await this.checkConnectCommonOps(callbackFunc);
   }
 
-  async getUserDisplayName(): Promise<string> {
-    throw new Error("Method not implemented.");
+  getUserDisplayName(): Promise<string> {
+    return notImplemented();
   }
 
-  async revokeAuth(): Promise<void> {
-    throw new Error("Method not implemented.");
+  revokeAuth(): Promise<void> {
+    return notImplemented();
   }
 
   supportsRename(): boolean { return true; }

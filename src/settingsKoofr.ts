@@ -33,7 +33,7 @@ class KoofrAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_KOOFR, "Connect Koofr Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
@@ -42,7 +42,7 @@ class KoofrAuthModal extends Modal {
 
     const div2 = contentEl.createDiv();
     t("modal_koofrauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+    contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 }
 
@@ -70,7 +70,7 @@ class KoofrRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_KOOFR, "Revoke Koofr Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -147,7 +147,7 @@ export const generateKoofrSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_koofr_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new KoofrRevokeAuthModal(
           app,
           plugin,
@@ -166,7 +166,7 @@ export const generateKoofrSettingsPart = (
     .setDesc(t("settings_koofr_auth_desc"))
     .addButton(async (button) => {
       button.setButtonText(t("settings_koofr_auth_button"));
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new KoofrAuthModal(
           app,
           plugin,

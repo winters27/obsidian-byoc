@@ -70,7 +70,7 @@ class DropboxAuthModal extends Modal {
         });
     }
 
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => {
+    contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => {
       el.onclick = () => activeWindow.open(authUrl);
     });
 
@@ -101,7 +101,7 @@ class DropboxAuthModal extends Modal {
                 DROPBOX_APP_KEY,
                 verifier,
                 authCode,
-                async (e: unknown) => {
+                (e: unknown) => {
                   new Notice(t("protocol_dropbox_connect_fail"));
                   new Notice(`${String(e)}`);
                   throw e;
@@ -172,7 +172,7 @@ class DropboxRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_DROPBOX, "Revoke Dropbox Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -185,7 +185,7 @@ class DropboxRevokeAuthModal extends Modal {
 
     contentEl.createEl("a", {
       href: "https://www.dropbox.com/account/connected_apps",
-      text: "Open Dropbox Connected Apps",
+      text: "Open Dropbox connected apps",
       cls: "external-link",
     });
 
@@ -255,7 +255,7 @@ export const generateDropboxSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_dropbox_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new DropboxRevokeAuthModal(
           app,
           plugin,
@@ -270,12 +270,12 @@ export const generateDropboxSettingsPart = (
   }
 
   new Setting(dropboxAuthDiv)
-    .setName("Connect Dropbox Account")
-    .setDesc("Authenticate BYOC with your Dropbox account to enable cloud synchronization.")
+    .setName("Connect Dropbox account")
+    .setDesc("Authenticate byoc with your Dropbox account to enable cloud synchronization.")
     .addButton(async (button) => {
       button.setButtonText("Authorize");
       button.setCta();
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new DropboxAuthModal(
           app,
           plugin,

@@ -249,12 +249,12 @@ export class FakeFsWebdis extends FakeFs {
     // return true;
   }
 
-  async getUserDisplayName(): Promise<string> {
-    return this.webdisConfig.username || "<no usernme>";
+  getUserDisplayName(): Promise<string> {
+    return Promise.resolve(this.webdisConfig.username || "<no usernme>");
   }
 
-  async revokeAuth(): Promise<void> {
-    throw new Error("Method not implemented.");
+  revokeAuth(): Promise<void> {
+    return Promise.reject(new Error("Method not implemented."));
   }
 
   supportsRename(): boolean { return true; }

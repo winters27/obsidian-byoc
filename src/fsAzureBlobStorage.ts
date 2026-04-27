@@ -304,17 +304,20 @@ export class FakeFsAzureBlobStorage extends FakeFs {
     return this.checkConnectCommonOps(callbackFunc);
   }
 
-  async getUserDisplayName(): Promise<string> {
+  getUserDisplayName(): Promise<string> {
     if (!this.config.containerSasUrl) {
-      return "Azure Blob Storage (not configured)";
+      return Promise.resolve("Azure Blob Storage (not configured)");
     }
-    return `Azure Blob: ${this.config.containerName || "container"}`;
+    return Promise.resolve(
+      `Azure Blob: ${this.config.containerName || "container"}`
+    );
   }
 
-  async revokeAuth(): Promise<void> {
+  revokeAuth(): Promise<void> {
     // SAS tokens don't have a revoke flow — user regenerates on Azure portal
     this.config.containerSasUrl = "";
     this.config.containerName = "";
+    return Promise.resolve();
   }
 
   allowEmptyFile(): boolean {

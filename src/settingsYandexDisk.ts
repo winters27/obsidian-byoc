@@ -33,7 +33,7 @@ class YandexDiskAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_YANDEX, "Connect Yandex Disk Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
@@ -42,7 +42,7 @@ class YandexDiskAuthModal extends Modal {
 
     const div2 = contentEl.createDiv();
     t("modal_yandexdiskauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+    contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 }
 
@@ -70,7 +70,7 @@ class YandexDiskRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_YANDEX, "Revoke Yandex Disk Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -150,7 +150,7 @@ export const generateYandexDiskSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_yandexdisk_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new YandexDiskRevokeAuthModal(
           app,
           plugin,
@@ -169,7 +169,7 @@ export const generateYandexDiskSettingsPart = (
     .setDesc(t("settings_yandexdisk_auth_desc"))
     .addButton(async (button) => {
       button.setButtonText(t("settings_yandexdisk_auth_button"));
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new YandexDiskAuthModal(
           app,
           plugin,

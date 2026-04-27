@@ -64,7 +64,7 @@ class OnedriveAuthModal extends Modal {
         });
     }
 
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => {
+    contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => {
       el.onclick = () => activeWindow.open(authUrl);
     });
   }
@@ -93,7 +93,7 @@ class OnedriveRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
     setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive Account");
     const t = this.t;
@@ -178,7 +178,7 @@ export const generateOnedriveSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_onedrive_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new OnedriveRevokeAuthModal(
           app,
           plugin,
@@ -193,12 +193,12 @@ export const generateOnedriveSettingsPart = (
   }
 
   new Setting(onedriveAuthDiv)
-    .setName("Connect OneDrive Account")
-    .setDesc("Authenticate BYOC with your Microsoft OneDrive account to enable cloud synchronization.")
+    .setName("Connect OneDrive account")
+    .setDesc("Authenticate byoc with your Microsoft OneDrive account to enable cloud synchronization.")
     .addButton(async (button) => {
       button.setButtonText("Authorize");
       button.setCta();
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new OnedriveAuthModal(
           app,
           plugin,

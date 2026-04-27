@@ -182,6 +182,7 @@ describe("Misc: extract svg", () => {
   beforeEach(() => {
     const fakeBrowser = new JSDOM("");
     global.window = fakeBrowser.window as any;
+    (global as any).DOMParser = fakeBrowser.window.DOMParser;
   });
 
   it("should extract rect from svg correctly", () => {

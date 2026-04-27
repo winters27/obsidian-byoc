@@ -75,8 +75,10 @@ export abstract class FakeFs {
    *
    * Default: throws. Override in providers that support OAuth folder picking.
    */
-  async listFoldersAtRoot(): Promise<string[]> {
-    throw new Error(`[BYOC] listFoldersAtRoot not implemented for ${this.kind}`);
+  listFoldersAtRoot(): Promise<string[]> {
+    return Promise.reject(
+      new Error(`[BYOC] listFoldersAtRoot not implemented for ${this.kind}`)
+    );
   }
 
   /**
@@ -85,7 +87,9 @@ export abstract class FakeFs {
    *
    * Default: throws. Override in providers that support OAuth folder picking.
    */
-  async createFolderAtRoot(name: string): Promise<void> {
-    throw new Error(`[BYOC] createFolderAtRoot not implemented for ${this.kind}`);
+  createFolderAtRoot(name: string): Promise<void> {
+    return Promise.reject(
+      new Error(`[BYOC] createFolderAtRoot not implemented for ${this.kind}`)
+    );
   }
 }

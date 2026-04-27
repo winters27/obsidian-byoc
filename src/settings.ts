@@ -172,7 +172,7 @@ class EncryptionMethodModal extends Modal {
 
     new Setting(contentEl).addButton((button) => {
       button.setButtonText(t("confirm"));
-      button.onClick(async () => {
+      button.onClick(() => {
         this.close();
       });
       button.setClass("encryptionmethod-second-confirm");
@@ -375,7 +375,7 @@ class SyncConfigDirModal extends Modal {
     this.saveDropdownFunc = saveDropdownFunc;
   }
 
-  async onOpen() {
+  onOpen() {
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
 
@@ -629,9 +629,9 @@ export class BYOCSettingTab extends PluginSettingTab {
       .addDropdown((dropdown) => {
         dropdown.addOption(
           "virtualHostedStyle",
-          "Virtual Hosted-Style (default)"
+          "Virtual hosted-style (default)"
         );
-        dropdown.addOption("pathStyle", "Path-Style");
+        dropdown.addOption("pathStyle", "Path-style");
         dropdown
           .setValue(
             this.plugin.settings.s3.forcePathStyle
@@ -682,7 +682,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("5", "5");
         dropdown.addOption("10", "10");
         dropdown.addOption("15", "15");
-        dropdown.addOption("20", "20 (default)");
+        dropdown.addOption("20", "20 (Default)");
 
         dropdown
           .setValue(`${this.plugin.settings.s3.partsConcurrency}`)
@@ -810,7 +810,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for dropbox
     //////////////////////////////////////////////////
 
-    const { dropboxDiv, dropboxAllowedToUsedDiv: _dropboxAllowedToUsedDiv, dropboxNotShowUpHintSetting: _dropboxNotShowUpHintSetting } =
+    const { dropboxDiv } =
       generateDropboxSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -819,7 +819,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for onedrive
     //////////////////////////////////////////////////
 
-    const { onedriveDiv, onedriveAllowedToUsedDiv: _onedriveAllowedToUsedDiv, onedriveNotShowUpHintSetting: _onedriveNotShowUpHintSetting } =
+    const { onedriveDiv } =
       generateOnedriveSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -910,9 +910,9 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setName(t("settings_webdav_auth"))
       .setDesc(t("settings_webdav_auth_desc"))
       .addDropdown(async (dropdown) => {
-        dropdown.addOption("basic", "basic");
+        dropdown.addOption("basic", "Basic");
         if (VALID_REQURL) {
-          dropdown.addOption("digest", "digest");
+          dropdown.addOption("digest", "Digest");
         }
 
         // new version config, copied to old version, we need to reset it
@@ -959,7 +959,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(stringToFragment(t("settings_webdav_customheaders_desc")))
       .addTextArea((textArea) => {
         textArea
-          .setPlaceholder(`X-Header1: Value1\nX-Header2: Value2`)
+          .setPlaceholder(`X-Header1: Value1\nx-header2: Value2`)
           .setValue(`${this.plugin.settings.webdav.customHeaders ?? ""}`)
           .onChange(async (value) => {
             this.plugin.settings.webdav.customHeaders = value
@@ -1045,7 +1045,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setName(t("settings_webdis_addr"))
       .addText((text) =>
         text
-          .setPlaceholder("https://")
+          .setPlaceholder("HTTPS://")
           .setValue(this.plugin.settings.webdis.address)
           .onChange(async (value) => {
             this.plugin.settings.webdis.address = value.trim();
@@ -1137,8 +1137,6 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       onedriveFullDiv,
-      onedriveFullAllowedToUsedDiv: _onedriveFullAllowedToUsedDiv,
-      onedriveFullNotShowUpHintSetting: _onedriveFullNotShowUpHintSetting,
     } = generateOnedriveFullSettingsPart(
       containerEl,
       t,
@@ -1153,8 +1151,6 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       googleDriveDiv,
-      googleDriveAllowedToUsedDiv: _googleDriveAllowedToUsedDiv,
-      googleDriveNotShowUpHintSetting: _googleDriveNotShowUpHintSetting,
     } = generateGoogleDriveSettingsPart(
       containerEl,
       t,
@@ -1167,7 +1163,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for box
     //////////////////////////////////////////////////
 
-    const { boxDiv, boxAllowedToUsedDiv: _boxAllowedToUsedDiv, boxNotShowUpHintSetting: _boxNotShowUpHintSetting } =
+    const { boxDiv } =
       generateBoxSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1176,7 +1172,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for pcloud
     //////////////////////////////////////////////////
 
-    const { pCloudDiv, pCloudAllowedToUsedDiv: _pCloudAllowedToUsedDiv, pCloudNotShowUpHintSetting: _pCloudNotShowUpHintSetting } =
+    const { pCloudDiv } =
       generatePCloudSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1187,8 +1183,6 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       yandexDiskDiv,
-      yandexDiskAllowedToUsedDiv: _yandexDiskAllowedToUsedDiv,
-      yandexDiskNotShowUpHintSetting: _yandexDiskNotShowUpHintSetting,
     } = generateYandexDiskSettingsPart(
       containerEl,
       t,
@@ -1201,7 +1195,7 @@ export class BYOCSettingTab extends PluginSettingTab {
     // below for koofr
     //////////////////////////////////////////////////
 
-    const { koofrDiv, koofrAllowedToUsedDiv: _koofrAllowedToUsedDiv, koofrNotShowUpHintSetting: _koofrNotShowUpHintSetting } =
+    const { koofrDiv } =
       generateKoofrSettingsPart(containerEl, t, this.app, this.plugin, () =>
         this.plugin.saveSettings()
       );
@@ -1212,8 +1206,6 @@ export class BYOCSettingTab extends PluginSettingTab {
 
     const {
       azureBlobStorageDiv,
-      azureBlobStorageAllowedToUsedDiv: _azureBlobStorageAllowedToUsedDiv,
-      azureBlobStorageNotShowUpHintSetting: _azureBlobStorageNotShowUpHintSetting,
     } = generateAzureBlobStorageSettingsPart(
       containerEl,
       t,
@@ -1367,13 +1359,13 @@ export class BYOCSettingTab extends PluginSettingTab {
         text
           .setPlaceholder("")
           .setValue(`${this.plugin.settings.password}`)
-          .onChange(async (value) => {
+          .onChange((value) => {
             newPassword = value.trim();
           });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("confirm"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new PasswordModal(
             this.app,
             this.plugin,
@@ -1475,10 +1467,10 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_synconsave_desc"))
       .addDropdown((dropdown) => {
         dropdown.addOption("-1", t("settings_synconsave_disable"));
-        dropdown.addOption("3000", "3 seconds");
-        dropdown.addOption("5000", "5 seconds (Recommended)");
-        dropdown.addOption("10000", "10 seconds");
-        dropdown.addOption("30000", "30 seconds");
+        dropdown.addOption("3000", "3 Seconds");
+        dropdown.addOption("5000", "5 Seconds (recommended)");
+        dropdown.addOption("10000", "10 Seconds");
+        dropdown.addOption("30000", "30 Seconds");
 
         dropdown
           .setValue(`${(this.plugin.settings.syncOnSaveAfterMilliseconds ?? -1) > 0 ? this.plugin.settings.syncOnSaveAfterMilliseconds : "-1"}`)
@@ -1605,7 +1597,7 @@ export class BYOCSettingTab extends PluginSettingTab {
         dropdown.addOption("1", "1");
         dropdown.addOption("2", "2");
         dropdown.addOption("3", "3");
-        dropdown.addOption("5", "5 (default)");
+        dropdown.addOption("5", "5 (Default)");
         dropdown.addOption("10", "10");
         dropdown.addOption("15", "15");
         dropdown.addOption("20", "20");
@@ -1866,9 +1858,9 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_export_desc"));
     importExportDivSetting1.settingEl.addClass("setting-need-wrapping");
     importExportDivSetting1
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_basic_and_advanced_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1876,15 +1868,15 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_s3_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "s3").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_dropbox_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1892,9 +1884,9 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_onedrive_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1902,9 +1894,9 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_onedrivefull_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1912,21 +1904,21 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_webdav_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "webdav").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_webdis_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "webdis").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_googledrive_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1934,21 +1926,21 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_box_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "box").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_pcloud_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "pcloud").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_yandexdisk_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1956,15 +1948,15 @@ export class BYOCSettingTab extends PluginSettingTab {
           ).open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_koofr_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(this.app, this.plugin, "koofr").open();
         });
       })
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_export_azureblobstorage_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new ExportSettingsQrCodeModal(
             this.app,
             this.plugin,
@@ -1979,7 +1971,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_import_desc"))
       .addText((text) =>
         text
-          .setPlaceholder("obsidian://remotely-save?func=settings&...")
+          .setPlaceholder("Obsidian://remotely-save?func=settings&...")
           .setValue("")
           .onChange((val) => {
             importSettingVal = val;
@@ -2024,12 +2016,9 @@ export class BYOCSettingTab extends PluginSettingTab {
           }
         });
       });
-
-    //////////////////////////////////////////////////
     // below for pro
     //////////////////////////////////////////////////
 
-    const _proDiv = containerEl.createEl("div");
 
 
     //////////////////////////////////////////////////
@@ -2043,8 +2032,8 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setName(t("settings_debuglevel"))
       .setDesc(t("settings_debuglevel_desc"))
       .addDropdown(async (dropdown) => {
-        dropdown.addOption("info", "info");
-        dropdown.addOption("debug", "debug");
+        dropdown.addOption("info", "Info");
+        dropdown.addOption("debug", "Debug");
         dropdown
           .setValue(this.plugin.settings.currLogLevel ?? "info")
           .onChange(async (val: string) => {
@@ -2265,9 +2254,9 @@ export class BYOCSettingTab extends PluginSettingTab {
     new Setting(debugDiv)
       .setName(t("settings_outputbasepathvaultid"))
       .setDesc(t("settings_outputbasepathvaultid_desc"))
-      .addButton(async (button) => {
+      .addButton((button) => {
         button.setButtonText(t("settings_outputbasepathvaultid_button"));
-        button.onClick(async () => {
+        button.onClick(() => {
           new Notice(this.plugin.getVaultBasePath());
           new Notice(this.plugin.vaultRandomID);
         });
@@ -2278,8 +2267,8 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(t("settings_resetcache_desc"))
       .addButton(async (button) => {
         button.setButtonText(t("settings_resetcache_button"));
-        button.onClick(async () => {
-          await destroyDBs();
+        button.onClick(() => {
+          destroyDBs();
           new Notice(t("settings_resetcache_notice"));
           this.plugin.unload();
         });

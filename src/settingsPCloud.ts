@@ -33,16 +33,16 @@ class PCloudAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_PCLOUD, "Connect pCloud Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
 
-    const { authUrl } = await generateAuthUrl(true);
+    const { authUrl } = generateAuthUrl(true);
     const div2 = contentEl.createDiv();
     t("modal_pcloudauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
-    contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+    contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 }
 
@@ -71,7 +71,7 @@ class PCloudRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_PCLOUD, "Revoke pCloud Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -157,7 +157,7 @@ export const generatePCloudSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_pcloud_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new PCloudRevokeAuthModal(
           app,
           plugin,
@@ -177,7 +177,7 @@ export const generatePCloudSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_pcloud_auth_button"));
       button.setCta();
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new PCloudAuthModal(
           app,
           plugin,

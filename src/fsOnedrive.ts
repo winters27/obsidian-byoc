@@ -1089,14 +1089,14 @@ export class FakeFsOnedrive extends FakeFs {
    * https://docs.microsoft.com/en-us/graph/api/user-revokesigninsessions
    * https://docs.microsoft.com/en-us/graph/api/user-invalidateallrefreshtokens
    */
-  async revokeAuth() {
+  revokeAuth(): Promise<void> {
     // await this._init();
     // await this._postJson("/me/revokeSignInSessions", {});
-    throw new Error("Method not implemented.");
+    return Promise.reject(new Error("Method not implemented."));
   }
 
-  async getRevokeAddr() {
-    return "https://account.live.com/consent/Manage";
+  getRevokeAddr(): Promise<string> {
+    return Promise.resolve("https://account.live.com/consent/Manage");
   }
 
   allowEmptyFile(): boolean {

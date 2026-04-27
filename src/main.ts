@@ -246,7 +246,7 @@ export default class BYOCPlugin extends Plugin {
     if (this.awaitingFolderSelection) {
       console.debug(`[BYOC] syncRun skipped (${triggerSource}): awaiting remote folder selection`);
       if (triggerSource === "manual") {
-        new Notice("Pick a remote folder in BYOC settings before syncing.");
+        new Notice("Pick a remote folder in byoc settings before syncing.");
       }
       return;
     }
@@ -303,7 +303,7 @@ export default class BYOCPlugin extends Plugin {
       if (s === "manual" || s === "dry") new Notice(msg, timeout);
     };
 
-    const notifyFunc = async (s: SyncTriggerSourceType, step: number) => {
+    const notifyFunc = (s: SyncTriggerSourceType, step: number): Promise<void> => {
       switch (step) {
         case 0:
           if (s === "dry") getNotice(s, this.settings.currLogLevel === "info" ? t("syncrun_shortstep0") : t("syncrun_step0"));
@@ -329,11 +329,12 @@ export default class BYOCPlugin extends Plugin {
           getNotice(s, this.settings.currLogLevel === "info" ? t("syncrun_shortstep2") : t("syncrun_step8"));
           break;
         default:
-          throw new Error(`unknown step=${step} for showing notice`);
+          return Promise.reject(new Error(`unknown step=${step} for showing notice`));
       }
+      return Promise.resolve();
     };
 
-    const errNotifyFunc = async (s: SyncTriggerSourceType, error: Error) => {
+    const errNotifyFunc = (s: SyncTriggerSourceType, error: Error): Promise<void> => {
       console.error(error);
       if (error instanceof AggregateError) {
         for (const e of error.errors as unknown as Error[]) {
@@ -342,9 +343,10 @@ export default class BYOCPlugin extends Plugin {
       } else {
         getNotice(s, error?.message ?? "error while sync", 10 * 1000);
       }
+      return Promise.resolve();
     };
 
-    const ribbonFunc = async (s: SyncTriggerSourceType, step: number) => {
+    const ribbonFunc = (s: SyncTriggerSourceType, step: number): Promise<void> => {
       if (step === 1 && this.syncRibbon !== undefined) {
         setIcon(this.syncRibbon, iconNameSyncRunning);
         this.syncRibbon.setAttribute("aria-label",
@@ -353,6 +355,7 @@ export default class BYOCPlugin extends Plugin {
         setIcon(this.syncRibbon, iconNameSyncWait);
         this.syncRibbon.setAttribute("aria-label", `${this.manifest.name}`);
       }
+      return Promise.resolve();
     };
 
     const statusBarFunc = async (s: SyncTriggerSourceType, step: number, everythingOk: boolean) => {
@@ -369,18 +372,20 @@ export default class BYOCPlugin extends Plugin {
       }
     };
 
-    const markIsSyncingFunc = async (isSyncing: boolean) => {
+    const markIsSyncingFunc = (isSyncing: boolean): Promise<void> => {
       this.isSyncing = isSyncing;
+      return Promise.resolve();
     };
 
-    const callbackSyncProcess = async (
+    const callbackSyncProcess = (
       s: SyncTriggerSourceType,
       realCounter: number,
       realTotalCount: number,
       pathName: string,
       decision: string
-    ) => {
+    ): Promise<void> => {
       this.setCurrSyncMsg(t, s, realCounter, realTotalCount, pathName, decision, triggerSource);
+      return Promise.resolve();
     };
 
     if (this.isSyncing) {
@@ -498,16 +503,16 @@ export default class BYOCPlugin extends Plugin {
 
     // Legacy remotely-save:// URI support (for migration compatibility)
     try {
-      this.registerObsidianProtocolHandler(COMMAND_URI_LEGACY, async (inputParams) => {
+      this.registerObsidianProtocolHandler(COMMAND_URI_LEGACY, (inputParams) => {
         new Notice(
-          `[BYOC] Legacy remotely-save:// URI detected. Please update links to use bring-your-own-cloud:// instead.`
+          `[byoc] legacy remotely-save:// uri detected. Please update links to use bring-your-own-cloud:// instead.`
         );
       });
-    } catch (e) {
+    } catch {
       console.warn("[BYOC] Legacy protocol 'remotely-save' already registered (likely another plugin is active). Setup continuing.");
     }
 
-    this.registerObsidianProtocolHandler(COMMAND_CALLBACK, async (inputParams) => {
+    this.registerObsidianProtocolHandler(COMMAND_CALLBACK, (inputParams) => {
       new Notice(t("protocol_callbacknotsupported", { params: JSON.stringify(inputParams) }));
     });
 
@@ -527,7 +532,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.dropbox.clientID,
           this.oauth2Info.verifier,
           inputParams.code,
-          async (e: unknown) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${String(e)}`); throw e; }
+          (e: unknown) => { new Notice(t("protocol_dropbox_connect_fail")); new Notice(`${String(e)}`); throw e; }
         );
         await setConfigBySuccessfullAuthInplaceDropbox(this.settings.dropbox, authRes!, () => this.saveSettings());
         const client = getClient(this.settings, this.app.vault.getName(), () => this.saveSettings());
@@ -567,7 +572,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.onedrive.authority,
           inputParams.code,
           this.oauth2Info.verifier,
-          async (e: unknown) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${String(e)}`); throw e; }
+          (e: unknown) => { new Notice(t("protocol_onedrive_connect_fail")); new Notice(`${String(e)}`); throw e; }
         );
         if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         await setConfigBySuccessfullAuthInplaceOnedrive(this.settings.onedrive, rsp as AccessCodeResponseSuccessfulTypeOnedrive, () => this.saveSettings());
@@ -606,7 +611,7 @@ export default class BYOCPlugin extends Plugin {
           this.settings.onedrivefull.authority,
           inputParams.code,
           this.oauth2Info.verifier,
-          async (e: unknown) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${String(e)}`); throw e; }
+          (e: unknown) => { new Notice(t("protocol_onedrivefull_connect_fail")); new Notice(`${String(e)}`); throw e; }
         );
         if ((rsp as { error?: unknown }).error !== undefined) { new Notice(`${JSON.stringify(rsp)}`); throw new Error(`${JSON.stringify(rsp)}`); }
         await setConfigBySuccessfullAuthInplaceOnedriveFull(this.settings.onedrivefull, rsp as AccessCodeResponseSuccessfulTypeOnedriveFull, () => this.saveSettings());
@@ -641,7 +646,7 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqBox(
         inputParams.code,
-        async (e: unknown) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${String(e)}`); throw e; }
+        (e: unknown) => { new Notice(t("protocol_box_connect_fail")); new Notice(`${String(e)}`); throw e; }
       );
       await setConfigBySuccessfullAuthInplaceBox(this.settings.box, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
@@ -653,7 +658,7 @@ export default class BYOCPlugin extends Plugin {
         const username = await boxClient.getUserDisplayName();
         this.settings.box.username = username;
         await this.saveSettings();
-      } catch (_) { /* username display is non-critical */ }
+      } catch { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
       this.settingTab?.display();
@@ -675,7 +680,7 @@ export default class BYOCPlugin extends Plugin {
       const authRes = await sendAuthReqPCloud(
         inputParams.hostname,
         inputParams.code,
-        async (e: unknown) => { new Notice(t("protocol_pcloud_connect_fail")); new Notice(`${String(e)}`); throw e; }
+        (e: unknown) => { new Notice(t("protocol_pcloud_connect_fail")); new Notice(`${String(e)}`); throw e; }
       );
       await setConfigBySuccessfullAuthInplacePCloud(
         this.settings.pcloud,
@@ -696,7 +701,7 @@ export default class BYOCPlugin extends Plugin {
         this.settings.pcloud.username = username;
         await this.saveSettings();
         this.settingTab?.display();
-      } catch (_) { /* username display is non-critical */ }
+      } catch { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv?.toggleClass("pcloud-revoke-auth-button-hide", this.settings.pcloud?.accessToken === "");
       this.oauth2Info.revokeDiv = undefined;
@@ -722,7 +727,7 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqYandexDisk(
         inputParams.code,
-        async (e: unknown) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${String(e)}`); throw e; }
+        (e: unknown) => { new Notice(t("protocol_yandexdisk_connect_fail")); new Notice(`${String(e)}`); throw e; }
       );
       await setConfigBySuccessfullAuthInplaceYandexDisk(this.settings.yandexdisk, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
@@ -734,7 +739,7 @@ export default class BYOCPlugin extends Plugin {
         const username = await yandexClient.getUserDisplayName();
         this.settings.yandexdisk.username = username;
         await this.saveSettings();
-      } catch (_) { /* username display is non-critical */ }
+      } catch { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
       this.settingTab?.display();
@@ -755,7 +760,7 @@ export default class BYOCPlugin extends Plugin {
       }
       const authRes = await sendAuthReqKoofr(
         inputParams.code,
-        async (e: unknown) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${String(e)}`); throw e; }
+        (e: unknown) => { new Notice(t("protocol_koofr_connect_fail")); new Notice(`${String(e)}`); throw e; }
       );
       await setConfigBySuccessfullAuthInplaceKoofr(this.settings.koofr, authRes, () => this.saveSettings());
       this.oauth2Info.verifier = "";
@@ -767,7 +772,7 @@ export default class BYOCPlugin extends Plugin {
         const username = await koofrClient.getUserDisplayName();
         this.settings.koofr.username = username;
         await this.saveSettings();
-      } catch (_) { /* username display is non-critical */ }
+      } catch { /* username display is non-critical */ }
       this.oauth2Info.revokeAuthSetting = undefined;
       this.oauth2Info.revokeDiv = undefined;
       this.settingTab?.display();
@@ -793,7 +798,7 @@ export default class BYOCPlugin extends Plugin {
       try {
         const authRes = await sendAuthReqGoogleDrive(
           inputParams.code,
-          async (e: unknown) => { new Notice("Google Drive connection failed"); new Notice(`${String(e)}`); throw e; }
+          (e: unknown) => { new Notice("Google Drive connection failed"); new Notice(`${String(e)}`); throw e; }
         );
         if (!authRes || authRes.error) {
           new Notice("Google Drive connection failed");
@@ -810,7 +815,7 @@ export default class BYOCPlugin extends Plugin {
           const username = await gdClient.getUserDisplayName();
           this.settings.googledrive.username = username;
           await this.saveSettings();
-        } catch (_) { /* username display is non-critical */ }
+        } catch { /* username display is non-critical */ }
         this.oauth2Info.helperModal?.close();
         this.oauth2Info.helperModal = undefined;
         new Notice("Google Drive connected successfully!");
@@ -1301,7 +1306,7 @@ export default class BYOCPlugin extends Plugin {
     const t = (x: TransItemType, vars?: Record<string, string>) => this.i18n.t(x, vars);
 
     if (syncStatus === "syncing") {
-      this.statusBarElement.setText("BYOC ⟳");
+      this.statusBarElement.setText("Byoc ⟳");
       this.statusBarElement.setAttribute("aria-label", "Syncing now…");
       return;
     }
@@ -1310,7 +1315,7 @@ export default class BYOCPlugin extends Plugin {
     const isSuccess = (lastSuccessSyncMillis ?? -999) >= (lastFailedSyncMillis ?? -999);
 
     if (inputTs <= 0) {
-      this.statusBarElement.setText("BYOC —");
+      this.statusBarElement.setText("Byoc —");
       this.statusBarElement.setAttribute("aria-label", "Never synced. Click to sync now.");
       return;
     }

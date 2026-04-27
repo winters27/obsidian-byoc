@@ -30,7 +30,7 @@ export interface AuthAllowFirstRes {
 /**
  * https://docs.pcloud.com/methods/oauth_2.0/authorize.html
  */
-export const generateAuthUrl = async (hasCallback: boolean) => {
+export const generateAuthUrl = (hasCallback: boolean) => {
   const clientID = PCLOUD_CLIENT_ID;
   const state = nanoid();
   let authUrl = `https://my.pcloud.com/oauth2/authorize?response_type=code&client_id=${clientID}&state=${state}`;
@@ -381,12 +381,12 @@ export class FakeFsPCloud extends FakeFs {
     return this.client!;
   }
 
-async _getAccessToken() {
+_getAccessToken(): Promise<string> {
     if (this.pCloudConfig.accessToken === "") {
-      throw Error("The user has not manually auth yet.");
+      return Promise.reject(Error("The user has not manually auth yet."));
     }
 
-    return this.pCloudConfig.accessToken;
+    return Promise.resolve(this.pCloudConfig.accessToken);
 
     // TODO: no expire date?
     // https://docs.pcloud.com/methods/intro/authentication.html
@@ -515,10 +515,6 @@ async _getAccessToken() {
     }
 
     await this._init();
-
-    const prevCachedEntity: PCloudEntity | undefined =
-      this.keyToPCloudEntity[key];
-    const _prevFileID: number | undefined = prevCachedEntity?.id;
 
     let parentID: number | undefined = undefined;
     let parentFolderPath: string | undefined = undefined;

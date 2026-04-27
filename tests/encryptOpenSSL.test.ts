@@ -17,6 +17,7 @@ describe("Encryption OpenSSL tests", () => {
     global.window = {
       crypto: require("crypto").webcrypto,
     } as any;
+    (global as any).activeWindow = global.window;
   });
 
   it("should encrypt string", async () => {

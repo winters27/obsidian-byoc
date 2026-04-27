@@ -32,7 +32,7 @@ class GoogleDriveAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_GDRIVE, "Connect Google Drive Account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
@@ -70,7 +70,7 @@ class GoogleDriveRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_GDRIVE, "Revoke Google Drive Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -83,7 +83,7 @@ class GoogleDriveRevokeAuthModal extends Modal {
 
     contentEl.createEl("a", {
       href: "https://myaccount.google.com/permissions",
-      text: "Open Google Account Permissions",
+      text: "Open Google account permissions",
       cls: "external-link",
     });
 
@@ -152,7 +152,7 @@ export const generateGoogleDriveSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_googledrive_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new GoogleDriveRevokeAuthModal(
           app,
           plugin,
@@ -169,7 +169,7 @@ export const generateGoogleDriveSettingsPart = (
     .setDesc(t("settings_googledrive_auth_desc"))
     .addButton(async (button) => {
       button.setButtonText(t("settings_googledrive_auth_button"));
-      button.onClick(async () => {
+      button.onClick(() => {
         const m = new GoogleDriveAuthModal(
           app,
           plugin,

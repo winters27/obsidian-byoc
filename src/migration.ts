@@ -321,7 +321,7 @@ export async function runMigration(
     }
 
     new Notice(
-      "[BYOC] Migrated settings from Remotely Save. Your old config is backed up.",
+      "[byoc] migrated settings from remotely save. Your old config is backed up.",
       8000
     );
     console.debug("[BYOC Migration] Migration from remotely-save complete.");

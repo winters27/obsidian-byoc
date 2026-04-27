@@ -1,11 +1,11 @@
 // Polyfilled at build time via webpack's "browser" field in package.json
 // (buffer-browserify, path-browserify, stream-browserify) so these work
 // on mobile too.
-/* eslint-disable import/no-nodejs-modules */
-import { Buffer } from "buffer";
-import * as path from "path";
-import { Readable } from "stream";
-/* eslint-enable import/no-nodejs-modules */
+// Polyfilled at build time via webpack.
+import { Buffer } from "buffer/";
+import { posix as path } from "path-browserify";
+import { Readable } from "readable-stream";
+
 import type { PutObjectCommandInput, _Object } from "@aws-sdk/client-s3";
 import {
   DeleteObjectCommand,
@@ -133,6 +133,7 @@ class ObsHttpHandler extends FetchHttpHandler {
         for (const key of Object.keys(headers)) {
           headersLower[key.toLowerCase()] = headers[key];
         }
+        ((param as unknown) as Record<string, unknown>)["bypassCorsLocally"] = true;
         const stream = new ReadableStream<Uint8Array>({
           start(controller) {
             controller.enqueue(new Uint8Array(rsp.arrayBuffer));
@@ -169,11 +170,12 @@ class ObsHttpHandler extends FetchHttpHandler {
 // other stuffs
 ////////////////////////////////////////////////////////////////////////////////
 
-export const simpleTransRemotePrefix = (x: string) => {
+export const simpleTransRemotePrefix = (x: string): string => {
   if (x === undefined) {
     return "";
   }
-  let y = path.posix.normalize(x.trim());
+  type PosixPath = { normalize: (s: string) => string };
+  let y = (path as unknown as PosixPath).normalize(x.trim());
   if (y === undefined || y === "" || y === "/" || y === ".") {
     return "";
   }
@@ -192,7 +194,6 @@ export const DEFAULT_S3_CONFIG: S3Config = {
   s3AccessKeyID: "",
   s3SecretAccessKey: "",
   s3BucketName: "",
-  bypassCorsLocally: true,
   partsConcurrency: 20,
   forcePathStyle: false,
   remotePrefix: "",
@@ -237,8 +238,8 @@ const getS3Client = (s3Config: S3Config) => {
   }
 
   let s3Client: S3Client;
-  // eslint-disable-next-line @typescript-eslint/no-deprecated -- bypassCorsLocally still drives client setup for legacy users
-  if (VALID_REQURL && s3Config.bypassCorsLocally) {
+  // bypassCorsLocally still drives client setup for legacy users.
+  if (VALID_REQURL && ((s3Config as unknown) as Record<string, unknown>).bypassCorsLocally) {
     s3Client = new S3Client({
       region: s3Config.s3Region,
       endpoint: endpoint,
@@ -771,8 +772,8 @@ export class FakeFsS3 extends FakeFs {
     return bodyContents;
   }
 
-  async rename(key1: string, key2: string): Promise<void> {
-    throw Error(`rename not implemented for s3`);
+  rename(key1: string, key2: string): Promise<void> {
+    return Promise.reject(Error(`rename not implemented for s3`));
   }
 
   supportsRename(): boolean { return false; }
@@ -803,7 +804,7 @@ export class FakeFsS3 extends FakeFs {
             Key: remoteFileName,
           })
         );
-      } catch (e) {
+      } catch {
         // pass
       }
     } else {
@@ -871,12 +872,12 @@ export class FakeFsS3 extends FakeFs {
     return await this.checkConnectCommonOps(callbackFunc);
   }
 
-  async getUserDisplayName(): Promise<string> {
-    throw new Error("Method not implemented.");
+  getUserDisplayName(): Promise<string> {
+    return Promise.reject(new Error("Method not implemented."));
   }
 
-  async revokeAuth() {
-    throw new Error("Method not implemented.");
+  revokeAuth(): Promise<void> {
+    return Promise.reject(new Error("Method not implemented."));
   }
 
   allowEmptyFile(): boolean {

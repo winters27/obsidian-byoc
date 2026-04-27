@@ -16,7 +16,6 @@ type SyncPlanType = Record<string, unknown>;
 import type { Entity, SUPPORTED_SERVICES_TYPE } from "./baseTypes";
 import { unixTimeToStr } from "./misc";
 
-const _DB_VERSION_NUMBER_IN_HISTORY = [20211114, 20220108, 20220326, 20240220];
 export const DEFAULT_DB_VERSION_NUMBER: number = 20240220;
 export const DEFAULT_DB_NAME = "remotelysavedb";
 export const DEFAULT_TBL_VERSION = "schemaversion";
@@ -300,7 +299,7 @@ export const prepareDBs = async (
   };
 };
 
-export const destroyDBs = async () => {
+export const destroyDBs = () => {
   // await localforage.dropInstance({
   //   name: DEFAULT_DB_NAME,
   // });

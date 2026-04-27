@@ -5,6 +5,10 @@
 
 import type { LangTypeAndAuto } from "./i18n";
 
+/* global DEFAULT_DROPBOX_APP_KEY, DEFAULT_ONEDRIVE_CLIENT_ID, DEFAULT_ONEDRIVE_AUTHORITY, DEFAULT_GOOGLEDRIVE_CLIENT_ID, DEFAULT_GOOGLEDRIVE_CLIENT_SECRET, DEFAULT_BOX_CLIENT_ID, DEFAULT_BOX_CLIENT_SECRET, DEFAULT_PCLOUD_CLIENT_ID, DEFAULT_PCLOUD_CLIENT_SECRET, DEFAULT_YANDEXDISK_CLIENT_ID, DEFAULT_YANDEXDISK_CLIENT_SECRET, DEFAULT_KOOFR_CLIENT_ID, DEFAULT_KOOFR_CLIENT_SECRET */
+
+/* global DEFAULT_DROPBOX_APP_KEY, DEFAULT_ONEDRIVE_CLIENT_ID, DEFAULT_ONEDRIVE_AUTHORITY, DEFAULT_GOOGLEDRIVE_CLIENT_ID, DEFAULT_GOOGLEDRIVE_CLIENT_SECRET, DEFAULT_BOX_CLIENT_ID, DEFAULT_BOX_CLIENT_SECRET, DEFAULT_PCLOUD_CLIENT_ID, DEFAULT_PCLOUD_CLIENT_SECRET, DEFAULT_YANDEXDISK_CLIENT_ID, DEFAULT_YANDEXDISK_CLIENT_SECRET, DEFAULT_KOOFR_CLIENT_ID, DEFAULT_KOOFR_CLIENT_SECRET */
+
 declare global {
   var DEFAULT_DROPBOX_APP_KEY: string;
   var DEFAULT_ONEDRIVE_CLIENT_ID: string;
@@ -24,21 +28,19 @@ declare global {
 // These globals are injected by webpack's DefinePlugin at build time, not
 // related to popout windows. The activeWindow/activeDocument rule doesn't
 // apply to module-load-time constants.
-/* eslint-disable obsidianmd/prefer-active-doc */
-export const DROPBOX_APP_KEY = globalThis.DEFAULT_DROPBOX_APP_KEY || "";
-export const ONEDRIVE_CLIENT_ID = globalThis.DEFAULT_ONEDRIVE_CLIENT_ID || "";
-export const ONEDRIVE_AUTHORITY = globalThis.DEFAULT_ONEDRIVE_AUTHORITY || "https://login.microsoftonline.com/consumers/";
-export const GOOGLEDRIVE_CLIENT_ID = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_ID || "";
-export const GOOGLEDRIVE_CLIENT_SECRET = globalThis.DEFAULT_GOOGLEDRIVE_CLIENT_SECRET || "";
-export const BOX_CLIENT_ID = globalThis.DEFAULT_BOX_CLIENT_ID || "";
-export const BOX_CLIENT_SECRET = globalThis.DEFAULT_BOX_CLIENT_SECRET || "";
-export const PCLOUD_CLIENT_ID = globalThis.DEFAULT_PCLOUD_CLIENT_ID || "";
-export const PCLOUD_CLIENT_SECRET = globalThis.DEFAULT_PCLOUD_CLIENT_SECRET || "";
-export const YANDEXDISK_CLIENT_ID = globalThis.DEFAULT_YANDEXDISK_CLIENT_ID || "";
-export const YANDEXDISK_CLIENT_SECRET = globalThis.DEFAULT_YANDEXDISK_CLIENT_SECRET || "";
-export const KOOFR_CLIENT_ID = globalThis.DEFAULT_KOOFR_CLIENT_ID || "";
-export const KOOFR_CLIENT_SECRET = globalThis.DEFAULT_KOOFR_CLIENT_SECRET || "";
-/* eslint-enable obsidianmd/prefer-active-doc */
+export const DROPBOX_APP_KEY: string = typeof DEFAULT_DROPBOX_APP_KEY !== "undefined" ? DEFAULT_DROPBOX_APP_KEY : "";
+export const ONEDRIVE_CLIENT_ID: string = typeof DEFAULT_ONEDRIVE_CLIENT_ID !== "undefined" ? DEFAULT_ONEDRIVE_CLIENT_ID : "";
+export const ONEDRIVE_AUTHORITY: string = typeof DEFAULT_ONEDRIVE_AUTHORITY !== "undefined" ? DEFAULT_ONEDRIVE_AUTHORITY : "https://login.microsoftonline.com/consumers/";
+export const GOOGLEDRIVE_CLIENT_ID: string = typeof DEFAULT_GOOGLEDRIVE_CLIENT_ID !== "undefined" ? DEFAULT_GOOGLEDRIVE_CLIENT_ID : "";
+export const GOOGLEDRIVE_CLIENT_SECRET: string = typeof DEFAULT_GOOGLEDRIVE_CLIENT_SECRET !== "undefined" ? DEFAULT_GOOGLEDRIVE_CLIENT_SECRET : "";
+export const BOX_CLIENT_ID: string = typeof DEFAULT_BOX_CLIENT_ID !== "undefined" ? DEFAULT_BOX_CLIENT_ID : "";
+export const BOX_CLIENT_SECRET: string = typeof DEFAULT_BOX_CLIENT_SECRET !== "undefined" ? DEFAULT_BOX_CLIENT_SECRET : "";
+export const PCLOUD_CLIENT_ID: string = typeof DEFAULT_PCLOUD_CLIENT_ID !== "undefined" ? DEFAULT_PCLOUD_CLIENT_ID : "";
+export const PCLOUD_CLIENT_SECRET: string = typeof DEFAULT_PCLOUD_CLIENT_SECRET !== "undefined" ? DEFAULT_PCLOUD_CLIENT_SECRET : "";
+export const YANDEXDISK_CLIENT_ID: string = typeof DEFAULT_YANDEXDISK_CLIENT_ID !== "undefined" ? DEFAULT_YANDEXDISK_CLIENT_ID : "";
+export const YANDEXDISK_CLIENT_SECRET: string = typeof DEFAULT_YANDEXDISK_CLIENT_SECRET !== "undefined" ? DEFAULT_YANDEXDISK_CLIENT_SECRET : "";
+export const KOOFR_CLIENT_ID: string = typeof DEFAULT_KOOFR_CLIENT_ID !== "undefined" ? DEFAULT_KOOFR_CLIENT_ID : "";
+export const KOOFR_CLIENT_SECRET: string = typeof DEFAULT_KOOFR_CLIENT_SECRET !== "undefined" ? DEFAULT_KOOFR_CLIENT_SECRET : "";
 
 export const DEFAULT_CONTENT_TYPE = "application/octet-stream";
 

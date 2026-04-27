@@ -52,8 +52,8 @@ class OnedrivefullAuthModal extends Modal {
 
       this.plugin.oauth2Info.verifier = verifier;
 
-      const _div2 = contentEl.createDiv();
-      contentEl.createEl("button", { text: "Open Authorization in Browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+  
+      contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
 } catch (e) {
       console.error(e);
@@ -87,7 +87,7 @@ class OnedrivefullRevokeAuthModal extends Modal {
     this.t = t;
   }
 
-  async onOpen() {
+  onOpen() {
     setSvgTitle(this.titleEl, SVG_ONEDRIVE, "Revoke OneDrive (Full) Account");
     this.modalEl.addClass("byoc-auth-modal");
     const t = this.t;
@@ -171,7 +171,7 @@ export const generateOnedriveFullSettingsPart = (
     .addButton(async (button) => {
       button.setButtonText(t("settings_onedrivefull_revoke_button"));
       button.setWarning();
-      button.onClick(async () => {
+      button.onClick(() => {
         new OnedrivefullRevokeAuthModal(
           app,
           plugin,
@@ -190,7 +190,7 @@ export const generateOnedriveFullSettingsPart = (
     .setDesc(t("settings_onedrivefull_auth_desc"))
     .addButton(async (button) => {
       button.setButtonText(t("settings_onedrivefull_auth_button"));
-      button.onClick(async () => {
+      button.onClick(() => {
         const modal = new OnedrivefullAuthModal(
           app,
           plugin,

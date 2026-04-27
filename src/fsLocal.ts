@@ -181,16 +181,16 @@ export class FakeFsLocal extends FakeFs {
       }
     }
   }
-  async checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
-    return true;
+  checkConnect(callbackFunc?: (err: unknown) => unknown): Promise<boolean> {
+    return Promise.resolve(true);
   }
 
-  async getUserDisplayName(): Promise<string> {
-    throw new Error("Method not implemented.");
+  getUserDisplayName(): Promise<string> {
+    return Promise.reject(new Error("Method not implemented."));
   }
 
-  async revokeAuth(): Promise<void> {
-    throw new Error("Method not implemented.");
+  revokeAuth(): Promise<void> {
+    return Promise.reject(new Error("Method not implemented."));
   }
 
   supportsRename(): boolean { return true; }

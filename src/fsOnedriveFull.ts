@@ -705,12 +705,14 @@ export class FakeFsOnedriveFull extends FakeFs {
     return res.displayName ?? "<unknown>";
   }
 
-  async revokeAuth(): Promise<void> {
-    throw new Error("Visit https://account.live.com/consent/Manage to revoke.");
+  revokeAuth(): Promise<void> {
+    return Promise.reject(
+      new Error("Visit https://account.live.com/consent/Manage to revoke.")
+    );
   }
 
-  async getRevokeAddr(): Promise<string> {
-    return "https://account.live.com/consent/Manage";
+  getRevokeAddr(): Promise<string> {
+    return Promise.resolve("https://account.live.com/consent/Manage");
   }
 
   supportsRename(): boolean { return true; }

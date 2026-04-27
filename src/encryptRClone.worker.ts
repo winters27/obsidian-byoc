@@ -1,7 +1,21 @@
 import { Cipher as CipherRCloneCryptPack } from "@fyears/rclone-crypt";
 import { nanoid } from "nanoid";
 
-const ctx: WorkerGlobalScope = self as any;
+const ctx = self as unknown as DedicatedWorkerGlobalScope;
+
+interface WorkerMessageData {
+  action:
+    | "prepare"
+    | "encryptContent"
+    | "decryptContent"
+    | "encryptName"
+    | "decryptName";
+  dataKeyBuf?: ArrayBuffer;
+  nameKeyBuf?: ArrayBuffer;
+  nameTweakBuf?: ArrayBuffer;
+  inputName?: string;
+  inputContent?: ArrayBuffer;
+}
 
 const workerNanoID = nanoid();
 const cipher = new CipherRCloneCryptPack("base64");
@@ -25,8 +39,10 @@ async function decryptContentBuf(input: ArrayBuffer) {
   return (await cipher.decryptData(new Uint8Array(input))).buffer;
 }
 
-ctx.addEventListener("message", async (event: any) => {
+ctx.addEventListener("message", (event: MessageEvent) => {
+  void (async () => {
   const port: MessagePort = event.ports[0];
+  const data = event.data as WorkerMessageData;
   const {
     action,
     dataKeyBuf,
@@ -34,19 +50,7 @@ ctx.addEventListener("message", async (event: any) => {
     nameTweakBuf,
     inputName,
     inputContent,
-  } = event.data as {
-    action:
-      | "prepare"
-      | "encryptContent"
-      | "decryptContent"
-      | "encryptName"
-      | "decryptName";
-    dataKeyBuf?: ArrayBuffer;
-    nameKeyBuf?: ArrayBuffer;
-    nameTweakBuf?: ArrayBuffer;
-    inputName?: string;
-    inputContent?: ArrayBuffer;
-  };
+  } = data;
 
   // console.debug(`worker [${workerNanoID}]: receiving action=${action}`);
 
@@ -178,7 +182,8 @@ ctx.addEventListener("message", async (event: any) => {
   } else {
     port.postMessage({
       status: "error",
-      error: `worker [${workerNanoID}]: unknown action=${action}`,
+      error: `worker [${workerNanoID}]: unknown action=${String(action)}`,
     });
   }
+  })();
 });

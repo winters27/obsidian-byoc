@@ -25,7 +25,7 @@ export const generateAzureBlobStorageSettingsPart = (
     cls: "settings-long-desc",
   });
   azureDescDiv.createEl("p", {
-    text: "Authenticate with a secure Container SAS URL. BYOC requires List, Read, Write, and Delete permissions to fully synchronize your vault in Azure.",
+    text: "Authenticate with a secure container sas URL. Byoc requires list, read, write, and delete permissions to fully synchronize your vault in azure.",
     cls: "azureblobstorage-disclaimer"
   });
 
@@ -37,11 +37,11 @@ export const generateAzureBlobStorageSettingsPart = (
   const azureBlobStorageAllowedToUsedDiv = azureBlobStorageDiv.createDiv();
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName("Container SAS URL")
-    .setDesc("Enter your full Shared Access Signature URL ending in ?sv=... Ensure it targets a container, not a specific blob, and allows read/write/list/delete.")
+    .setName("Container sas URL")
+    .setDesc("Enter your full shared access signature URL ending in ?sv=... Ensure it targets a container, not a specific blob, and allows read/write/list/delete.")
     .addText((text) => {
       text
-        .setPlaceholder("https://account.blob.core.windows.net/container?...")
+        .setPlaceholder("HTTPS://account.blob.core.Windows.net/container?...")
         .setValue(plugin.settings.azureblobstorage.containerSasUrl)
         .onChange(async (val) => {
           plugin.settings.azureblobstorage.containerSasUrl = val.trim();
@@ -51,7 +51,7 @@ export const generateAzureBlobStorageSettingsPart = (
     });
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName("Base Directory / Prefix")
+    .setName("Base directory / prefix")
     .setDesc("A virtual directory within the container to isolate your vault data. Defaults to your vault name if left blank.")
     .addText((text) =>
       text
@@ -64,13 +64,13 @@ export const generateAzureBlobStorageSettingsPart = (
     );
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName("Generate Empty Folder Blobs")
-    .setDesc("Creates 0-byte blobs ending with '/' to emulate folders. Required for compatibility with some S3/blob browsers, but technically unnecessary for BYOC.")
+    .setName("Generate empty folder blobs")
+    .setDesc(t("settings_azureblobstorage_folderemulation_desc" as TransItemType))
     .addDropdown((dropdown) =>
       dropdown
         .addOption(
           "false",
-          "No (Recommended)"
+          "No (recommended)"
         )
         .addOption(
           "true",
@@ -106,13 +106,13 @@ export const generateAzureBlobStorageSettingsPart = (
     );
 
   new Setting(azureBlobStorageAllowedToUsedDiv)
-    .setName("Test Connection")
-    .setDesc("Verify that BYOC can successfully contact Azure and read your container using the SAS URL provided.")
+    .setName("Test connection")
+    .setDesc("Verify that byoc can successfully contact azure and read your container using the sas URL provided.")
     .addButton(async (button) => {
-      button.setButtonText("Check Connectivity");
+      button.setButtonText("Check connectivity");
       button.setCta();
       button.onClick(async () => {
-        new Notice("Checking Azure connection...");
+        new Notice("Checking azure connection...");
         const client = getClient(plugin.settings, app.vault.getName(), () =>
           plugin.saveSettings()
         );
@@ -121,9 +121,9 @@ export const generateAzureBlobStorageSettingsPart = (
           errors.msg = err instanceof Error ? err.message : String(err);
         });
         if (res) {
-          new Notice("Azure Blob connection successful!");
+          new Notice("Azure blob connection successful!");
         } else {
-          new Notice("Azure Blob connection failed.");
+          new Notice("Azure blob connection failed.");
           new Notice(errors.msg);
         }
       });

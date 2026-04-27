@@ -652,7 +652,6 @@ export class FakeFsDropbox extends FakeFs {
     }
 
     const mtimeFixed = Math.floor(mtime / 1000.0) * 1000;
-    const _ctimeFixed = Math.floor(ctime / 1000.0) * 1000;
     const mtimeStr = new Date(mtimeFixed)
       .toISOString()
       .replace(/\.\d{3}Z$/, "Z");
