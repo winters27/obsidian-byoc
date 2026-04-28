@@ -44,7 +44,7 @@ class GoogleDriveAuthModal extends Modal {
     });
 
     contentEl.createEl("button", {
-      text: "Authorize with Google",
+      text: "Authorize with Google Drive",
       cls: "mod-cta",
     }, (el) => {
       el.onclick = () => activeWindow.open(authUrl);
@@ -77,13 +77,13 @@ class GoogleDriveRevokeAuthModal extends Modal {
     const { contentEl } = this;
 
     contentEl.createEl("p", {
-      text: "To fully revoke access, visit your Google account permissions page and remove this app.",
+      text: "To fully revoke access, open the link below and remove this app from your authorized apps.",
       cls: "setting-item-description",
     });
 
     contentEl.createEl("a", {
       href: "https://myaccount.google.com/permissions",
-      text: "Open Google account permissions",
+      text: "Open Google Drive permissions",
       cls: "external-link",
     });
 

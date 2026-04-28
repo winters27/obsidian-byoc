@@ -194,7 +194,7 @@ export const generateOnedriveSettingsPart = (
 
   new Setting(onedriveAuthDiv)
     .setName("Connect OneDrive account")
-    .setDesc("Authenticate byoc with your Microsoft OneDrive account to enable cloud synchronization.")
+    .setDesc("Authenticate byoc with your OneDrive account to enable cloud synchronization.")
     .addButton(async (button) => {
       button.setButtonText("Authorize");
       button.setCta();

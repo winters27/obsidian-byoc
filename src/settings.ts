@@ -959,7 +959,7 @@ export class BYOCSettingTab extends PluginSettingTab {
       .setDesc(stringToFragment(t("settings_webdav_customheaders_desc")))
       .addTextArea((textArea) => {
         textArea
-          .setPlaceholder(`X-Header1: value1\nX-Header2: value2`)
+          .setPlaceholder(`X-Custom-Header: value`)
           .setValue(`${this.plugin.settings.webdav.customHeaders ?? ""}`)
           .onChange(async (value) => {
             this.plugin.settings.webdav.customHeaders = value
