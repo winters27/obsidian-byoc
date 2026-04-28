@@ -27,21 +27,28 @@ BYOC is a community-maintained fork of the excellent [Remotely Save](https://git
 
 ## Installation
 
-### Manual (Recommended)
+### From the latest release (recommended)
 
-1. Download the [latest release](../../releases/latest) — grab `main.js`, `manifest.json`, and `styles.css`
-2. Copy them into your vault at `.obsidian/plugins/obsidian-byoc/`
-3. In Obsidian → Settings → Community Plugins, enable **Bring Your Own Cloud**
+1. Download `byoc.zip` from the [latest release](../../releases/latest).
+2. Extract it into your vault's plugins folder so the files land at `<vault>/.obsidian/plugins/byoc/main.js` (alongside `manifest.json` and `styles.css`). The zip already contains a `byoc/` folder, so unzipping it directly into `.obsidian/plugins/` does the right thing.
+3. In Obsidian, open **Settings → Community plugins**, click the refresh icon under "Installed plugins" if BYOC doesn't appear, and toggle **Bring Your Own Cloud** on.
 
-### From Source
+If Community plugins is disabled (Restricted mode), turn it on first — Obsidian will warn you about third-party code, which is expected.
+
+### Building from source
+
+For developers who want to run a local build, or to use BYOC with their own OAuth client IDs:
 
 ```bash
-git clone https://github.com/obsidian-byoc/obsidian-byoc
+git clone https://github.com/winters27/obsidian-byoc
 cd obsidian-byoc
 npm install
 npm run build
-# Copy main.js + manifest.json to your vault's .obsidian/plugins/obsidian-byoc/
 ```
+
+The build emits `main.js`, `manifest.json`, and `styles.css` in the repo root. Copy those three files into `<vault>/.obsidian/plugins/byoc/` (create the folder if it doesn't exist), then reload Obsidian (Ctrl/Cmd+R) and enable the plugin under **Settings → Community plugins**.
+
+To swap in your own OAuth credentials before building, copy `.env.example.txt` to `.env` and fill in the relevant `*_CLIENT_ID` / `*_CLIENT_SECRET` values — webpack's DefinePlugin bakes them into `main.js` at build time.
 
 ---
 
@@ -90,7 +97,7 @@ All settings are in Obsidian → Settings → **Bring Your Own Cloud**.
 
 ## Migrating from Remotely Save
 
-BYOC automatically detects your Remotely Save `data.json` on first launch and imports all credentials and settings. A backup of your current config is created at `.obsidian/plugins/obsidian-byoc/data.json.byoc-backup` before any changes are made.
+BYOC automatically detects your Remotely Save `data.json` on first launch and imports all credentials and settings. A backup of your current config is created at `.obsidian/plugins/byoc/data.json.byoc-backup` before any changes are made.
 
 ## Credits
 

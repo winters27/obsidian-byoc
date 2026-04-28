@@ -75,9 +75,6 @@ jobs:
           tag_name: ${{ env.tag_name }}
           name: ${{ env.tag_name }}
           files: |
-            main.js
-            manifest.json
-            styles.css
             ${{ env.plugin_id }}.zip
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
