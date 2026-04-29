@@ -4,196 +4,912 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="application-name" content="Bring Your Own Cloud" />
+  <meta name="description" content="An open-source sync plugin for Obsidian. Connect your own cloud storage — Google Drive, OneDrive, Dropbox, and nine more — directly from your vault." />
   <meta property="og:title" content="Bring Your Own Cloud" />
+  <meta property="og:description" content="Sync your Obsidian vault to the cloud you already use. Twelve providers, free and open source." />
   <meta property="og:site_name" content="Bring Your Own Cloud" />
-  <title>Bring Your Own Cloud</title>
+  <meta name="theme-color" content="#0d0f14" />
+  <title>Bring Your Own Cloud — sync Obsidian to the cloud you already own</title>
   <link rel="icon" type="image/png" href="/logo.png" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --bg-deep: #08090d;
+      --surface: rgba(30, 34, 44, 0.4);
+      --surface-strong: rgba(30, 34, 44, 0.65);
+      --border: rgba(255, 255, 255, 0.06);
+      --border-strong: rgba(255, 255, 255, 0.12);
+      --text: #e8ecf0;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      --accent: #a855f7;
+      --accent-2: #6366f1;
+      --accent-soft: rgba(147, 51, 234, 0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
-      background: radial-gradient(circle at 50% 0%, #1e1b4b, #0d0f14 60%);
+      background: var(--bg);
       color: #c6cdd5;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 4rem 2rem;
+      line-height: 1.6;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    
-    /* Background Ambience */
-    .bg-glow {
-      position: absolute;
-      top: 0; left: 50%;
-      transform: translateX(-50%);
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(147, 51, 234, 0.15) 0%, transparent 70%);
+
+    /* Background ambience — fixed, not section-bound, so it bleeds through the whole page */
+    .bg-ambience {
+      position: fixed;
+      inset: 0;
       pointer-events: none;
       z-index: 0;
+      background:
+        radial-gradient(circle at 50% -10%, rgba(99, 102, 241, 0.18), transparent 55%),
+        radial-gradient(circle at 85% 30%, rgba(147, 51, 234, 0.10), transparent 50%),
+        radial-gradient(circle at 10% 70%, rgba(56, 189, 248, 0.06), transparent 50%);
     }
 
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 800px;
-      width: 100%;
+    main { position: relative; z-index: 1; }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+    .wrap-narrow {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* Top nav */
+    nav.top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(13, 15, 20, 0.6);
+      border-bottom: 1px solid var(--border);
+    }
+    nav.top .inner {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      text-align: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    nav.top .brand {
+      display: flex; align-items: center; gap: 0.625rem;
+      color: var(--text); font-weight: 600; font-size: 0.95rem;
+      text-decoration: none; letter-spacing: -0.01em;
+    }
+    nav.top .brand img { width: 22px; height: 22px; border-radius: 5px; }
+    nav.top .links { display: flex; gap: 1.25rem; align-items: center; }
+    nav.top .links a {
+      color: var(--text-muted); text-decoration: none; font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    nav.top .links a:hover { color: var(--text); }
+    nav.top .links .gh-btn {
+      padding: 0.4rem 0.85rem;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      color: var(--text);
+    }
+    nav.top .links .gh-btn:hover { background: rgba(255,255,255,0.04); }
+    @media (max-width: 600px) {
+      nav.top .links a:not(.gh-btn) { display: none; }
     }
 
-    /* Hero Section */
+    /* Hero */
     .hero {
-      margin-bottom: 4rem;
-      animation: fadeUp 0.8s ease-out forwards;
+      padding: 6rem 0 5rem;
+      text-align: center;
+      animation: fadeUp 0.7s ease-out both;
     }
-    .logo-container {
+    .hero .logo-frame {
       width: 96px; height: 96px;
       margin: 0 auto 2rem;
       border-radius: 24px;
       background: rgba(255, 255, 255, 0.03);
       padding: 16px;
-      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
-    .logo { width: 100%; height: 100%; object-fit: contain; }
-    
+    .hero .logo-frame img { width: 100%; height: 100%; object-fit: contain; }
+
+    .hero .eyebrow {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8rem; color: var(--text-muted);
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      margin-bottom: 1.75rem;
+      background: rgba(255,255,255,0.02);
+    }
+    .hero .eyebrow .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4ade80; box-shadow: 0 0 8px #4ade80;
+    }
+
     h1 {
-      font-size: 3.5rem;
+      font-size: clamp(2.5rem, 5vw, 3.75rem);
       font-weight: 700;
       color: #ffffff;
-      margin-bottom: 1.5rem;
       letter-spacing: -0.03em;
-      line-height: 1.1;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
       text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
     }
     .gradient-text {
-      background: linear-gradient(135deg, #a855f7, #6366f1);
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
       -webkit-background-clip: text;
+      background-clip: text;
       -webkit-text-fill-color: transparent;
-    }
-    
-    p.subtitle {
-      font-size: 1.25rem;
-      line-height: 1.6;
-      color: #9ca3af;
-      max-width: 600px;
-      margin: 0 auto 3rem;
+      color: transparent;
     }
 
-    /* Action Buttons */
-    .actions {
-      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    .hero p.lede {
+      font-size: 1.2rem;
+      line-height: 1.55;
+      color: #b5bdc8;
+      max-width: 620px;
+      margin: 0 auto 2.5rem;
     }
+
+    .actions { display: flex; gap: 0.875rem; justify-content: center; flex-wrap: wrap; }
     .btn {
-      padding: 0.875rem 1.75rem;
+      padding: 0.875rem 1.6rem;
       border-radius: 12px;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 500;
       text-decoration: none;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex; align-items: center; gap: 0.5rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      border: 1px solid transparent;
     }
+    .btn svg { width: 16px; height: 16px; }
     .btn-primary {
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(99, 102, 241, 0.2));
-      color: #e0e7ff;
-      border: 1px solid rgba(147, 51, 234, 0.5);
-      box-shadow: 0 0 20px rgba(147, 51, 234, 0.15);
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(99, 102, 241, 0.25));
+      color: #ede9fe;
+      border-color: rgba(147, 51, 234, 0.5);
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.18);
     }
     .btn-primary:hover {
-      background: linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(99, 102, 241, 0.3));
-      box-shadow: 0 0 30px rgba(147, 51, 234, 0.25);
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.4), rgba(99, 102, 241, 0.4));
+      box-shadow: 0 0 32px rgba(147, 51, 234, 0.32);
       transform: translateY(-2px);
     }
     .btn-secondary {
       background: rgba(255, 255, 255, 0.03);
       color: #d1d5db;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-color: var(--border-strong);
     }
     .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.07);
       color: #ffffff;
       transform: translateY(-2px);
     }
 
-    /* Frosted Feature Grid */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      width: 100%;
-      margin-top: 4rem;
-      animation: fadeUp 1s ease-out forwards;
-      opacity: 0;
-      animation-delay: 0.2s;
+    /* Section scaffolding */
+    section { padding: 5rem 0; }
+    section + section { border-top: 1px solid var(--border); }
+
+    .section-head { text-align: center; margin-bottom: 3rem; }
+    .section-head .kicker {
+      display: inline-block; font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 0.75rem;
     }
-    .feature-card {
-      background: rgba(30, 34, 44, 0.4);
+    h2 {
+      font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 0.875rem;
+    }
+    .section-head p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+
+    /* Pillars — three columns */
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--surface);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 2rem;
-      text-align: left;
-      transition: border-color 0.3s;
+      padding: 1.75rem;
+      transition: border-color 0.25s, transform 0.25s;
     }
-    .feature-card:hover {
+    .card:hover {
       border-color: rgba(147, 51, 234, 0.3);
+      transform: translateY(-2px);
     }
-    .feature-title { font-weight: 600; color: #f3f4f6; margin-bottom: 0.75rem; font-size: 1.125rem; }
-    .feature-desc { color: #8b95a3; font-size: 0.9375rem; line-height: 1.5; }
+    .card .icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(99, 102, 241, 0.2));
+      border: 1px solid rgba(147, 51, 234, 0.3);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.125rem;
+      color: #c4b5fd;
+    }
+    .card .icon svg { width: 18px; height: 18px; }
+    .card h3 {
+      font-weight: 600; color: #f3f4f6;
+      margin-bottom: 0.5rem; font-size: 1.05rem;
+      letter-spacing: -0.01em;
+    }
+    .card p {
+      color: #8b95a3; font-size: 0.925rem; line-height: 1.55;
+    }
+
+    /* Provider grid */
+    .providers {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 0.75rem;
+    }
+    .provider {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.875rem 1rem;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: #d1d5db;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .provider:hover {
+      border-color: var(--border-strong);
+      background: rgba(255,255,255,0.04);
+    }
+    .provider .logo {
+      width: 32px; height: 32px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .provider .logo img,
+    .provider .logo svg {
+      width: 26px; height: 26px;
+      display: block;
+    }
+    .provider .logo svg.fallback {
+      width: 22px; height: 22px;
+      color: #9ca3af;
+    }
+
+    /* Feature blocks — alternating */
+    .feature-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+    .feature-block + .feature-block { margin-top: 4rem; }
+    .feature-block.flip .feature-text { order: 2; }
+    @media (max-width: 760px) {
+      .feature-block { grid-template-columns: 1fr; gap: 1.5rem; }
+      .feature-block.flip .feature-text { order: 0; }
+    }
+    .feature-text h3 {
+      font-size: 1.5rem; font-weight: 700; color: var(--text);
+      margin-bottom: 1rem; letter-spacing: -0.02em;
+    }
+    .feature-text p { color: var(--text-muted); margin-bottom: 0.875rem; }
+    .feature-text p:last-child { margin-bottom: 0; }
+    .feature-text strong { color: #d8dde3; font-weight: 600; }
+
+    .feature-visual {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      min-height: 200px;
+    }
+    .feature-visual .label {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 0.875rem;
+    }
+
+    /* Sync diagram */
+    .sync-diagram {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0.75rem;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .sync-node {
+      padding: 0.875rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      text-align: center;
+    }
+    .sync-node .name { color: #f3f4f6; font-weight: 600; margin-bottom: 0.2rem; }
+    .sync-node .meta { color: var(--text-dim); font-size: 0.75rem; }
+    .sync-arrow {
+      color: var(--accent); font-size: 1.5rem; line-height: 1;
+      text-align: center;
+    }
+    .sync-merge {
+      grid-column: 1 / -1;
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, rgba(147,51,234,0.12), rgba(99,102,241,0.12));
+      border: 1px solid rgba(147,51,234,0.3);
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #ede9fe;
+    }
+
+    /* Mobile toolbar mock */
+    .mobile-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.625rem;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+    }
+    .mobile-toolbar .tb-spacer { flex: 1; }
+    .mobile-toolbar .tb-icon {
+      width: 34px; height: 34px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+    }
+    .mobile-toolbar .tb-icon svg { width: 17px; height: 17px; }
+    .mobile-toolbar .tb-active {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.32), rgba(99, 102, 241, 0.32));
+      border: 1px solid rgba(147, 51, 234, 0.55);
+      color: #ede9fe;
+      box-shadow: 0 0 16px rgba(147, 51, 234, 0.25);
+    }
+
+    /* Privacy visual — checklist */
+    .checklist { list-style: none; }
+    .checklist li {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      padding: 0.625rem 0;
+      color: #c6cdd5; font-size: 0.925rem;
+    }
+    .checklist li + li { border-top: 1px dashed var(--border); }
+    .checklist .check {
+      flex-shrink: 0; width: 18px; height: 18px;
+      color: #4ade80; margin-top: 2px;
+    }
+    .checklist .x { color: #ef4444; }
+
+    /* Code block */
+    .code-block {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.875rem 1rem;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.825rem;
+      color: #c6cdd5;
+      overflow-x: auto;
+      line-height: 1.65;
+    }
+    .code-block .c { color: var(--text-dim); }
+    .code-block .k { color: #c4b5fd; }
+
+    /* Install steps */
+    .steps { counter-reset: step; display: grid; gap: 1rem; }
+    .step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 1rem;
+      padding: 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .step-num {
+      counter-increment: step;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(99, 102, 241, 0.2));
+      border: 1px solid rgba(147, 51, 234, 0.4);
+      color: #ede9fe;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.95rem;
+    }
+    .step-num::before { content: counter(step); }
+    .step-body h4 {
+      font-size: 1rem; color: var(--text); font-weight: 600;
+      margin-bottom: 0.35rem; letter-spacing: -0.01em;
+    }
+    .step-body p { color: var(--text-muted); font-size: 0.9rem; }
+    .step-body code {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.825rem;
+      background: rgba(255,255,255,0.05);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      color: #d8b4fe;
+    }
+
+    /* FAQ */
+    .faq { display: grid; gap: 0.5rem; }
+    details.faq-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.25rem 0.25rem;
+      transition: border-color 0.2s;
+    }
+    details.faq-item[open] { border-color: rgba(147,51,234,0.3); }
+    details.faq-item summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 1rem 1.25rem;
+      font-weight: 500;
+      color: var(--text);
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 1rem;
+    }
+    details.faq-item summary::-webkit-details-marker { display: none; }
+    details.faq-item summary > .q { flex: 1; }
+    details.faq-item summary::after {
+      content: '+';
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      line-height: 1;
+      transition: transform 0.25s;
+    }
+    details.faq-item[open] summary::after { transform: rotate(45deg); }
+    details.faq-item .answer {
+      padding: 0 1.25rem 1.125rem;
+      color: var(--text-muted);
+      font-size: 0.925rem;
+      line-height: 1.65;
+    }
+    details.faq-item .answer p + p { margin-top: 0.75rem; }
+
+    /* CTA strip */
+    .cta-strip {
+      text-align: center;
+      padding: 4rem 1.5rem;
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.08), rgba(99, 102, 241, 0.08));
+      border: 1px solid rgba(147, 51, 234, 0.2);
+      border-radius: 24px;
+      margin: 2rem 0;
+    }
+    .cta-strip h2 { margin-bottom: 0.75rem; }
+    .cta-strip p { color: var(--text-muted); margin-bottom: 1.75rem; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+    /* Footer */
+    footer {
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    footer .links { display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    footer .links a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+    footer .links a:hover { color: var(--text); }
+    footer .small { font-size: 0.78rem; color: var(--text-dim); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Reveal on scroll */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+      .reveal { opacity: 1; transform: none; }
     }
   </style>
 </head>
 <body>
-  <div class="bg-glow"></div>
-  
-  <div class="container">
-    <div class="hero">
-      <div class="logo-container">
-        <img src="logo.png" alt="Bring Your Own Cloud" class="logo" onerror="this.style.display='none'">
-      </div>
-      
-      <h1 aria-label="Bring Your Own Cloud">Bring Your <span aria-hidden="true" class="gradient-text">Own Cloud</span></h1>
-      <p class="subtitle">
-        <strong>Bring Your Own Cloud</strong> is a native, open-source sync engine for Obsidian. Connect your personal storage providers directly inside your vault on both Desktop and Mobile. No middleman, zero tracking.
-      </p>
-      
-      <div class="actions">
-        <a href="https://github.com/winters27/obsidian-byoc/releases/latest/download/obsidian-byoc.zip" class="btn btn-primary">
-          Download Plugin
-        </a>
-        <a href="https://github.com/winters27/obsidian-byoc" class="btn btn-secondary">
-          View on GitHub
-        </a>
-        <a href="/privacy.html" class="btn btn-secondary">
-          Privacy Policy
-        </a>
-      </div>
-    </div>
+  <div class="bg-ambience" aria-hidden="true"></div>
 
-    <div class="features">
-      <div class="feature-card">
-        <div class="feature-title">Native Integration</div>
-        <div class="feature-desc">Bypasses local filesystem loops. Runs natively on iOS, Android, macOS, and Windows.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-title">Zero Middleware</div>
-        <div class="feature-desc">Communicate directly with Google Drive, OneDrive, and Dropbox APIs. 100% private.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-title">Frosted UX</div>
-        <div class="feature-desc">Premium graphical interface baked directly into Obsidian settings. No pasting codes.</div>
+  <nav class="top">
+    <div class="inner">
+      <a href="#top" class="brand">
+        <img src="logo.png" alt="" onerror="this.style.display='none'">
+        <span>Bring Your Own Cloud</span>
+      </a>
+      <div class="links">
+        <a href="#what">What it does</a>
+        <a href="#providers">Providers</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/winters27/obsidian-byoc" class="gh-btn" rel="noopener">GitHub</a>
       </div>
     </div>
-  </div>
+  </nav>
+
+  <main id="top">
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap-narrow">
+        <div class="logo-frame">
+          <img src="logo.png" alt="Bring Your Own Cloud" onerror="this.style.display='none'">
+        </div>
+        <div class="eyebrow"><span class="dot"></span> Free, open source, no account required</div>
+        <h1 aria-label="Bring Your Own Cloud">Sync Obsidian to the cloud<br><span class="gradient-text">you already own</span>.</h1>
+        <p class="lede">
+          Bring Your Own Cloud is a community-built sync plugin for Obsidian. Connect the storage you already use &mdash; Google Drive, OneDrive, Dropbox, and nine more &mdash; and your vault syncs directly to it. No relay server, no extra subscription, no account to create.
+        </p>
+        <div class="actions">
+          <a href="https://github.com/winters27/obsidian-byoc/releases/latest/download/byoc.zip" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download the plugin
+          </a>
+          <a href="https://github.com/winters27/obsidian-byoc" class="btn btn-secondary" rel="noopener">View source on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pillars -->
+    <section id="what">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">What you get</span>
+          <h2>Everything you need to sync. Nothing you don't.</h2>
+          <p>A community-built plugin that talks to your cloud directly &mdash; twelve providers, one settings panel, free and open source.</p>
+        </div>
+        <div class="pillars">
+          <div class="card reveal">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <h3>Twelve providers</h3>
+            <p>Each cloud has its own dedicated settings panel and a fully implemented sync path. Use one, or run more than one for redundancy.</p>
+          </div>
+          <div class="card reveal">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <h3>Direct, private connection</h3>
+            <p>Your Obsidian app talks to your cloud account. Nothing routes through a relay server in between &mdash; there's nothing in the loop but you and your provider.</p>
+          </div>
+          <div class="card reveal">
+            <div class="icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <h3>Open source, all the way</h3>
+            <p>MIT-licensed source on GitHub. Read it, audit it, fork it &mdash; the whole plugin is in plain sight.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Providers -->
+    <section id="providers">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">Providers</span>
+          <h2>Twelve clouds, one settings panel.</h2>
+          <p>Each provider connects through its own OAuth flow or API key, all from inside Obsidian. Pick the cloud you already trust.</p>
+        </div>
+        <div class="providers reveal">
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/dropbox.svg" alt="" loading="lazy" /></span>
+            Dropbox
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/microsoft-onedrive.svg" alt="" loading="lazy" /></span>
+            OneDrive
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/microsoft-onedrive.svg" alt="" loading="lazy" /></span>
+            OneDrive Full
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/google-drive.svg" alt="" loading="lazy" /></span>
+            Google Drive
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/box.svg" alt="" loading="lazy" /></span>
+            Box
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="icons/pcloud.png" alt="" loading="lazy" /></span>
+            pCloud
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="icons/yandex-disk.png" alt="" loading="lazy" /></span>
+            Yandex Disk
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="icons/koofr.png" alt="" loading="lazy" /></span>
+            Koofr
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/aws-s3.svg" alt="" loading="lazy" /></span>
+            Amazon S3
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/microsoft-azure.svg" alt="" loading="lazy" /></span>
+            Azure Blob
+          </div>
+          <div class="provider">
+            <span class="logo">
+              <svg class="fallback" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><circle cx="12" cy="11" r="4"/><path d="M12 7v8"/><path d="M8 11h8"/></svg>
+            </span>
+            WebDAV
+          </div>
+          <div class="provider">
+            <span class="logo"><img src="https://api.iconify.design/logos/redis.svg" alt="" loading="lazy" /></span>
+            Webdis
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature deep dives -->
+    <section>
+      <div class="wrap">
+        <div class="section-head reveal">
+          <span class="kicker">Under the hood</span>
+          <h2>What makes the sync feel boring &mdash; in a good way.</h2>
+          <p>The interesting work happens in the parts you never have to think about: deciding what changed, what to upload, and what to leave alone.</p>
+        </div>
+
+        <!-- Three-way merge -->
+        <div class="feature-block reveal">
+          <div class="feature-text">
+            <h3>It compares three states, not two.</h3>
+            <p>Most "cloud sync" tools just check the file's modified date locally and remotely, then guess. That's how vaults end up with mystery duplicates and silently overwritten notes.</p>
+            <p>BYOC keeps a third reference &mdash; <strong>what each side looked like the last time they agreed</strong> &mdash; and uses that to tell apart "I edited this on my phone" from "this file came back from the dead." Edits land. Deletes stay deleted. Conflicts get caught instead of papered over.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="label">Sync decision</div>
+            <div class="sync-diagram">
+              <div class="sync-node">
+                <div class="name">Local vault</div>
+                <div class="meta">edited 2&nbsp;min ago</div>
+              </div>
+              <div class="sync-arrow">↔</div>
+              <div class="sync-node">
+                <div class="name">Cloud copy</div>
+                <div class="meta">last sync 1&nbsp;hr ago</div>
+              </div>
+              <div class="sync-merge">Last-known-agreed snapshot resolves the difference.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy / encryption -->
+        <div class="feature-block flip reveal">
+          <div class="feature-text">
+            <h3>Encryption you can read the code for.</h3>
+            <p>Turn on a vault password and your notes are encrypted on your device before they leave it. The cloud only ever sees ciphertext &mdash; even the file <em>names</em> are scrambled if you want them to be.</p>
+            <p>And because there's no BYOC server in the loop, there's no log file we could hand over even if someone asked us to. Nothing about your vault touches our infrastructure, because we don't have any.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="label">What leaves your device</div>
+            <ul class="checklist">
+              <li><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Encrypted file contents (your key, your device)</li>
+              <li><svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> A direct, authenticated request to <em>your</em> cloud</li>
+              <li><svg class="check x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Telemetry, analytics, crash pings</li>
+              <li><svg class="check x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> A relay server we control</li>
+              <li><svg class="check x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> An account on a service you didn't ask to sign up for</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Mobile -->
+        <div class="feature-block reveal">
+          <div class="feature-text">
+            <h3>Mobile that actually works like mobile.</h3>
+            <p>Open the app on your phone and the vault picks up where you left off &mdash; sync resumes automatically when Obsidian comes back to the foreground, with a short debounce so it doesn't fire every time you alt-tab.</p>
+            <p>The sync button is built right into Obsidian's mobile toolbar. One tap, no menu diving. Works on iOS and Android.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="label">Mobile toolbar</div>
+            <div class="mobile-toolbar">
+              <div class="tb-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </div>
+              <div class="tb-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </div>
+              <div class="tb-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </div>
+              <div class="tb-spacer"></div>
+              <div class="tb-icon tb-active" aria-label="Sync">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              </div>
+              <div class="tb-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              </div>
+            </div>
+            <p style="color: var(--text-dim); font-size: 0.825rem; margin-top: 0.875rem; line-height: 1.5;">
+              The sync icon lives in the toolbar itself, right alongside Obsidian's built-in actions.
+            </p>
+          </div>
+        </div>
+
+        <!-- Path filtering -->
+        <div class="feature-block flip reveal">
+          <div class="feature-text">
+            <h3>Sync only what you want synced.</h3>
+            <p>Maybe your daily notes belong on every device, but a folder of scratch drafts shouldn't leave your laptop. Or you want to keep one provider for your personal vault and another for work, with no overlap.</p>
+            <p>Allowlists and denylists are first-class &mdash; built on the same glob patterns you'd use in <code>.gitignore</code>. Per-provider, per-folder, per-extension.</p>
+          </div>
+          <div class="feature-visual">
+            <div class="label">Filter rules</div>
+            <pre class="code-block"><span class="c"># Skip drafts and large media</span>
+<span class="k">deny</span>  drafts/**
+<span class="k">deny</span>  **/*.mov
+<span class="k">deny</span>  attachments/raw/**
+
+<span class="c"># Always include daily notes and tags</span>
+<span class="k">allow</span> daily/**
+<span class="k">allow</span> .obsidian/snippets/**</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section id="install">
+      <div class="wrap-narrow">
+        <div class="section-head reveal">
+          <span class="kicker">Install</span>
+          <h2>Three steps. About a minute.</h2>
+          <p>You'll need Obsidian (any platform) and an account on at least one of the supported clouds.</p>
+        </div>
+        <div class="steps">
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <h4>Download the latest release</h4>
+              <p>Grab <code>byoc.zip</code> from the GitHub releases page. It contains a single <code>byoc/</code> folder.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <h4>Drop the folder into your vault</h4>
+              <p>Unzip and place <code>byoc/</code> inside <code>&lt;your-vault&gt;/.obsidian/plugins/</code>. On mobile, sync the plugin folder over with any of the supported clouds the first time, then BYOC takes over from itself.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-num"></div>
+            <div class="step-body">
+              <h4>Enable it and pick a provider</h4>
+              <p>Open Obsidian's community plugin list, toggle <strong>Bring Your Own Cloud</strong> on, then open its settings and authorize the cloud account you want to sync to. That's it.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section>
+      <div class="wrap-narrow">
+        <div class="section-head reveal">
+          <span class="kicker">Common questions</span>
+          <h2>Things people ask first.</h2>
+        </div>
+        <div class="faq">
+          <details class="faq-item reveal">
+            <summary><span class="q">Is this the same as Obsidian Sync?</span></summary>
+            <div class="answer">
+              <p>No, and they aren't trying to be the same thing. Obsidian Sync is the official, first-party service from the Obsidian team &mdash; it's a polished, end-to-end solution and a great way to support the developers who make Obsidian itself.</p>
+              <p>BYOC sits in a different lane: it's a community plugin for people who'd rather route their vault through cloud storage they already use. Pick whichever fits your workflow &mdash; both are valid, and either keeps your notes synced across devices.</p>
+            </div>
+          </details>
+          <details class="faq-item reveal">
+            <summary><span class="q">How does this relate to <em>remotely-save</em>?</span></summary>
+            <div class="answer">
+              <p>BYOC is a community fork of <em>remotely-save</em>, and we're grateful to the original project &mdash; it's the foundation BYOC builds on.</p>
+              <p>The fork's focus is to make every provider available out of the box, complete the integrations that were partial, tighten conflict and rename handling so encrypted vaults don't see phantom re-uploads, and expand the mobile experience. The whole thing is MIT-licensed and open to contributions.</p>
+            </div>
+          </details>
+          <details class="faq-item reveal">
+            <summary><span class="q">Do I have to give you any credentials?</span></summary>
+            <div class="answer">
+              <p>Never. Authorization happens directly between Obsidian and your cloud provider's own login page. Tokens stay on your device. There's no BYOC account to create, because there's no BYOC server.</p>
+            </div>
+          </details>
+          <details class="faq-item reveal">
+            <summary><span class="q">Does it work on iPhone and Android?</span></summary>
+            <div class="answer">
+              <p>Yes. BYOC runs in Obsidian's mobile app on both iOS and Android, with a sync button injected into the mobile toolbar and automatic resume when the app comes back to the foreground. The same plugin, settings, and providers work on every platform Obsidian runs on.</p>
+            </div>
+          </details>
+          <details class="faq-item reveal">
+            <summary><span class="q">What happens if two devices edit the same note?</span></summary>
+            <div class="answer">
+              <p>BYOC's sync engine compares three states &mdash; what your device has, what the cloud has, and what they last agreed on &mdash; so it can tell a real edit from a stale copy and a real delete from a missed sync. When the changes genuinely conflict, you get a conflict file rather than a silent overwrite, so nothing is lost.</p>
+            </div>
+          </details>
+          <details class="faq-item reveal">
+            <summary><span class="q">Is this in the official Obsidian community plugin list?</span></summary>
+            <div class="answer">
+              <p>The submission is in review. Until it lands you can install BYOC manually using the steps above. Manual installs work exactly the same as community-list installs &mdash; same files, same updates.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section>
+      <div class="wrap">
+        <div class="cta-strip reveal">
+          <h2>Your notes. Your cloud. Your call.</h2>
+          <p>Free, MIT-licensed, and built so you can keep your vault in the storage you already trust.</p>
+          <div class="actions">
+            <a href="https://github.com/winters27/obsidian-byoc/releases/latest/download/byoc.zip" class="btn btn-primary">Download the plugin</a>
+            <a href="https://github.com/winters27/obsidian-byoc" class="btn btn-secondary" rel="noopener">Star on GitHub</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="links">
+      <a href="https://github.com/winters27/obsidian-byoc" rel="noopener">GitHub</a>
+      <a href="https://github.com/winters27/obsidian-byoc/releases" rel="noopener">Releases</a>
+      <a href="https://github.com/winters27/obsidian-byoc/issues" rel="noopener">Issues</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="https://github.com/winters27/obsidian-byoc/blob/master/LICENSE" rel="noopener">License</a>
+    </div>
+    <div class="small">
+      Bring Your Own Cloud is an independent open-source project. Not affiliated with Obsidian, Dynalist Inc., or any cloud provider listed above.
+    </div>
+  </footer>
+
+  <script>
+    // Reveal-on-scroll, no dependencies
+    (function () {
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('in'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in');
+            io.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(function (el) { io.observe(el); });
+    })();
+  </script>
 </body>
 </html>
