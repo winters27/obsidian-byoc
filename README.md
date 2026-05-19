@@ -27,10 +27,21 @@ BYOC is a community-maintained fork of the excellent [Remotely Save](https://git
 
 ## Installation
 
-### From the latest release (recommended)
+### Via BRAT (recommended)
 
-1. Download `byoc.zip` from the [latest release](../../releases/latest).
-2. Extract it into your vault's plugins folder so the files land at `<vault>/.obsidian/plugins/byoc/main.js` (alongside `manifest.json` and `styles.css`). The zip already contains a `byoc/` folder, so unzipping it directly into `.obsidian/plugins/` does the right thing.
+[BRAT](https://github.com/TfTHacker/obsidian42-brat) lets you install and auto-update plugins that aren't in the Obsidian community directory.
+
+1. Install the **BRAT** plugin from the Obsidian community plugins directory and enable it.
+2. Open BRAT settings and click **Add Beta plugin**.
+3. Enter the repository URL: `https://github.com/winters27/obsidian-byoc`
+4. Click **Add Plugin** — BRAT will download the latest release and enable it automatically.
+
+BRAT will notify you when a new version is available and can update with one click.
+
+### Manual install
+
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest).
+2. Create the folder `<vault>/.obsidian/plugins/byoc/` and copy the three files into it.
 3. In Obsidian, open **Settings → Community plugins**, click the refresh icon under "Installed plugins" if BYOC doesn't appear, and toggle **Bring Your Own Cloud** on.
 
 If Community plugins is disabled (Restricted mode), turn it on first — Obsidian will warn you about third-party code, which is expected.
