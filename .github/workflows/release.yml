@@ -64,18 +64,15 @@ jobs:
         run: |
           echo "tag_name=$(node -p "require('./manifest.json').version")" >> $GITHUB_ENV
           echo "plugin_id=$(node -p "require('./manifest.json').id")" >> $GITHUB_ENV
-      - name: Bundle Plugin Zip
-        run: |
-          mkdir ${{ env.plugin_id }}
-          cp main.js manifest.json styles.css ${{ env.plugin_id }}/
-          zip -r ${{ env.plugin_id }}.zip ${{ env.plugin_id }}/
       - name: Create Release And Upload
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.tag_name }}
           name: ${{ env.tag_name }}
           files: |
-            ${{ env.plugin_id }}.zip
+            main.js
+            manifest.json
+            styles.css
           token: ${{ secrets.GITHUB_TOKEN }}
           draft: false
           prerelease: false
