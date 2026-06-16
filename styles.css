@@ -116,7 +116,6 @@
 .byoc-settings .azureblobstorage-disclaimer,
 .byoc-settings .pro-disclaimer,
 .byoc-settings .password-disclaimer,
-.byoc-settings .s3-disclaimer,
 .byoc-settings .password-second-confirm,
 .byoc-settings .encryptionmethod-second-confirm {
   font-weight: 500;
@@ -283,12 +282,12 @@
   padding-bottom: 0.75rem;
 }
 
-.byoc-settings .setting-item.setting-item-heading .setting-item-name {
+.byoc-settings .setting-item.setting-item-heading .setting-item-name.setting-item-name {
   font-weight: 600;
   color: var(--text-normal);
   font-size: 1.15em;
   letter-spacing: 0.01em;
-  display: flex !important;
+  display: flex;
   align-items: center;
   gap: 0.6em;
 }
@@ -323,8 +322,8 @@
 }
 
 /* ──── 14. Active Provider Sub-header ──── */
-h2.byoc-provider-heading {
-  margin-top: 2rem !important;
+h2.byoc-provider-heading.byoc-provider-heading {
+  margin-top: 2rem;
   padding-bottom: 0.5em;
   font-size: 1.2em;
   color: var(--byoc-accent);
@@ -343,8 +342,8 @@ h2.byoc-provider-heading svg {
 }
 
 /* ──── 15. General Section Headers ──── */
-h2.byoc-section-heading {
-  margin-top: 2.5rem !important;
+h2.byoc-section-heading.byoc-section-heading {
+  margin-top: 2.5rem;
   padding-bottom: 0.5em;
   font-size: 1.15em;
   color: var(--text-normal);
