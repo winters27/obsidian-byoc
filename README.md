@@ -120,4 +120,6 @@ We are incredibly grateful to the original developer for creating such a robust 
 
 ## License
 
-[Apache 2.0](LICENSE) — inherited from the upstream Remotely Save project.
+[MIT](LICENSE), copyright 2026 winters27.
+
+BYOC started as a fork of Remotely Save and has since been substantially rewritten. It is distributed under the MIT license. See [Credits](#credits) for attribution to the original project.
