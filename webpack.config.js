@@ -71,6 +71,10 @@ module.exports = {
     new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
       resource.request = resource.request.replace(/^node:/, "");
     }),
+    // Emit a single bundle. Obsidian plugins must be one file, and merging all
+    // chunks here drops webpack's JSONP runtime, whose dynamic createElement("script")
+    // loader trips the plugin review's dynamic-script-injection check.
+    new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
   ],
   module: {
     rules: [
@@ -102,6 +106,12 @@ module.exports = {
         resolve: {
           fullySpecified: false, // process/browser returns some errors before
         },
+      },
+      {
+        // Strip the dead legacy-IE script-injection branch from localforage's
+        // bundled `immediate` polyfill (see scripts/strip-script-injection.cjs).
+        test: /[\\/]node_modules[\\/]localforage[\\/]/,
+        use: [path.resolve(__dirname, "scripts/strip-script-injection.cjs")],
       },
     ],
   },
@@ -154,5 +164,8 @@ module.exports = {
   optimization: {
     minimize: true,
     minimizer: [new TerserPlugin({ extractComments: false })],
+    // Keep everything in main.js — no separate runtime or async chunks.
+    splitChunks: false,
+    runtimeChunk: false,
   },
 };
