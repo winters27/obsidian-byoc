@@ -14,7 +14,7 @@ import type {
 import type { Entity, WebdavConfig } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { bufferToArrayBuffer, splitFileSizeToChunkRanges } from "./misc";
+import { bufferToArrayBuffer, delay, splitFileSizeToChunkRanges } from "./misc";
 
 /**
  * https://stackoverflow.com/questions/32850898/how-to-check-if-a-string-has-any-non-iso-8859-1-characters-with-javascript
@@ -47,8 +47,10 @@ if (VALID_REQURL) {
       delete transformedHeaders["host"];
       delete transformedHeaders["content-length"];
 
-      const reqContentType =
-        transformedHeaders["accept"] ?? transformedHeaders["content-type"];
+      // Pass Content-Type only via the contentType param; leaving it in headers
+      // too makes requestUrl emit a duplicate (e.g. text/plain,application/xml).
+      const reqContentType = transformedHeaders["content-type"];
+      delete transformedHeaders["content-type"];
 
       const retractedHeaders = { ...transformedHeaders };
       if (Object.prototype.hasOwnProperty.call(retractedHeaders, "authorization")) {
@@ -70,22 +72,44 @@ if (VALID_REQURL) {
         throw: false,
       };
 
-      let r = await requestUrl(p);
+      // Some webdav servers return 401 instead of 404 for a missing folder
+      // requested without a trailing slash, so retry once with the slash.
+      const doRequest = async () => {
+        p.url = options.url;
+        let rr = await requestUrl(p);
+        if (
+          rr.status === 401 &&
+          Platform.isIosApp &&
+          !options.url.endsWith("/") &&
+          !options.url.endsWith(".md") &&
+          options.method.toUpperCase() === "PROPFIND"
+        ) {
+          p.url = `${options.url}/`;
+          rr = await requestUrl(p);
+        }
+        return rr;
+      };
 
-      if (
-        r.status === 401 &&
-        Platform.isIosApp &&
-        !options.url.endsWith("/") &&
-        !options.url.endsWith(".md") &&
-        options.method.toUpperCase() === "PROPFIND"
+      // Retry on throttling (429), transient unavailability (503), and early-data
+      // rejection (425), honoring Retry-After, so the server doesn't abort sync.
+      const RETRY_BACKOFF_SEC = [1, 2, 4, 8];
+      const retryable = (s: number) => s === 429 || s === 503 || s === 425;
+      let r = await doRequest();
+      for (
+        let attempt = 0;
+        retryable(r.status) && attempt < RETRY_BACKOFF_SEC.length;
+        attempt++
       ) {
-        // don't ask me why,
-        // some webdav servers have some mysterious behaviours,
-        // if a folder doesn't exist without slash, the servers return 401 instead of 404
-        // here is a dirty hack that works
-        console.debug(`so we have 401, try appending request url with slash`);
-        p.url = `${options.url}/`;
-        r = await requestUrl(p);
+        const retryAfterSec =
+          Number.parseInt(
+            objKeyToLower({ ...r.headers })["retry-after"] || "0"
+          ) || 0;
+        const waitSec = Math.max(retryAfterSec, RETRY_BACKOFF_SEC[attempt]);
+        console.warn(
+          `[BYOC] webdav ${r.status} on ${options.method} ${options.url}; waiting ${waitSec}s before retry ${attempt + 1}/${RETRY_BACKOFF_SEC.length}`
+        );
+        await delay(waitSec * 1000 + Math.floor(Math.random() * 500));
+        r = await doRequest();
       }
 
       // console.debug(`after request:`);
