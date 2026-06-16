@@ -111,7 +111,7 @@ class ObsHttpHandler extends FetchHttpHandler {
 
     let transformedBody: ArrayBuffer | string | undefined;
     if (ArrayBuffer.isView(body)) {
-      transformedBody = bufferToArrayBuffer(body) as ArrayBuffer;
+      transformedBody = bufferToArrayBuffer(body);
     } else if (typeof body === "string" || body instanceof ArrayBuffer || body === undefined) {
       transformedBody = body;
     } else {
@@ -220,7 +220,7 @@ const getObjectBodyToArrayBuffer = async (
       const chunks: Uint8Array[] = [];
       b.on("data", (chunk: Uint8Array) => chunks.push(chunk));
       b.on("error", reject);
-      b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks)) as ArrayBuffer));
+      b.on("end", () => resolve(bufferToArrayBuffer(Buffer.concat(chunks))));
     });
   } else if (b instanceof ReadableStream) {
     return await new Response(b, {}).arrayBuffer();

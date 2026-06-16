@@ -857,7 +857,7 @@ export default class BYOCPlugin extends Plugin {
       }
 
       this.registerInterval(
-        activeWindow.setInterval(async () => {
+        window.setInterval(async () => {
           if (!this.isSyncing) {
             this.updateLastSyncMsg(
               undefined,
@@ -1053,7 +1053,7 @@ export default class BYOCPlugin extends Plugin {
   enableAutoSyncIfSet() {
     if (this.settings.autoRunEveryMilliseconds != null && this.settings.autoRunEveryMilliseconds > 0) {
       this.app.workspace.onLayoutReady(() => {
-        const intervalID = activeWindow.setInterval(() => this.syncRun("auto"), this.settings.autoRunEveryMilliseconds);
+        const intervalID = window.setInterval(() => this.syncRun("auto"), this.settings.autoRunEveryMilliseconds);
         this.autoRunIntervalID = intervalID;
         this.registerInterval(intervalID);
       });
@@ -1063,7 +1063,7 @@ export default class BYOCPlugin extends Plugin {
   enableInitSyncIfSet() {
     if (this.settings.initRunAfterMilliseconds != null && this.settings.initRunAfterMilliseconds > 0) {
       this.app.workspace.onLayoutReady(() => {
-        activeWindow.setTimeout(() => this.syncRun("auto_once_init"), this.settings.initRunAfterMilliseconds);
+        window.setTimeout(() => this.syncRun("auto_once_init"), this.settings.initRunAfterMilliseconds);
       });
     }
   }
@@ -1112,8 +1112,8 @@ export default class BYOCPlugin extends Plugin {
     let resumeTimer: number | undefined;
 
     const triggerSync = () => {
-      activeWindow.clearTimeout(resumeTimer);
-      resumeTimer = activeWindow.setTimeout(() => {
+      window.clearTimeout(resumeTimer);
+      resumeTimer = window.setTimeout(() => {
         if (!this.isSyncing) {
           console.debug("[BYOC] Mobile resume sync: triggering syncRun");
           void this.syncRun("manual");
@@ -1133,14 +1133,14 @@ export default class BYOCPlugin extends Plugin {
       this.app.workspace.onLayoutReady(() => {
         if (!this.isSyncing) {
           console.debug("[BYOC] Mobile cold-start sync: triggering initial syncRun");
-          activeWindow.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
+          window.setTimeout(() => this.syncRun("manual"), RESUME_DEBOUNCE_MS);
         }
       });
     }
 
     this.register(() => {
       activeDocument.removeEventListener("visibilitychange", handler);
-      activeWindow.clearTimeout(resumeTimer);
+      window.clearTimeout(resumeTimer);
     });
   }
 
@@ -1367,14 +1367,14 @@ export default class BYOCPlugin extends Plugin {
 
   enableAutoClearOutputToDBHistIfSet() {
     this.app.workspace.onLayoutReady(() => {
-      activeWindow.setTimeout(() => void clearAllLoggerOutputRecords(this.db), 1000 * 30);
+      window.setTimeout(() => void clearAllLoggerOutputRecords(this.db), 1000 * 30);
     });
   }
 
   enableAutoClearSyncPlanHist() {
     this.app.workspace.onLayoutReady(() => {
-      activeWindow.setTimeout(() => void clearExpiredSyncPlanRecords(this.db), 1000 * 45);
-      const intervalID = activeWindow.setInterval(() => clearExpiredSyncPlanRecords(this.db), 1000 * 60 * 5);
+      window.setTimeout(() => void clearExpiredSyncPlanRecords(this.db), 1000 * 45);
+      const intervalID = window.setInterval(() => clearExpiredSyncPlanRecords(this.db), 1000 * 60 * 5);
       this.registerInterval(intervalID);
     });
   }

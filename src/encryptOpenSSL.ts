@@ -112,7 +112,7 @@ export const encryptStringToBase32 = async (
   saltHex = ""
 ) => {
   const enc = await encryptArrayBuffer(
-    bufferToArrayBuffer(new TextEncoder().encode(text)) as ArrayBuffer,
+    bufferToArrayBuffer(new TextEncoder().encode(text)),
     password,
     rounds,
     saltHex
@@ -127,7 +127,7 @@ export const decryptBase32ToString = async (
 ) => {
   return new TextDecoder().decode(
     await decryptArrayBuffer(
-      bufferToArrayBuffer(base32.parse(text, { loose: true })) as ArrayBuffer,
+      bufferToArrayBuffer(base32.parse(text, { loose: true })),
       password,
       rounds
     )
@@ -141,7 +141,7 @@ export const encryptStringToBase64url = async (
   saltHex = ""
 ) => {
   const enc = await encryptArrayBuffer(
-    bufferToArrayBuffer(new TextEncoder().encode(text)) as ArrayBuffer,
+    bufferToArrayBuffer(new TextEncoder().encode(text)),
     password,
     rounds,
     saltHex
@@ -156,7 +156,7 @@ export const decryptBase64urlToString = async (
 ) => {
   return new TextDecoder().decode(
     await decryptArrayBuffer(
-      bufferToArrayBuffer(base64url.parse(text, { loose: true })) as ArrayBuffer,
+      bufferToArrayBuffer(base64url.parse(text, { loose: true })),
       password,
       rounds
     )

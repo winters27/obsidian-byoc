@@ -554,7 +554,7 @@ export const stringToFragment = (
  * @returns
  */
 export const delay = (ms: number) =>
-  new Promise((resolve) => activeWindow.setTimeout(resolve, ms));
+  new Promise((resolve) => window.setTimeout(resolve, ms));
 
 // Parse a server response as JSON, or throw a readable error naming the source
 // and a snippet when the body isn't JSON (e.g. an HTML error page).

@@ -1419,14 +1419,14 @@ export class BYOCSettingTab extends PluginSettingTab {
               this.plugin.autoRunIntervalID !== undefined
             ) {
               // clear
-              activeWindow.clearInterval(this.plugin.autoRunIntervalID);
+              window.clearInterval(this.plugin.autoRunIntervalID);
               this.plugin.autoRunIntervalID = undefined;
             } else if (
               realVal !== undefined &&
               realVal !== null &&
               realVal > 0
             ) {
-              const intervalID = activeWindow.setInterval(() => {
+              const intervalID = window.setInterval(() => {
                 console.debug("auto run from settings.ts");
                 void this.plugin.syncRun("auto");
               }, realVal);

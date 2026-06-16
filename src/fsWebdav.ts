@@ -919,7 +919,7 @@ export class FakeFsWebdav extends FakeFs {
     if (buff instanceof ArrayBuffer) {
       return buff;
     } else if (buff instanceof Buffer) {
-      return bufferToArrayBuffer(buff) as ArrayBuffer;
+      return bufferToArrayBuffer(buff);
     }
     throw Error(`unexpected file content result with type ${typeof buff}`);
   }

@@ -569,12 +569,11 @@ _getAccessToken(): Promise<string> {
       // console.warn(`uploading empty file ${key}`);
       const controller = new AbortController();
       const timeoutMs = 300; // just a random reasonable number
-      const id = activeWindow.setTimeout(() => controller.abort(), timeoutMs);
+      const id = window.setTimeout(() => controller.abort(), timeoutMs);
       try {
         // requestUrl has no abort signal support; we deliberately use fetch
         // here so we can abort the hung empty-file request after 300ms.
-        // Accessed via activeWindow (matching the setTimeout/clearTimeout
-        // calls above) so no-restricted-globals's bare-fetch ban doesn't fire.
+        // Accessed via activeWindow so the bare-fetch lint ban doesn't fire.
         await activeWindow.fetch(apiUrl, {
           method: "PUT",
           body: content,
@@ -584,7 +583,7 @@ _getAccessToken(): Promise<string> {
         // console.warn(`we abort the request of uploading empty file ${key}:`);
         // console.warn(e);
       } finally {
-        activeWindow.clearTimeout(id);
+        window.clearTimeout(id);
       }
 
       // raw stat here
