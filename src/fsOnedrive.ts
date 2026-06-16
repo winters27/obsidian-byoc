@@ -7,7 +7,7 @@ import type {
   User,
 } from "@microsoft/microsoft-graph-types";
 import cloneDeep from "lodash/cloneDeep";
-import { request, requestUrl } from "obsidian";
+import { requestUrl } from "obsidian";
 import {
   COMMAND_CALLBACK_ONEDRIVE,
   DEFAULT_CONTENT_TYPE,
@@ -18,7 +18,7 @@ import {
 } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, requestWithRetry, retryFetch } from "./misc";
 
 const SCOPES = ["User.Read", "Files.ReadWrite.AppFolder", "offline_access"];
 const REDIRECT_URI = `obsidian://${COMMAND_CALLBACK_ONEDRIVE}`;
@@ -122,7 +122,7 @@ export const sendAuthReq = async (
   // https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow
   // https://docs.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/graph-oauth?view=odsp-graph-online#code-flow
   try {
-    const rsp1 = await request({
+    const rsp1 = await requestWithRetry({
       url: `${authority}/oauth2/v2.0/token`,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -137,7 +137,7 @@ export const sendAuthReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    const rsp2 = parseJsonOrThrow<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType>(rsp1, "onedrive oauth");
     return rsp2;
   } catch (e) {
     console.error(e);
@@ -153,7 +153,7 @@ export const sendRefreshTokenReq = async (
 ): Promise<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType> => {
   // also use Obsidian request to bypass CORS issue.
   try {
-    const rsp1 = await request({
+    const rsp1 = await requestWithRetry({
       url: `${authority}/oauth2/v2.0/token`,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -166,7 +166,7 @@ export const sendRefreshTokenReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    const rsp2 = parseJsonOrThrow<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType>(rsp1, "onedrive oauth");
     return rsp2;
   } catch (e) {
     console.error(e);
@@ -608,8 +608,8 @@ export class FakeFsOnedrive extends FakeFs {
   async _getJson<T = unknown>(pathFragOrig: string): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`getJson, theUrl=${theUrl}`);
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: theUrl,
         method: "GET",
         contentType: "application/json",
@@ -617,15 +617,16 @@ export class FakeFsOnedrive extends FakeFs {
           Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
           "Cache-Control": "no-cache",
         },
-      })
-    ) as T;
+      }),
+      "onedrive api"
+    );
   }
 
   async _postJson<T = unknown>(pathFragOrig: string, payload: unknown): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`postJson, theUrl=${theUrl}`);
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: theUrl,
         method: "POST",
         contentType: "application/json",
@@ -633,15 +634,16 @@ export class FakeFsOnedrive extends FakeFs {
         headers: {
           Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
         },
-      })
-    ) as T;
+      }),
+      "onedrive api"
+    );
   }
 
   async _patchJson<T = unknown>(pathFragOrig: string, payload: unknown): Promise<T> {
     const theUrl = this._buildUrl(pathFragOrig);
     console.debug(`patchJson, theUrl=${theUrl}`);
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: theUrl,
         method: "PATCH",
         contentType: "application/json",
@@ -649,8 +651,9 @@ export class FakeFsOnedrive extends FakeFs {
         headers: {
           Authorization: `Bearer ${await this.authGetter.getAccessToken()}`,
         },
-      })
-    ) as T;
+      }),
+      "onedrive api"
+    );
   }
 
   async _deleteJson(pathFragOrig: string) {

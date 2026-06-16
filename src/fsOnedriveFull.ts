@@ -12,7 +12,7 @@ import type {
   User,
 } from "@microsoft/microsoft-graph-types";
 import cloneDeep from "lodash/cloneDeep";
-import { request, requestUrl } from "obsidian";
+import { requestUrl } from "obsidian";
 import {
   COMMAND_CALLBACK_ONEDRIVEFULL,
   DEFAULT_CONTENT_TYPE,
@@ -23,7 +23,7 @@ import {
 } from "./baseTypes";
 import { VALID_REQURL } from "./baseTypesObs";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, requestWithRetry, retryFetch } from "./misc";
 
 // Full access scopes — reads/writes anywhere on the drive
 const SCOPES = ["User.Read", "Files.ReadWrite.All", "offline_access"];
@@ -96,7 +96,7 @@ export const sendAuthReq = async (
   errorCallBack: (e: unknown) => void | Promise<void>
 ) => {
   try {
-    const rsp1 = await request({
+    const rsp1 = await requestWithRetry({
       url: `${authority}/oauth2/v2.0/token`,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -111,7 +111,7 @@ export const sendAuthReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    const rsp2 = parseJsonOrThrow<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType>(rsp1, "onedrive (full) oauth");
     if ((rsp2 as AccessCodeResponseFailedType).error !== undefined) {
       return rsp2 as AccessCodeResponseFailedType;
     }
@@ -129,7 +129,7 @@ export const sendRefreshTokenReq = async (
   refreshToken: string
 ): Promise<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType> => {
   try {
-    const rsp1 = await request({
+    const rsp1 = await requestWithRetry({
       url: `${authority}/oauth2/v2.0/token`,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -142,7 +142,7 @@ export const sendRefreshTokenReq = async (
       }).toString(),
     });
 
-    const rsp2 = JSON.parse(rsp1) as AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType;
+    const rsp2 = parseJsonOrThrow<AccessCodeResponseSuccessfulType | AccessCodeResponseFailedType>(rsp1, "onedrive (full) oauth");
     return rsp2;
   } catch (e) {
     console.error(e);
@@ -355,8 +355,8 @@ export class FakeFsOnedriveFull extends FakeFs {
     return url;
   }
   private async _getJson<T = unknown>(path: string): Promise<T> {
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: this._buildUrl(path),
         method: "GET",
         contentType: "application/json",
@@ -364,13 +364,14 @@ export class FakeFsOnedriveFull extends FakeFs {
           Authorization: `Bearer ${await this.auth.getAccessToken()}`,
           "Cache-Control": "no-cache",
         },
-      })
-    ) as T;
+      }),
+      "onedrive (full) api"
+    );
   }
 
   private async _postJson<T = unknown>(path: string, payload: unknown): Promise<T> {
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: this._buildUrl(path),
         method: "POST",
         contentType: "application/json",
@@ -378,13 +379,14 @@ export class FakeFsOnedriveFull extends FakeFs {
         headers: {
           Authorization: `Bearer ${await this.auth.getAccessToken()}`,
         },
-      })
-    ) as T;
+      }),
+      "onedrive (full) api"
+    );
   }
 
   private async _patchJson<T = unknown>(path: string, payload: unknown): Promise<T> {
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: this._buildUrl(path),
         method: "PATCH",
         contentType: "application/json",
@@ -392,8 +394,9 @@ export class FakeFsOnedriveFull extends FakeFs {
         headers: {
           Authorization: `Bearer ${await this.auth.getAccessToken()}`,
         },
-      })
-    ) as T;
+      }),
+      "onedrive (full) api"
+    );
   }
 
   private async _deleteJson(path: string): Promise<void> {

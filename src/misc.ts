@@ -2,10 +2,10 @@
 import { posix as pathUncast } from "path-browserify";
 type PosixPath = { normalize: (s: string) => string; dirname: (s: string) => string };
 const path = pathUncast as unknown as PosixPath;
-import type { Vault } from "obsidian";
+import type { RequestUrlParam, Vault } from "obsidian";
 
 import emojiRegex from "emoji-regex";
-import { moment } from "obsidian";
+import { moment, request } from "obsidian";
 import { base32 } from "rfc4648";
 import XRegExp from "xregexp";
 
@@ -555,6 +555,44 @@ export const stringToFragment = (
  */
 export const delay = (ms: number) =>
   new Promise((resolve) => activeWindow.setTimeout(resolve, ms));
+
+// Parse a server response as JSON, or throw a readable error naming the source
+// and a snippet when the body isn't JSON (e.g. an HTML error page).
+export const parseJsonOrThrow = <T>(text: string, context: string): T => {
+  try {
+    return JSON.parse(text) as T;
+  } catch (e) {
+    const snippet = (text ?? "").trim().slice(0, 200);
+    throw new Error(
+      `${context}: expected a JSON response but the server returned non-JSON content: ${snippet}`
+    );
+  }
+};
+
+// request() wrapper that retries on throttling and transient/early-data errors
+// (429/503/425). Other errors propagate unchanged so status-based handling
+// (e.g. treating 404 as missing) keeps working.
+export const requestWithRetry = async (
+  param: RequestUrlParam
+): Promise<string> => {
+  const backoffSec = [1, 2, 4, 8];
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await request(param);
+    } catch (e) {
+      const status = Number.parseInt(
+        /status\D{0,2}(\d{3})/i.exec(String((e as Error)?.message ?? e))?.[1] ??
+          "0"
+      );
+      const retryable = status === 429 || status === 503 || status === 425;
+      if (retryable && attempt < backoffSec.length) {
+        await delay(backoffSec[attempt] * 1000 + Math.floor(Math.random() * 500));
+        continue;
+      }
+      throw e;
+    }
+  }
+};
 
 
 

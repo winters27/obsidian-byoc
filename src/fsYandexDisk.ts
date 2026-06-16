@@ -4,7 +4,6 @@
  * OAuth2 authorization code flow with silent token refresh.
  */
 
-import { request } from "obsidian";
 import {
   COMMAND_CALLBACK_YANDEXDISK,
   YANDEXDISK_CLIENT_ID,
@@ -13,7 +12,7 @@ import {
   type YandexDiskConfig,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, requestWithRetry, retryFetch } from "./misc";
 
 const YANDEX_API = "https://cloud-api.yandex.net/v1/disk";
 const YANDEX_AUTH_URL = "https://oauth.yandex.com/authorize";
@@ -92,7 +91,7 @@ export async function sendAuthReq(
   errorCallBack: (e: unknown) => Promise<void>
 ): Promise<YandexOAuthRes> {
   try {
-    const rsp = await request({
+    const rsp = await requestWithRetry({
       url: YANDEX_TOKEN_URL,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -104,7 +103,7 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp) as YandexOAuthRes;
+    return parseJsonOrThrow<YandexOAuthRes>(rsp, "yandex disk oauth");
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
@@ -113,7 +112,7 @@ export async function sendAuthReq(
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<YandexOAuthRes> {
-  const rsp = await request({
+  const rsp = await requestWithRetry({
     url: YANDEX_TOKEN_URL,
     method: "POST",
     contentType: "application/x-www-form-urlencoded",
@@ -124,7 +123,7 @@ async function refreshAccessToken(refreshToken: string): Promise<YandexOAuthRes>
       client_secret: YANDEXDISK_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp) as YandexOAuthRes;
+  return parseJsonOrThrow<YandexOAuthRes>(rsp, "yandex disk oauth");
 }
 
 export async function setConfigBySuccessfullAuthInplace(
@@ -221,13 +220,14 @@ export class FakeFsYandexDisk extends FakeFs {
   private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: fullUrl,
         method: "GET",
         headers: { Authorization: `OAuth ${token}` },
-      })
-    ) as T;
+      }),
+      "yandex disk api"
+    );
   }
 
   private async _put<T = unknown>(url: string, body?: unknown): Promise<T> {
@@ -242,14 +242,14 @@ export class FakeFsYandexDisk extends FakeFs {
       opts.contentType = "application/json";
       opts.body = JSON.stringify(body);
     }
-    const rsp = await request(opts);
-    return (rsp ? JSON.parse(rsp) : {}) as T;
+    const rsp = await requestWithRetry(opts);
+    return (rsp ? parseJsonOrThrow<T>(rsp, "yandex disk api") : ({} as T));
   }
 
   private async _delete(url: string): Promise<void> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${YANDEX_API}${url}`;
-    await request({
+    await requestWithRetry({
       url: fullUrl,
       method: "DELETE",
       headers: { Authorization: `OAuth ${token}` },
@@ -466,7 +466,7 @@ export class FakeFsYandexDisk extends FakeFs {
 
   private async _postMove(from: string, to: string): Promise<void> {
     const token = await this.ensureToken();
-    await request({
+    await requestWithRetry({
       url: `${YANDEX_API}/resources/move?from=${encodeURIComponent(from)}&path=${encodeURIComponent(to)}&overwrite=true`,
       method: "POST",
       headers: { Authorization: `OAuth ${token}` },

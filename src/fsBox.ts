@@ -12,7 +12,7 @@ import {
   type Entity,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, retryFetch } from "./misc";
 
 const BOX_API = "https://api.box.com/2.0";
 const BOX_UPLOAD_API = "https://upload.box.com/api/2.0";
@@ -98,7 +98,7 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp) as BoxOAuthRes;
+    return parseJsonOrThrow<BoxOAuthRes>(rsp, "box oauth");
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
@@ -120,7 +120,7 @@ async function refreshAccessToken(
       client_secret: BOX_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp) as BoxOAuthRes;
+  return parseJsonOrThrow<BoxOAuthRes>(rsp, "box oauth");
 }
 
 export async function setConfigBySuccessfullAuthInplace(
@@ -304,41 +304,44 @@ export class FakeFsBox extends FakeFs {
   private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
-    return JSON.parse(
+    return parseJsonOrThrow<T>(
       await request({
         url: fullUrl,
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "box api"
+    );
   }
 
   private async _postJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
-    return JSON.parse(
+    return parseJsonOrThrow<T>(
       await request({
         url: fullUrl,
         method: "POST",
         contentType: "application/json",
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "box api"
+    );
   }
 
   private async _putJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
-    return JSON.parse(
+    return parseJsonOrThrow<T>(
       await request({
         url: fullUrl,
         method: "PUT",
         contentType: "application/json",
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "box api"
+    );
   }
 
   private async _delete(url: string): Promise<void> {

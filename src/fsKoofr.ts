@@ -4,7 +4,6 @@
  * OAuth2 authorization code flow with silent token refresh.
  */
 
-import { request } from "obsidian";
 import {
   COMMAND_CALLBACK_KOOFR,
   KOOFR_CLIENT_ID,
@@ -13,7 +12,7 @@ import {
   type KoofrConfig,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, requestWithRetry, retryFetch } from "./misc";
 
 const KOOFR_AUTH_URL = "https://app.koofr.net/oauth2/auth";
 const KOOFR_TOKEN_URL = "https://app.koofr.net/oauth2/token";
@@ -97,7 +96,7 @@ export async function sendAuthReq(
   errorCallBack: (e: unknown) => Promise<void>
 ): Promise<KoofrOAuthRes> {
   try {
-    const rsp = await request({
+    const rsp = await requestWithRetry({
       url: KOOFR_TOKEN_URL,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -109,7 +108,7 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp) as KoofrOAuthRes;
+    return parseJsonOrThrow<KoofrOAuthRes>(rsp, "koofr oauth");
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
@@ -118,7 +117,7 @@ export async function sendAuthReq(
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<KoofrOAuthRes> {
-  const rsp = await request({
+  const rsp = await requestWithRetry({
     url: KOOFR_TOKEN_URL,
     method: "POST",
     contentType: "application/x-www-form-urlencoded",
@@ -129,7 +128,7 @@ async function refreshAccessToken(refreshToken: string): Promise<KoofrOAuthRes> 
       client_secret: KOOFR_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp) as KoofrOAuthRes;
+  return parseJsonOrThrow<KoofrOAuthRes>(rsp, "koofr oauth");
 }
 
 export async function setConfigBySuccessfullAuthInplace(
@@ -231,16 +230,17 @@ export class FakeFsKoofr extends FakeFs {
   private async _getJson<T = unknown>(path: string): Promise<T> {
     const token = await this.ensureToken();
     const url = path.startsWith("http") ? path : `${this.apiBase}${path}`;
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url,
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
-      })
-    ) as T;
+      }),
+      "koofr api"
+    );
   }
 
   private async _postJson<T = unknown>(path: string, body?: unknown): Promise<T> {
@@ -258,8 +258,8 @@ export class FakeFsKoofr extends FakeFs {
       opts.contentType = "application/json";
       opts.body = JSON.stringify(body);
     }
-    const rsp = await request(opts);
-    return (rsp ? JSON.parse(rsp) : {}) as T;
+    const rsp = await requestWithRetry(opts);
+    return (rsp ? parseJsonOrThrow<T>(rsp, "koofr api") : ({} as T));
   }
 
   private async _delete(path: string): Promise<void> {

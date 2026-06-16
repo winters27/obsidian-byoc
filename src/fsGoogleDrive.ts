@@ -13,7 +13,7 @@
  * The scope is drive.file — only files created by this app are accessible.
  */
 
-import { request, requestUrl } from "obsidian";
+import { requestUrl } from "obsidian";
 import {
   GOOGLEDRIVE_CLIENT_ID,
   GOOGLEDRIVE_CLIENT_SECRET,
@@ -21,7 +21,7 @@ import {
   type GoogleDriveConfig,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { retryFetch } from "./misc";
+import { parseJsonOrThrow, requestWithRetry, retryFetch } from "./misc";
 
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 const DRIVE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
@@ -72,7 +72,7 @@ export async function sendAuthReq(
   errorCallBack: (e: unknown) => Promise<void>
 ): Promise<GDriveOAuthRes> {
   try {
-    const rsp = await request({
+    const rsp = await requestWithRetry({
       url: GOOGLE_TOKEN_URL,
       method: "POST",
       contentType: "application/x-www-form-urlencoded",
@@ -84,7 +84,7 @@ export async function sendAuthReq(
         redirect_uri: REDIRECT_URI,
       }).toString(),
     });
-    return JSON.parse(rsp) as GDriveOAuthRes;
+    return parseJsonOrThrow<GDriveOAuthRes>(rsp, "google drive oauth");
   } catch (e) {
     console.error(e);
     await errorCallBack(e);
@@ -93,7 +93,7 @@ export async function sendAuthReq(
 }
 
 async function refreshAccessToken(refreshToken: string): Promise<GDriveOAuthRes> {
-  const rsp = await request({
+  const rsp = await requestWithRetry({
     url: GOOGLE_TOKEN_URL,
     method: "POST",
     contentType: "application/x-www-form-urlencoded",
@@ -104,7 +104,7 @@ async function refreshAccessToken(refreshToken: string): Promise<GDriveOAuthRes>
       client_secret: GOOGLEDRIVE_CLIENT_SECRET,
     }).toString(),
   });
-  return JSON.parse(rsp) as GDriveOAuthRes;
+  return parseJsonOrThrow<GDriveOAuthRes>(rsp, "google drive oauth");
 }
 
 export async function setConfigBySuccessfullAuthInplace(
@@ -205,41 +205,44 @@ export class FakeFsGoogleDrive extends FakeFs {
   private async _getJson<T = unknown>(url: string): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: fullUrl,
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "google drive api"
+    );
   }
 
   private async _postJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: fullUrl,
         method: "POST",
         contentType: "application/json",
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "google drive api"
+    );
   }
 
   private async _patchJson<T = unknown>(url: string, body: unknown): Promise<T> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${DRIVE_API}${url}`;
-    return JSON.parse(
-      await request({
+    return parseJsonOrThrow<T>(
+      await requestWithRetry({
         url: fullUrl,
         method: "PATCH",
         contentType: "application/json",
         body: JSON.stringify(body),
         headers: { Authorization: `Bearer ${token}` },
-      })
-    ) as T;
+      }),
+      "google drive api"
+    );
   }
 
   private async _delete(url: string): Promise<void> {
@@ -337,8 +340,10 @@ export class FakeFsGoogleDrive extends FakeFs {
     let q = `name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and trashed=false`;
     if (mimeType) q += ` and mimeType='${mimeType}'`;
 
+    // Google Drive allows duplicate names in a folder; target the newest so
+    // writes converge instead of updating an arbitrary copy.
     const res = await this._getJson<GDriveFileList>(
-      `/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,size,modifiedTime,createdTime,parents)&pageSize=1`
+      `/files?q=${encodeURIComponent(q)}&orderBy=${encodeURIComponent("modifiedTime desc")}&fields=files(id,name,mimeType,size,modifiedTime,createdTime,parents)&pageSize=1`
     );
 
     return res.files && res.files.length > 0 ? res.files[0] : null;
