@@ -561,7 +561,7 @@ export const delay = (ms: number) =>
 export const parseJsonOrThrow = <T>(text: string, context: string): T => {
   try {
     return JSON.parse(text) as T;
-  } catch (e) {
+  } catch {
     const snippet = (text ?? "").trim().slice(0, 200);
     throw new Error(
       `${context}: expected a JSON response but the server returned non-JSON content: ${snippet}`
