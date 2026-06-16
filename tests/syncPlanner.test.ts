@@ -306,5 +306,41 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
       "local_is_deleted_thus_also_delete_remote"
     );
   });
+
+  // ── Encrypted deletion (#985, #991 under webdav + password) ──────────────
+  // For an encrypted remote, remote.sizeRaw is the ciphertext size while the
+  // baseline plaintext size lives in prevSync.sizeRaw and the ciphertext size in
+  // prevSync.sizeEnc. A genuine local deletion must compare ciphertext-to-
+  // ciphertext, otherwise it is misread as a conflict and the file resurrects.
+  const PLAIN = 10;   // plaintext byte size
+  const CIPHER = 58;  // ciphertext byte size (plaintext + rclone header/padding)
+
+  it("local deleted of an encrypted file, remote unchanged → delete remote (no resurrection)", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(
+          undefined,
+          { sizeRaw: CIPHER, sizeEnc: CIPHER, mtimeSvr: T, mtimeCli: T },
+          { sizeRaw: PLAIN, sizeEnc: CIPHER, mtimeCli: T, mtimeSvr: T }
+        ),
+        "smart_conflict"
+      ),
+      "local_is_deleted_thus_also_delete_remote"
+    );
+  });
+
+  it("local deleted of an encrypted file, remote ciphertext changed → conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(
+          undefined,
+          { sizeRaw: CIPHER + 16, sizeEnc: CIPHER + 16, mtimeSvr: T, mtimeCli: T },
+          { sizeRaw: PLAIN, sizeEnc: CIPHER, mtimeCli: T, mtimeSvr: T }
+        ),
+        "smart_conflict"
+      ),
+      "conflict_modified_then_smart_conflict"
+    );
+  });
 });
 

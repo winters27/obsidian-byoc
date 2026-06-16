@@ -91,8 +91,20 @@ export const determineSyncDecision = (
   if (!hasLocal && hasRemote && hasPrev) {
     // Use relaxed mtime tolerance for deletion branches to prevent
     // mtime drift from overriding confirmed deletions (#985, #991).
+    //
+    // For an encrypted remote, remote.sizeRaw holds the ciphertext byte size
+    // (the plaintext size is unknowable without downloading), while the baseline
+    // prevSync.sizeRaw is anchored to the plaintext size. Comparing those two
+    // directly always reports "changed" for any encrypted file, which misreads a
+    // genuine deletion as a delete-vs-modify conflict and resurrects the file
+    // (the webdav + password case of #985, #991). Compare against the baseline
+    // ciphertext size instead, mirroring the both-present branch below.
+    const remoteBaselineSize =
+      remote.sizeEnc !== undefined
+        ? (prevSync.sizeEnc ?? prevSync.sizeRaw)
+        : prevSync.sizeRaw;
     const remoteContentChanged =
-      remote.sizeRaw !== prevSync.sizeRaw ||
+      remote.sizeRaw !== remoteBaselineSize ||
       mtimeChangedRelaxed(remote.mtimeSvr, prevSync.mtimeSvr) ||
       mtimeChangedRelaxed(remote.mtimeCli, prevSync.mtimeCli);
 
