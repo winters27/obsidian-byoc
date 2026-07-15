@@ -154,6 +154,30 @@ describe("Misc: vaild file name tests", () => {
     const x = misc.isVaildText("😄🍎 apple 苹果/-_=/\\*%^&@#$`");
     assert.ok(x);
   });
+
+  it("should accept legitimate format chars in filenames (ZWNJ/ZWJ/bidi/SHY)", async () => {
+    // These are real, common filename characters in Persian, Arabic, Hindi and
+    // Hebrew. A correctly decrypted name containing them must validate as valid,
+    // not be dropped as garbage (which would risk deleting the local file).
+    const zwnj = String.fromCharCode(0x200c);
+    const zwj = String.fromCharCode(0x200d);
+    const lrm = String.fromCharCode(0x200e);
+    const rlm = String.fromCharCode(0x200f);
+    const shy = String.fromCharCode(0x00ad);
+    assert.ok(misc.isVaildText(`note${zwnj}book`), "ZWNJ");
+    assert.ok(misc.isVaildText(`a${zwj}b`), "ZWJ");
+    assert.ok(misc.isVaildText(`${lrm}left`), "LRM");
+    assert.ok(misc.isVaildText(`${rlm}right`), "RLM");
+    assert.ok(misc.isVaildText(`soft${shy}hyphen`), "SHY");
+  });
+
+  it("should still reject control-char garbage even alongside a format char", async () => {
+    // Stripping allowed format chars must not weaken wrong-password detection:
+    // a NUL (or other control char) still makes the string invalid.
+    const zwnj = String.fromCharCode(0x200c);
+    const nul = String.fromCharCode(0x0000);
+    assert.ok(!misc.isVaildText(`note${zwnj}book${nul}`));
+  });
 });
 
 describe("Misc: get dirname", () => {

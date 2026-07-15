@@ -78,6 +78,9 @@ export class FakeFsEncrypt extends FakeFs {
   cacheMapOrigToEnc: Record<string, string>;
   hasCacheMap: boolean;
   kind: string;
+  // Raw keys from the most recent walk whose names could not be decrypted.
+  // The syncer reads this to avoid treating a dropped entry as a remote deletion.
+  undecryptableKeys: string[];
 
   constructor(innerFs: FakeFs, password: string, method: CipherMethodType) {
     super();
@@ -86,6 +89,7 @@ export class FakeFsEncrypt extends FakeFs {
     this.method = method;
     this.cacheMapOrigToEnc = {};
     this.hasCacheMap = false;
+    this.undecryptableKeys = [];
 
     this.kind = `encrypt(${this.innerFs.kind},${
       this.password !== "" ? method : "no password"
@@ -182,6 +186,7 @@ export class FakeFsEncrypt extends FakeFs {
 
   async _dealWithWalk(innerWalkResult: Entity[]): Promise<Entity[]> {
     const res: Entity[] = [];
+    this.undecryptableKeys = [];
 
     if (this.isPasswordEmpty()) {
       for (const innerEntity of innerWalkResult) {
@@ -196,9 +201,11 @@ export class FakeFsEncrypt extends FakeFs {
           continue;
         }
 
-        // Bug Fix #2: Gracefully skip entries that cannot be decrypted.
-        // A malformed or wrong-password-encrypted name (e.g., "Data P must be
-        // a multiple of 16 long") must not abort the entire sync walk.
+        // An entry whose name cannot be decrypted (wrong password/method,
+        // corrupted, or a foreign file) is recorded and skipped here so the
+        // walk still returns. The syncer inspects undecryptableKeys and refuses
+        // to treat these skipped entries as remote deletions, which would
+        // otherwise delete the matching local files.
         let key: string;
         try {
           key = await this._decryptName(innerEntity.keyRaw);
@@ -207,13 +214,16 @@ export class FakeFsEncrypt extends FakeFs {
             `[BYOC] Skipping undecryptable remote entry: ${innerEntity.keyRaw}`,
             e
           );
+          this.undecryptableKeys.push(innerEntity.keyRaw);
           continue;
         }
 
         const size = key.endsWith("/") ? 0 : undefined;
         res.push({
           key: key,
-          keyRaw: innerEntity.keyRaw,
+          // keyRaw is the logical (decrypted) key so the syncer node map merges
+          // this remote entry with the plaintext-keyed local/baseline entries.
+          keyRaw: key,
           keyEnc: innerEntity.key!,
           mtimeCli: innerEntity.mtimeCli,
           mtimeSvr: innerEntity.mtimeSvr,
@@ -246,7 +256,7 @@ export class FakeFsEncrypt extends FakeFs {
     } else {
       return {
         key: key,
-        keyRaw: innerEntity.keyRaw,
+        keyRaw: key,
         keyEnc: innerEntity.key!,
         mtimeCli: innerEntity.mtimeCli,
         mtimeSvr: innerEntity.mtimeSvr,
@@ -295,7 +305,7 @@ export class FakeFsEncrypt extends FakeFs {
       );
       return {
         key: key,
-        keyRaw: innerEntity.keyRaw,
+        keyRaw: key,
         keyEnc: innerEntity.key!,
         mtimeCli: innerEntity.mtimeCli,
         mtimeSvr: innerEntity.mtimeSvr,
@@ -345,7 +355,7 @@ export class FakeFsEncrypt extends FakeFs {
       );
       return {
         key: key,
-        keyRaw: innerEntity.keyRaw,
+        keyRaw: key,
         keyEnc: innerEntity.key!,
         mtimeCli: innerEntity.mtimeCli,
         mtimeSvr: innerEntity.mtimeSvr,

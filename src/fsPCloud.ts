@@ -627,8 +627,15 @@ _getAccessToken(): Promise<string> {
   }
 
   async rename(key1: string, key2: string): Promise<void> {
+    // pCloud has no server-side rename we verify against here (supportsRename is
+    // false, so the sync engine renames via delete + create). Kept as a safe
+    // copy + delete fallback, matching S3/Azure, so a stray call never throws
+    // mid-sync and abandons the operation.
     await this._init();
-    throw new Error("Method not implemented.");
+    const content = await this.readFile(key1);
+    const now = Date.now();
+    await this.writeFile(key2, content, now, now);
+    await this.rm(key1);
   }
 
   async rm(key: string): Promise<void> {
@@ -677,7 +684,8 @@ _getAccessToken(): Promise<string> {
     throw new Error("Method not implemented.");
   }
 
-  supportsRename(): boolean { return true; }
+  // No verified server-side rename; the sync engine falls back to delete+create.
+  supportsRename(): boolean { return false; }
 
   allowEmptyFile(): boolean {
     return true;

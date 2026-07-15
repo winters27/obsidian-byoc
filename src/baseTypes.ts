@@ -284,6 +284,13 @@ export interface BYOCPluginSettings {
   /** Migration version — tracks which migration has been applied */
   migrationVersion?: number;
 
+  /**
+   * One-time safety net: false/undefined until the first encrypted sync after
+   * the key-namespace fix has run without propagating local deletions. Guards
+   * upgraders against a residual broken-baseline mismatch mass-deleting files.
+   */
+  encryptionFixSafetyDone?: boolean;
+
   /** @deprecated */
   agreeToUploadExtraMetadata?: boolean;
   /** @deprecated */

@@ -153,13 +153,28 @@ export const base64ToBase64url = (a: string, pad = false) => {
  * so we need to write the regrex in a form that \p{C} minus \p{Cs}
  * @param a
  */
+// Format characters (\p{Cf}) that legitimately appear in real filenames and
+// must not be mistaken for wrong-password garbage: ZWNJ / ZWJ (Persian, Arabic,
+// Hindi/Devanagari), the bidi marks LRM / RLM / ALM (RTL scripts), and the
+// soft hyphen. Stripped before the validity check so a correctly decrypted name
+// containing them is not rejected (which would drop the file and risk deletion).
+const ALLOWED_FORMAT_CHARS = new RegExp(
+  "[" +
+    [0x200c, 0x200d, 0x200e, 0x200f, 0x061c, 0x00ad]
+      .map((c) => String.fromCharCode(c))
+      .join("") +
+    "]",
+  "g"
+);
+
 export const isVaildText = (a: string) => {
   if (a === undefined) {
     return false;
   }
+  const cleaned = a.replace(ALLOWED_FORMAT_CHARS, "");
   // If the regex matches, the string is invalid.
   return !XRegExp("\\p{Cc}|\\p{Cf}|\\p{Co}|\\p{Cn}|\\p{Zl}|\\p{Zp}", "A").test(
-    a
+    cleaned
   );
 };
 

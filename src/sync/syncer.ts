@@ -285,6 +285,63 @@ export async function syncer(
       return node;
     });
 
+    // Encryption safety: an undecryptable remote entry is dropped from the walk,
+    // so its local twin looks "remote-deleted" and would be wrongly removed.
+    // While any entry failed to decrypt we do not trust remote-absence for any
+    // file: abort if nothing decrypted (wrong password/method), otherwise keep
+    // the local files and warn.
+    if (settings.password !== "" && fsEncrypt.undecryptableKeys.length > 0) {
+      const undecryptableCount = fsEncrypt.undecryptableKeys.length;
+      if (remoteWalk.length === 0) {
+        throw Error(
+          `Sync aborted: ${undecryptableCount} encrypted remote ${undecryptableCount === 1 ? "entry" : "entries"} could not be decrypted and none decrypted successfully. Check your password and encryption method. No local files were changed.`
+        );
+      }
+      let suppressed = 0;
+      for (const action of unsortedActions) {
+        const d = action.decision;
+        const looksRemoteDeleted =
+          action.remote === undefined &&
+          action.prevSync !== undefined &&
+          action.local !== undefined &&
+          (d?.includes("delete") || d?.includes("conflict"));
+        if (looksRemoteDeleted) {
+          action.decision = "equal"; // keep local + baseline; never delete
+          suppressed++;
+        }
+      }
+      if (suppressed > 0) {
+        await errNotifyFunc(
+          triggerSource,
+          Error(
+            `${undecryptableCount} remote ${undecryptableCount === 1 ? "entry" : "entries"} could not be decrypted; kept ${suppressed} local ${suppressed === 1 ? "file" : "files"} instead of deleting to prevent data loss. Check your password and encryption method.`
+          )
+        );
+      }
+    }
+
+    // One-time upgrade safety net: the first encrypted sync after the
+    // key-namespace fix runs without propagating remote-driven local deletions,
+    // so any residual mismatch from a previously-broken baseline cannot
+    // mass-delete local files. Intended deletions apply on the next sync.
+    if (settings.password !== "" && !settings.encryptionFixSafetyDone) {
+      let held = 0;
+      for (const action of unsortedActions) {
+        if (action.decision === "remote_is_deleted_thus_also_delete_local") {
+          action.decision = "equal";
+          held++;
+        }
+      }
+      if (held > 0) {
+        await errNotifyFunc(
+          triggerSource,
+          Error(
+            `First encrypted sync after update: kept ${held} local ${held === 1 ? "file" : "files"} instead of deleting, as a one-time safety check. Re-run sync to apply any intended deletions.`
+          )
+        );
+      }
+    }
+
     // M1: Enforce folder-before-file creation order, file-before-folder delete order.
     let syncActions = sortSyncActions(unsortedActions);
 
@@ -346,9 +403,19 @@ export async function syncer(
     for (const node of syncActions) {
       const decision = node.decision;
       if (decision === "equal" || decision === "only_history") {
-        // M3: Commit the freshest known entity, not the stale prevSync snapshot.
-        const commitEntity = node.local ?? node.remote ?? node.prevSync;
-        if (commitEntity) successfulCommits.push(commitEntity);
+        // Commit a complete baseline: local carries the plaintext key/mtime/size,
+        // remote carries the server mtime + ciphertext size. Dropping the remote
+        // anchors here makes the next encrypted sync misread the file as remotely
+        // changed (ciphertext size vs plaintext baseline) and spawn a conflict.
+        const freshest = node.local ?? node.remote ?? node.prevSync;
+        if (freshest) {
+          const commitEntity: Entity = {
+            ...node.prevSync,
+            ...node.remote,
+            ...node.local,
+          } as Entity;
+          successfulCommits.push(commitEntity);
+        }
         continue;
       }
 
@@ -486,6 +553,12 @@ export async function syncer(
         ...prevSyncItems.filter(e => !committedKeys.has(e.keyRaw))
       ];
       await db.prevSyncRecordsTbl.setItem(profileID, merged);
+    }
+
+    // Mark the one-time encryption-fix safety net as satisfied after a clean run.
+    if (settings.password !== "" && !settings.encryptionFixSafetyDone) {
+      settings.encryptionFixSafetyDone = true;
+      await configSaver();
     }
 
     await notifyFunc(triggerSource, 8); // finish
