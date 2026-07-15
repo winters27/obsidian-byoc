@@ -1,6 +1,6 @@
 {
   "name": "byoc",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "A clean, self-hosted, un-paywalled synchronization tool for Obsidian.",
   "scripts": {
     "dev2": "node esbuild.config.mjs --watch",
@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "lint:bot": "eslint --config eslint.bot.config.mjs .",
     "lint:bot:fix": "eslint --config eslint.bot.config.mjs . --fix",
-    "test": "mocha --require ./tests/_obsidianStub.cjs --import=tsx 'tests/**/*.ts'"
+    "test": "mocha --require ./tests/_workerShim.cjs --require ./tests/_obsidianStub.cjs --import=tsx 'tests/**/*.ts'"
   },
   "browser": {
     "path": "path-browserify",
