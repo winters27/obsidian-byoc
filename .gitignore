@@ -4,7 +4,9 @@
 
 # npm
 node_modules
-package-lock.json
+# package-lock.json is committed on purpose: CI installs with `npm ci` so the
+# dependency tree is reproducible. Without it npm resolves a fresh tree on every
+# run, which silently drifts with the registry and broke the 1.0.14 release.
 pnpm-lock.yaml
 
 # build

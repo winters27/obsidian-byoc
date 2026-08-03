@@ -17,7 +17,6 @@ export default defineConfig([
       "esbuild.injecthelper.mjs",
       "eslint.config.mjs",
       "webpack.config.js",
-      "vitest.config.ts",
       "src/**/*.worker.ts",
       // JSON files we don't want eslint to parse as JS. package.json is
       // intentionally NOT here — the obsidianmd recommended preset has a

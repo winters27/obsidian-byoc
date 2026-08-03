@@ -21,7 +21,6 @@ export default defineConfig([
       "eslint.config.mjs",
       "eslint.bot.config.mjs",
       "webpack.config.js",
-      "vitest.config.ts",
       "biome.json",
       "versions.json",
       "tsconfig.json",
