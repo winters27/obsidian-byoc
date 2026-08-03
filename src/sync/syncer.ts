@@ -481,7 +481,7 @@ export async function syncer(
           ...node.local,
           mtimeSvr: node.remote.mtimeSvr ?? node.prevSync?.mtimeSvr,
           sizeEnc: node.remote.sizeEnc ?? node.prevSync?.sizeEnc,
-        } as Entity;
+        };
         successfulCommits.push(commitEntity);
         continue;
       }
