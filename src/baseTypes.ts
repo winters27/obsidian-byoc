@@ -290,6 +290,7 @@ export interface BYOCPluginSettings {
    * upgraders against a residual broken-baseline mismatch mass-deleting files.
    */
   encryptionFixSafetyDone?: boolean;
+  svrAnchorFixDone?: boolean;
 
   /** @deprecated */
   agreeToUploadExtraMetadata?: boolean;

@@ -109,27 +109,48 @@ export const determineSyncDecision = (
       mtimeChangedRelaxed(remote.mtimeCli, prevSync.mtimeCli);
 
     if (remoteContentChanged) {
-      // Remote was modified after our last sync — treat as conflict
-      return resolveModifiedConflict(conflictAction, local, remote);
+      // Remote was modified after our last sync — treat as conflict.
+      // The local copy is gone, so there is nothing to preserve in a conflict
+      // copy; smart_conflict would read a file that no longer exists, throw, and
+      // leave the sync permanently in an error state. Keep the other device's
+      // version instead.
+      return "conflict_modified_then_keep_remote";
     }
     return "local_is_deleted_thus_also_delete_remote";
   }
 
   // ── Remote missing, prev exists → remote was deleted ─────────────────────
   if (hasLocal && !hasRemote && hasPrev) {
+    // A folder that the remote only ever synthesized (S3 with the default
+    // generateFolderObject off keeps it in an in-memory cache that an app
+    // restart clears) cannot exist remotely at all, so its absence is not
+    // evidence of a deletion. A folder the remote genuinely materialised still
+    // deletes normally.
+    if (node.key.endsWith("/") && prevSync.synthesizedFolder === true) {
+      return "equal";
+    }
+
     const localContentChanged =
       local.sizeRaw !== prevSync.sizeRaw ||
       mtimeChangedRelaxed(local.mtimeCli, prevSync.mtimeCli);
 
     if (localContentChanged) {
-      // Local was modified after our last sync — treat as conflict
-      return resolveModifiedConflict(conflictAction, local, remote);
+      // Local was modified after our last sync — treat as conflict.
+      // The remote copy is gone, so smart_conflict would stat a key that is not
+      // there, throw, and wedge the sync in a permanent error state. Keep local.
+      return "conflict_modified_then_keep_local";
     }
     return "remote_is_deleted_thus_also_delete_local";
   }
 
   // ── Both present with history → compare each side to baseline ────────────
   if (hasLocal && hasRemote && hasPrev) {
+    // A folder has no content, and its timestamps are provider-invented: S3
+    // synthesizes folders from object keys, so the value recorded by mkdir and
+    // the value reported by the next walk never agree. Present on both sides
+    // with history means there is nothing to do.
+    if (node.key.endsWith("/")) return "equal";
+
     const localChanged =
       mtimeChanged(local.mtimeCli, prevSync.mtimeCli) ||
       local.sizeRaw !== prevSync.sizeRaw;

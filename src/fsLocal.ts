@@ -72,7 +72,10 @@ export class FakeFsLocal extends FakeFs {
           key: key, // local always unencrypted
           keyRaw: key,
           mtimeCli: mtimeLocal,
-          mtimeSvr: mtimeLocal,
+          // No mtimeSvr: a local file has no server-side timestamp. Claiming one
+          // lets the local entity win the baseline merge and overwrite the
+          // remote anchor, which makes the next sync misread every file as
+          // remotely modified.
           size: entry.stat.size, // local always unencrypted
           sizeRaw: entry.stat.size,
         };
@@ -135,10 +138,10 @@ export class FakeFsLocal extends FakeFs {
       keyRaw: isFolder ? `${key}/` : key,
       ctimeCli: statRes.ctime,
       mtimeCli: statRes.mtime,
-      mtimeSvr: statRes.mtime,
+      // No mtimeSvr: see walk. The pull branch of the syncer sets the remote
+      // anchor explicitly from the remote entity.
       ctimeCliFmt: unixTimeToStr(statRes.ctime),
       mtimeCliFmt: unixTimeToStr(statRes.mtime),
-      mtimeSvrFmt: unixTimeToStr(statRes.mtime),
       size: statRes.size, // local always unencrypted
       sizeRaw: statRes.size,
     };

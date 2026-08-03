@@ -313,7 +313,7 @@ const getRemoteWithPrefixPath = (
   return key;
 };
 
-const fromS3ObjectToEntity = (
+export const fromS3ObjectToEntity = (
   x: _Object,
   remotePrefix: string,
   mtimeRecords: Record<string, number>,
@@ -329,7 +329,11 @@ const fromS3ObjectToEntity = (
     );
   }
   const mtimeSvr = Math.floor(x.LastModified.valueOf() / 1000.0) * 1000;
-  let mtimeCli = mtimeSvr;
+  // Report a client mtime only when the object really carries the one written at
+  // upload (Metadata.MTime, read back only when useAccurateMTime is on).
+  // LastModified is the upload time, and the baseline holds the real local mtime,
+  // so echoing it here makes every file look permanently remotely modified.
+  let mtimeCli: number | undefined = undefined;
   if (x.Key! in mtimeRecords) {
     const m2 = mtimeRecords[x.Key!];
     if (m2 !== 0) {
@@ -357,7 +361,7 @@ const fromS3ObjectToEntity = (
   return r;
 };
 
-const fromS3HeadObjectToEntity = (
+export const fromS3HeadObjectToEntity = (
   fileOrFolderPathWithRemotePrefix: string,
   x: HeadObjectCommandOutput,
   remotePrefix: string,
@@ -373,7 +377,8 @@ const fromS3HeadObjectToEntity = (
     );
   }
   const mtimeSvr = Math.floor(x.LastModified.valueOf() / 1000.0) * 1000;
-  let mtimeCli = mtimeSvr;
+  // See fromS3ObjectToEntity: only a real Metadata.MTime counts as a client mtime.
+  let mtimeCli: number | undefined = undefined;
   if (useAccurateMTime && x.Metadata !== undefined) {
     const m2 = Math.floor(
       Number.parseFloat(x.Metadata.mtime || x.Metadata.MTime || "0")

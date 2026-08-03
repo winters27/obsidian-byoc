@@ -185,7 +185,9 @@ function detectRenames(
     }),
     getCreateMeta: (n) => ({
       sizeRaw: n.remote!.sizeRaw,
-      mtimeCli: n.remote!.mtimeCli ?? 0,
+      // Providers that cannot store a client mtime report none; fall back to the
+      // server mtime so the composite key can still line up with the delete side.
+      mtimeCli: n.remote!.mtimeCli ?? n.remote!.mtimeSvr ?? 0,
     }),
   });
 
@@ -239,6 +241,37 @@ export async function syncer(
     ]);
 
     const prevSyncItems = prevSyncItemsRaw || [];
+
+    // One-time heal. Releases up to 1.0.13 wrote the LOCAL mtime into
+    // baseline.mtimeSvr on every unchanged sync, which makes the next sync
+    // misread every file as remotely modified. Re-anchor from the live remote,
+    // but only for rows whose size and client mtime already agree with it: that
+    // is the exact signature of the stale anchor, and any other disagreement is
+    // a real change that must reach the planner untouched.
+    if (!settings.svrAnchorFixDone) {
+      const remoteByKey = new Map(remoteWalk.map((r) => [r.keyRaw, r]));
+      for (const p of prevSyncItems) {
+        const r = remoteByKey.get(p.keyRaw);
+        if (r === undefined) continue;
+        // The stale anchor is recognisable: the old code copied the local mtime
+        // over the server one, leaving both fields identical. A row where they
+        // differ was written correctly and must be left for the planner, so a
+        // genuine remote edit is never adopted as the new baseline.
+        if (p.mtimeSvr !== p.mtimeCli) continue;
+        const baselineSize =
+          r.sizeEnc !== undefined ? (p.sizeEnc ?? p.sizeRaw) : p.sizeRaw;
+        if (r.sizeRaw !== baselineSize) continue;
+        if (
+          r.mtimeCli !== undefined &&
+          p.mtimeCli !== undefined &&
+          Math.abs(r.mtimeCli - p.mtimeCli) > 2000
+        ) {
+          continue;
+        }
+        // Mutate in place: the partial-failure merge below re-reads this array.
+        p.mtimeSvr = r.mtimeSvr;
+      }
+    }
 
     // Matrix Assembly
     const nodes = new Map<string, MixedEntity>();
@@ -356,7 +389,11 @@ export async function syncer(
     const allFileCount = nodes.size;
     
     if (allFileCount > 0) {
-      let destructiveCount = 0;
+      // Counted separately so the log can say what was actually planned; the
+      // threshold still applies to the total, because an overwrite-from-remote
+      // destroys local content just as surely as a delete does.
+      let deleteCount = 0;
+      let overwriteCount = 0;
       for (const action of syncActions) {
         const d = action.decision;
         if (!d || d === "equal" || d === "only_history") continue;
@@ -366,30 +403,47 @@ export async function syncer(
 
         // Deletes (either side) are always destructive
         if (d.includes("delete")) {
-          destructiveCount++;
+          deleteCount++;
           continue;
         }
 
         // Pulls that OVERWRITE an existing local file
         if (d === "remote_is_modified_then_pull" && action.local !== undefined) {
-          destructiveCount++;
+          overwriteCount++;
           continue;
         }
 
         // Conflict resolutions that overwrite local with remote content
         if ((d.includes("keep_remote") || d.includes("smart_conflict")) && action.local !== undefined) {
-          destructiveCount++;
+          overwriteCount++;
           continue;
         }
       }
+      const destructiveCount = deleteCount + overwriteCount;
 
-      const protectErr = getProtectError(
-        settings.protectModifyPercentage || 50,
-        destructiveCount,
-        allFileCount
-      );
-      if (protectErr !== "") {
-        throw Error(`Protection Triggered: ${protectErr}`);
+      // Only consult the threshold when something destructive is actually
+      // planned. A threshold of 0 means "always block", and without this guard a
+      // no-op sync would abort too, since 0% is not below 0%.
+      if (destructiveCount > 0) {
+        const protectErr = getProtectError(
+          settings.protectModifyPercentage ?? 50,
+          destructiveCount,
+          allFileCount
+        );
+        if (protectErr !== "") {
+          const byDecision: Record<string, number> = {};
+          for (const a of syncActions) {
+            if (!a.decision || a.decision === "equal" || a.decision === "only_history") {
+              continue;
+            }
+            byDecision[a.decision] = (byDecision[a.decision] ?? 0) + 1;
+          }
+          console.error(
+            `[BYOC] Sync blocked by protection: ${deleteCount} deletion(s), ${overwriteCount} overwrite(s) of ${allFileCount} tracked items. Plan:`,
+            byDecision
+          );
+          throw Error(`Protection Triggered: ${protectErr}`);
+        }
       }
     }
 
@@ -403,19 +457,32 @@ export async function syncer(
     for (const node of syncActions) {
       const decision = node.decision;
       if (decision === "equal" || decision === "only_history") {
+        // A node forced to "equal" by the undecryptable-entry guard or the
+        // upgrade safety net has no remote side. Merging the local entity there
+        // would record the new local size/mtime against the old remote anchors,
+        // a state that exists on neither side and then reads as "equal" forever,
+        // silently losing the local edit. Keep the untouched baseline instead.
+        // "only_history" means the file is gone from both sides, so its row is
+        // dropped rather than carried forever.
+        if (node.remote === undefined) {
+          if (node.prevSync !== undefined && decision === "equal") {
+            successfulCommits.push({ ...node.prevSync });
+          }
+          continue;
+        }
         // Commit a complete baseline: local carries the plaintext key/mtime/size,
         // remote carries the server mtime + ciphertext size. Dropping the remote
-        // anchors here makes the next encrypted sync misread the file as remotely
-        // changed (ciphertext size vs plaintext baseline) and spawn a conflict.
-        const freshest = node.local ?? node.remote ?? node.prevSync;
-        if (freshest) {
-          const commitEntity: Entity = {
-            ...node.prevSync,
-            ...node.remote,
-            ...node.local,
-          } as Entity;
-          successfulCommits.push(commitEntity);
-        }
+        // anchors here makes the next sync misread the file as remotely changed
+        // (server mtime vs local baseline, ciphertext size vs plaintext baseline).
+        // Restate them after the spreads so ordering is not what keeps this right.
+        const commitEntity: Entity = {
+          ...node.prevSync,
+          ...node.remote,
+          ...node.local,
+          mtimeSvr: node.remote.mtimeSvr ?? node.prevSync?.mtimeSvr,
+          sizeEnc: node.remote.sizeEnc ?? node.prevSync?.sizeEnc,
+        } as Entity;
+        successfulCommits.push(commitEntity);
         continue;
       }
 
@@ -471,9 +538,14 @@ export async function syncer(
           successfulCommits.push({
             ...freshEntity,
             keyRaw: node.key,
-            mtimeSvr: node.prevSync?.mtimeSvr ?? node.remote?.mtimeSvr,
+            // The remote is authoritative for the remote anchors, and node.remote
+            // describes the NEW path while prevSync describes the old one.
+            mtimeSvr: node.remote?.mtimeSvr ?? node.prevSync?.mtimeSvr,
             sizeRaw: freshEntity.sizeRaw,
-            sizeEnc: node.prevSync?.sizeEnc,
+            sizeEnc:
+              node.prevSync?.sizeEnc ??
+              node.remote?.sizeEnc ??
+              node.remote?.sizeRaw,
           });
         }
         // ─────────────────────────────────────────────────────────────────────
@@ -558,6 +630,14 @@ export async function syncer(
     // Mark the one-time encryption-fix safety net as satisfied after a clean run.
     if (settings.password !== "" && !settings.encryptionFixSafetyDone) {
       settings.encryptionFixSafetyDone = true;
+      await configSaver();
+    }
+
+    // Mark the one-time baseline re-anchor as done, but only after a clean run
+    // that actually persisted a baseline. Deliberately outside the password
+    // guard above: the stale anchor affects encrypted and plain vaults alike.
+    if (!hadErrors && !settings.svrAnchorFixDone) {
+      settings.svrAnchorFixDone = true;
       await configSaver();
     }
 

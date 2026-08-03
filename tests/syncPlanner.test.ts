@@ -143,23 +143,28 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
   });
 
   // ── Delete-vs-Modify conflicts (new edge cases) ──────────────────────────
-  it("local deleted BUT remote was modified → smart_conflict (not blind delete)", () => {
+  // A one-sided conflict resolves to keep_remote / keep_local rather than
+  // smart_conflict: writing a conflict copy needs both sides, and asking for one
+  // that is missing throws in the executor and wedges the sync in a permanent
+  // error state. The point of these cases is that neither side is blindly
+  // deleted, which still holds.
+  it("local deleted BUT remote was modified → keep remote (not blind delete)", () => {
     assert.equal(
       determineSyncDecision(
         node(undefined, { sizeRaw: 20, mtimeSvr: T + D }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_remote"
     );
   });
 
-  it("remote deleted BUT local was modified → smart_conflict (not blind delete)", () => {
+  it("remote deleted BUT local was modified → keep local (not blind delete)", () => {
     assert.equal(
       determineSyncDecision(
         node({ sizeRaw: 20, mtimeCli: T + D }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_local"
     );
   });
 
@@ -243,7 +248,7 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
         node({ sizeRaw: 10, mtimeCli: T + LARGE_DRIFT }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_local"
     );
   });
 
@@ -253,7 +258,7 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
         node({ sizeRaw: 20, mtimeCli: T }, undefined, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_local"
     );
   });
 
@@ -273,7 +278,7 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
         node(undefined, { sizeRaw: 10, mtimeSvr: T + LARGE_DRIFT }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_remote"
     );
   });
 
@@ -283,7 +288,7 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
         node(undefined, { sizeRaw: 20, mtimeSvr: T }, { sizeRaw: 10, mtimeCli: T, mtimeSvr: T }),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_remote"
     );
   });
 
@@ -339,7 +344,7 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
         ),
         "smart_conflict"
       ),
-      "conflict_modified_then_smart_conflict"
+      "conflict_modified_then_keep_remote"
     );
   });
 });

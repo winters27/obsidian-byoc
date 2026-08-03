@@ -319,7 +319,9 @@ export class FakeFsYandexDisk extends FakeFs {
 
         entities.push({
           key, keyRaw: key,
-          mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
+          // No mtimeCli: uploads do not transmit the client mtime, so `modified`
+          // is the server's own clock and is not comparable to the baseline.
+          mtimeSvr: mtime, ctimeCli: ctime,
           size: isFolder ? 0 : (item.size ?? 0),
           sizeRaw: isFolder ? 0 : (item.size ?? 0),
         });
@@ -383,7 +385,8 @@ export class FakeFsYandexDisk extends FakeFs {
 
     return {
       key: normalKey, keyRaw: normalKey,
-      mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
+      // No mtimeCli, see the walk builder above.
+      mtimeSvr: mtime, ctimeCli: ctime,
       size: isFolder ? 0 : (res.size ?? 0),
       sizeRaw: isFolder ? 0 : (res.size ?? 0),
     };
