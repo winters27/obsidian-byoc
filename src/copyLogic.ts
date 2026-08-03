@@ -31,7 +31,12 @@ export async function copyFile(key: string, left: FakeFs, right: FakeFs) {
     }
   }
 
-  if (statsLeft.mtimeCli === undefined) {
+  // A provider that cannot store a client mtime reports none; the server mtime
+  // is then the best stamp available for the copy. Keep the throw for the case
+  // where there is neither, because writing a file with mtime 0 makes the next
+  // local walk throw and aborts every future sync.
+  const mtimeToWrite = statsLeft.mtimeCli ?? statsLeft.mtimeSvr;
+  if (mtimeToWrite === undefined) {
     throw Error(`error copying ${left.kind}=>${right.kind}, no mtimeCli`);
   }
 
@@ -40,8 +45,8 @@ export async function copyFile(key: string, left: FakeFs, right: FakeFs) {
     entity: await right.writeFile(
       key,
       content,
-      statsLeft.mtimeCli,
-      statsLeft.ctimeCli ?? statsLeft.mtimeCli
+      mtimeToWrite,
+      statsLeft.ctimeCli ?? mtimeToWrite
     ),
     content: content,
   };

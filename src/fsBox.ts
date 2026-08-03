@@ -442,7 +442,9 @@ export class FakeFsBox extends FakeFs {
 
       return {
         key, keyRaw: key,
-        mtimeSvr: mtime, mtimeCli: mtime, ctimeCli: ctime,
+        // No mtimeCli: uploads do not transmit the client mtime, so modified_at
+        // is the server's own clock and is not comparable to the baseline.
+        mtimeSvr: mtime, ctimeCli: ctime,
         size: isFolder ? 0 : (item.size ?? 0),
         sizeRaw: isFolder ? 0 : (item.size ?? 0),
         etag: item.etag,
@@ -490,8 +492,8 @@ export class FakeFsBox extends FakeFs {
 
     return {
       key, keyRaw: key,
+      // No mtimeCli, see the walk builder above.
       mtimeSvr: match.modified_at ? new Date(match.modified_at).getTime() : 0,
-      mtimeCli: match.modified_at ? new Date(match.modified_at).getTime() : 0,
       size: match.size ?? 0,
       sizeRaw: match.size ?? 0,
       etag: match.etag,

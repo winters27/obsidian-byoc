@@ -327,8 +327,9 @@ export class FakeFsKoofr extends FakeFs {
       } else {
         entities.push({
           key, keyRaw: key,
+          // No mtimeCli: uploads do not transmit the client mtime, so `modified`
+          // is the server's own clock and is not comparable to the baseline.
           mtimeSvr: item.modified ?? 0,
-          mtimeCli: item.modified ?? 0,
           size: item.size ?? 0,
           sizeRaw: item.size ?? 0,
           hash: item.hash,
@@ -378,8 +379,8 @@ export class FakeFsKoofr extends FakeFs {
     const isFolder = res.type === "dir";
     return {
       key, keyRaw: key,
+      // No mtimeCli, see the walk builder above.
       mtimeSvr: res.modified ?? 0,
-      mtimeCli: res.modified ?? 0,
       size: isFolder ? 0 : (res.size ?? 0),
       sizeRaw: isFolder ? 0 : (res.size ?? 0),
       hash: res.hash,

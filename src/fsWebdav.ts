@@ -218,7 +218,7 @@ const getNormPath = (fileOrFolderPath: string, remoteBaseDir: string) => {
   return result;
 };
 
-const fromWebdavItemToEntity = (x: FileStat, remoteBaseDir: string): Entity => {
+export const fromWebdavItemToEntity = (x: FileStat, remoteBaseDir: string): Entity => {
   let key = getNormPath(x.filename, remoteBaseDir);
 
   if (x.type === "directory" && !key.endsWith("/")) {
@@ -229,7 +229,10 @@ const fromWebdavItemToEntity = (x: FileStat, remoteBaseDir: string): Entity => {
     key: key,
     keyRaw: key,
     mtimeSvr: mtimeSvr,
-    mtimeCli: mtimeSvr, // TODO: no universal way to set mtime in webdav
+    // There is no universal way to set an mtime over webdav, so there is no
+    // client mtime to report. Echoing mtimeSvr here made every file look
+    // remotely modified against a baseline that holds the real local mtime.
+    mtimeCli: undefined,
     size: x.size,
     sizeRaw: x.size,
   };

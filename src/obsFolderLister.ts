@@ -79,7 +79,8 @@ export const listFilesInObsFolder = async (
             key: isFolder ? `${x}/` : x, // local always unencrypted
             keyRaw: isFolder ? `${x}/` : x,
             mtimeCli: statRes.mtime,
-            mtimeSvr: statRes.mtime,
+            // No mtimeSvr: see fsLocal.walk. A local entity must not claim a
+            // server timestamp it cannot know.
             size: statRes.size, // local always unencrypted
             sizeRaw: statRes.size,
           },
