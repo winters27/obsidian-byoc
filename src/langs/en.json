@@ -193,6 +193,8 @@
     "settings_s3_connect_succ":  "Great! The bucket can be accessed.",
     "settings_s3_connect_fail":  "The S3 bucket cannot be reached.",
     "settings_dropbox":  "Dropbox",
+    "settings_dropbox_clientid":  "Dropbox app key (optional)",
+    "settings_dropbox_clientid_desc":  "Use your own Dropbox app instead of the built-in shared one. Create an app in the Dropbox developer console with App folder access and the redirect URI obsidian://bring-your-own-cloud-cb-dropbox, then paste its app key here. Leave empty to use the built-in app. Reconnect your account after changing this.",
     "settings_dropbox_disclaimer1":  "Disclaimer: This app is NOT an official Dropbox product.",
     "settings_dropbox_disclaimer2":  "Credentials are stored locally. Disconnect at dropbox.com/account/connected_apps if needed.",
     "settings_dropbox_folder":  "We will create and sync inside the folder /Apps/{{pluginID}}/{{remoteBaseDir}} on your Dropbox.",
