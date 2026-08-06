@@ -21,6 +21,8 @@
     "syncrun_shortstep1":  "BYOC: Starting Sync... ({{serviceType}})",
     "syncrun_shortstep2skip":  "BYOC: Dry Run completed. Real sync skipped.",
     "syncrun_shortstep2":  "BYOC: Sync Finished!",
+    "syncrun_dry_summary":  "Dry run: {{breakdown}} would run. Nothing was changed.",
+    "syncrun_dry_summary_none":  "Dry run: everything in sync, no operations planned.",
     "syncrun_abort":  "{{manifestID}}-{{theDate}}: abort sync, triggerSource={{triggerSource}}, error while {{syncStatus}}",
     "syncrun_abort_protectmodifypercentage":  "Abort! Sync protection triggered. Your settings block any sync where {{protectModifyPercentage}}% or more of your tracked files would be deleted or overwritten from the remote. Currently {{realModifyDeleteCount}} of {{allFilesCount}} ({{percent}}%) are affected. See the developer console for the breakdown. If this is what you intended, adjust the allowed ratio in the settings or clear your sync cache.",
     "protocol_saveqr":  "New settings for {{manifestName}} is imported and saved. Reopen the plugin settings to make it effective.",

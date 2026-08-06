@@ -226,6 +226,10 @@ export async function syncer(
     realTotalCount: number,
     pathName: string,
     decision: string
+  ) => Promise<void>,
+  dryRunSummaryFunc?: (
+    byDecision: Record<string, number>,
+    totalPlanned: number
   ) => Promise<void>
 ): Promise<void> {
   await markIsSyncingFunc(true);
@@ -449,6 +453,25 @@ export async function syncer(
 
     // Phase 3: Execution Engine
     await statusBarFunc(triggerSource, 7, true); // Exchanging data
+
+    // A dry run stops at the plan. Returning here also skips the Phase 4
+    // baseline commit and the one-time migration flag flips: persisting any
+    // of those without executing the plan would corrupt the next real sync.
+    if (triggerSource === "dry") {
+      const byDecision: Record<string, number> = {};
+      let totalPlanned = 0;
+      for (const a of syncActions) {
+        if (!a.decision || a.decision === "equal" || a.decision === "only_history") continue;
+        byDecision[a.decision] = (byDecision[a.decision] ?? 0) + 1;
+        totalPlanned++;
+      }
+      console.info("[BYOC] Dry run plan (nothing executed):", byDecision);
+      await notifyFunc(triggerSource, 7); // "real sync is skipped in dry run mode"
+      await dryRunSummaryFunc?.(byDecision, totalPlanned);
+      await notifyFunc(triggerSource, 8);
+      await statusBarFunc(triggerSource, 8, true);
+      return;
+    }
 
     const successfulCommits: Entity[] = [];
     let hadErrors = false;

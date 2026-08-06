@@ -359,6 +359,18 @@ export default class BYOCPlugin extends Plugin {
     };
 
     const statusBarFunc = async (s: SyncTriggerSourceType, step: number, everythingOk: boolean) => {
+      if (s === "dry") {
+        // A dry run changes nothing, so it must not stamp a success or failure
+        // time. Restore the status bar from the stored timestamps instead.
+        if (step === 1) {
+          this.updateLastSyncMsg(s, "syncing", -1, -1);
+        } else if (step === 8) {
+          const storedSuccess = await getLastSuccessSyncTimeByVault(this.db, this.vaultRandomID);
+          const storedFailed = await getLastFailedSyncTimeByVault(this.db, this.vaultRandomID);
+          this.updateLastSyncMsg(s, "not_syncing", storedSuccess, storedFailed);
+        }
+        return;
+      }
       if (step === 1) {
         this.updateLastSyncMsg(s, "syncing", -1, -1);
       } else if (step === 8 && everythingOk) {
@@ -400,6 +412,33 @@ export default class BYOCPlugin extends Plugin {
 
     const configSaver = async () => await this.saveSettings();
 
+    const dryRunSummaryFunc = (byDecision: Record<string, number>, totalPlanned: number): Promise<void> => {
+      if (totalPlanned === 0) {
+        getNotice(triggerSource, t("syncrun_dry_summary_none"));
+        return Promise.resolve();
+      }
+      // Plain-language buckets; raw planner decision names stay out of notices.
+      const bucketOf = (d: string) => {
+        if (d.includes("conflict") || d.includes("keep_")) return "conflicts resolved";
+        if (d === "remote_is_deleted_thus_also_delete_local") return "local deletes";
+        if (d === "local_is_deleted_thus_also_delete_remote") return "remote deletes";
+        if (d.endsWith("push")) return "uploads";
+        if (d.endsWith("pull")) return "downloads";
+        if (d.startsWith("rename")) return "renames";
+        return "other changes";
+      };
+      const buckets: Record<string, number> = {};
+      for (const [d, c] of Object.entries(byDecision)) {
+        const b = bucketOf(d);
+        buckets[b] = (buckets[b] ?? 0) + c;
+      }
+      const breakdown = Object.entries(buckets)
+        .map(([b, c]) => `${c} ${b}`)
+        .join(", ");
+      getNotice(triggerSource, t("syncrun_dry_summary", { breakdown }), 10 * 1000);
+      return Promise.resolve();
+    };
+
     await syncer(
       fsLocal,
       fsRemote,
@@ -419,7 +458,8 @@ export default class BYOCPlugin extends Plugin {
       errNotifyFunc,
       ribbonFunc,
       statusBarFunc,
-      callbackSyncProcess
+      callbackSyncProcess,
+      dryRunSummaryFunc
     );
 
     void fsEncrypt.closeResources();
