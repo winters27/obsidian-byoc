@@ -50,7 +50,7 @@ class DropboxAuthModal extends Modal {
     const needManualPaste = Platform.isDesktopApp && Platform.isLinux;
 
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
-      DROPBOX_APP_KEY,
+      this.plugin.settings.dropbox.clientID || DROPBOX_APP_KEY,
       needManualPaste
     );
 
@@ -98,7 +98,7 @@ class DropboxAuthModal extends Modal {
             new Notice(t("modal_dropboxauth_maualinput_notice"));
             try {
               const authRes = await sendAuthReq(
-                DROPBOX_APP_KEY,
+                this.plugin.settings.dropbox.clientID || DROPBOX_APP_KEY,
                 verifier,
                 authCode,
                 (e: unknown) => {
@@ -239,6 +239,22 @@ export const generateDropboxSettingsPart = (
   dropboxNotShowUpHintSetting.settingEl.addClass("dropbox-allow-to-use-hide");
 
   const dropboxAllowedToUsedDiv = dropboxDiv.createDiv();
+
+  new Setting(dropboxAllowedToUsedDiv)
+    .setName(t("settings_dropbox_clientid"))
+    .setDesc(t("settings_dropbox_clientid_desc"))
+    .addText((text) => {
+      // The built-in shared key is an implementation detail; showing it here
+      // would read as the user's own. Display empty until a custom key is set.
+      const stored = plugin.settings.dropbox.clientID;
+      text
+        .setPlaceholder("Using built-in app")
+        .setValue(stored === DROPBOX_APP_KEY ? "" : stored)
+        .onChange(async (val) => {
+          plugin.settings.dropbox.clientID = val.trim() || DROPBOX_APP_KEY;
+          await saveUpdatedConfigFunc?.();
+        });
+    });
 
   const dropboxSelectAuthDiv = dropboxAllowedToUsedDiv.createDiv();
   const dropboxAuthDiv = dropboxSelectAuthDiv.createDiv({
