@@ -55,6 +55,10 @@ class OnedrivefullAuthModal extends Modal {
   
       contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
 
+    // activeWindow.open does not reliably launch a browser on mobile; a plain
+    // link always does, so every auth modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
+
 } catch (e) {
       console.error(e);
       contentEl.createEl("p", {

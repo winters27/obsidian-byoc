@@ -1,5 +1,10 @@
 import { SVG_KOOFR } from './icons';
 import { setSvgTitle } from "./misc";
+import { KOOFR_CLIENT_ID, KOOFR_CLIENT_SECRET } from "./baseTypes";
+import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_KOOFR_CONFIG } from "./fsKoofr";
@@ -38,11 +43,21 @@ class KoofrAuthModal extends Modal {
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
     const t = this.t;
+    const missing = findMissingCredentials({ KOOFR_CLIENT_ID, KOOFR_CLIENT_SECRET });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(contentEl, "Koofr", missing);
+      return;
+    }
+
     const authUrl = generateAuthUrl();
 
     const div2 = contentEl.createDiv();
     t("modal_koofrauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
     contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+
+    // activeWindow.open does not reliably launch a browser on mobile; a plain
+    // link always does, so every auth modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
 
 }
 

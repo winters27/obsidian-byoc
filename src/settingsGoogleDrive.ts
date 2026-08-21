@@ -1,5 +1,13 @@
 import { SVG_GDRIVE } from './icons';
 import { setSvgTitle } from "./misc";
+import {
+  GOOGLEDRIVE_CLIENT_ID,
+  GOOGLEDRIVE_CLIENT_SECRET,
+} from "./baseTypes";
+import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import {
@@ -36,6 +44,15 @@ class GoogleDriveAuthModal extends Modal {
     setSvgTitle(this.titleEl, SVG_GDRIVE, "Connect Google Drive account");
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
+    const missing = findMissingCredentials({
+      GOOGLEDRIVE_CLIENT_ID,
+      GOOGLEDRIVE_CLIENT_SECRET,
+    });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(contentEl, "Google Drive", missing);
+      return;
+    }
+
     const authUrl = generateAuthUrl();
 
     contentEl.createEl("p", {
@@ -49,6 +66,10 @@ class GoogleDriveAuthModal extends Modal {
     }, (el) => {
       el.onclick = () => activeWindow.open(authUrl);
     });
+
+    // activeWindow.open does not reliably launch a browser on mobile; a plain
+    // link always does, so every auth modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
   }
 
   onClose() {

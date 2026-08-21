@@ -1,5 +1,9 @@
 import { SVG_DROPBOX } from './icons';
 import { setSvgTitle } from "./misc";
+import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
 import { DROPBOX_APP_KEY } from './baseTypes';
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Platform, Setting } from "obsidian";
@@ -49,8 +53,22 @@ class DropboxAuthModal extends Modal {
     // so fall back to manual paste on Linux desktop.
     const needManualPaste = Platform.isDesktopApp && Platform.isLinux;
 
+    // A key the user pasted in settings wins over the one baked in at build time.
+    const effectiveAppKey =
+      this.plugin.settings.dropbox.clientID || DROPBOX_APP_KEY;
+    const missing = findMissingCredentials({ DROPBOX_APP_KEY: effectiveAppKey });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(
+        contentEl,
+        "Dropbox",
+        missing,
+        "You can also paste your own Dropbox app key in the Dropbox settings and authorize against that."
+      );
+      return;
+    }
+
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
-      this.plugin.settings.dropbox.clientID || DROPBOX_APP_KEY,
+      effectiveAppKey,
       needManualPaste
     );
 

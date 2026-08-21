@@ -11,6 +11,10 @@ import type { TransItemType } from "./i18n";
 import type RemotelySavePlugin from "./main";
 import { stringToFragment , setSvgTitle } from "./misc";
 import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
+import {
   openFolderPickerForProvider,
   renderFolderBreadcrumb,
 } from "./folderPicker";
@@ -43,6 +47,12 @@ class OnedriveAuthModal extends Modal {
     const { contentEl } = this;
     const t = this.t;
 
+    const missing = findMissingCredentials({ ONEDRIVE_CLIENT_ID });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(contentEl, "OneDrive", missing);
+      return;
+    }
+
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
       ONEDRIVE_CLIENT_ID,
       ONEDRIVE_AUTHORITY
@@ -67,6 +77,10 @@ class OnedriveAuthModal extends Modal {
     contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => {
       el.onclick = () => activeWindow.open(authUrl);
     });
+
+    // The button relies on activeWindow.open, which does not reliably launch a
+    // browser on mobile. A plain link always does, so every modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
   }
 
   onClose() {
