@@ -230,7 +230,8 @@ export async function syncer(
   dryRunSummaryFunc?: (
     byDecision: Record<string, number>,
     totalPlanned: number
-  ) => Promise<void>
+  ) => Promise<void>,
+  localPathStillExistsFunc?: (key: string) => Promise<boolean>
 ): Promise<void> {
   await markIsSyncingFunc(true);
   try {
@@ -318,7 +319,11 @@ export async function syncer(
 
     // Phase 2: Planner
     const unsortedActions = Array.from(nodes.values()).map(node => {
-      node.decision = determineSyncDecision(node, settings.conflictAction || "smart_conflict");
+      node.decision = determineSyncDecision(
+        node,
+        settings.conflictAction || "smart_conflict",
+        settings.syncDirection ?? "bidirectional"
+      );
       return node;
     });
 
@@ -379,6 +384,32 @@ export async function syncer(
       }
     }
 
+    // Hold every decision on keys the local walk saw but could not read
+    // (broken symlinks and the like). The node state for those keys is
+    // unreliable in both directions: absence must not read as a local
+    // deletion, and the remote copy must not overwrite a local file that
+    // exists but was not indexable. The do-nothing decision carries the
+    // baseline row forward untouched, so the hold repeats cleanly until the
+    // entry becomes readable again.
+    const problematicLocalKeys = new Set(fsLocal.problematicKeys ?? []);
+    if (problematicLocalKeys.size > 0) {
+      let held = 0;
+      for (const action of unsortedActions) {
+        if (problematicLocalKeys.has(action.key)) {
+          action.decision = "conflict_created_then_do_nothing";
+          held++;
+        }
+      }
+      if (held > 0) {
+        await errNotifyFunc(
+          triggerSource,
+          Error(
+            `${problematicLocalKeys.size} local ${problematicLocalKeys.size === 1 ? "entry" : "entries"} could not be read (a broken symlink can cause this); held ${held} sync ${held === 1 ? "operation" : "operations"} to prevent data loss. See the developer console for the paths.`
+          )
+        );
+      }
+    }
+
     // M1: Enforce folder-before-file creation order, file-before-folder delete order.
     let syncActions = sortSyncActions(unsortedActions);
 
@@ -387,6 +418,26 @@ export async function syncer(
     // and BEFORE the protection check (renames are not destructive).
     const canRename = remoteFsTarget.supportsRename();
     syncActions = detectRenames(syncActions, canRename);
+
+    // A remote that reports no files at all while sync history says it held
+    // some is far more likely a misconfigured, changed, or brand-new remote
+    // location than a genuine mass deletion. Planning local deletions from
+    // that state would erase the vault, and the percentage threshold is the
+    // only thing that would catch it, so refuse outright and explain (#11).
+    // Deleting the last file or two of a tiny vault is indistinguishable from
+    // that and legitimate, so only a sweep of three or more is refused; the
+    // percentage threshold still covers the small cases.
+    if (
+      !remoteWalk.some((e) => !e.keyRaw.endsWith("/")) &&
+      prevSyncItems.some((e) => !e.keyRaw.endsWith("/")) &&
+      syncActions.filter(
+        (a) => a.decision === "remote_is_deleted_thus_also_delete_local"
+      ).length >= 3
+    ) {
+      throw Error(
+        "Sync aborted: the remote returned no files, but this vault has sync history with it, so deleting the local copies is almost certainly wrong. If you changed the remote folder, endpoint, or account, point it back. If this new empty remote is intended, use Reset Local Internal Cache/Databases in the settings and sync again to upload everything fresh. No local files were changed."
+      );
+    }
 
     // M2: Protection — count operations that destroy or overwrite local content.
     // Rename decisions are explicitly skipped — a rename is a path change, not destruction.
@@ -509,6 +560,18 @@ export async function syncer(
         continue;
       }
 
+      if (decision === "conflict_created_then_do_nothing") {
+        // A one-way sync direction suppressed this operation, or the node's
+        // local state could not be read. Carry the baseline row forward
+        // untouched: merging either live side here would fabricate a state
+        // that was never synced, and dropping the row would re-plan the same
+        // suppressed operation on every following sync.
+        if (node.prevSync !== undefined) {
+          successfulCommits.push({ ...node.prevSync });
+        }
+        continue;
+      }
+
       await callbackSyncProcess(triggerSource, ++counter, syncActions.length, node.key, decision || "unknown");
 
       try {
@@ -537,8 +600,23 @@ export async function syncer(
           // Omit from successfulCommits — clears baseline so next sync won't re-examine
         }
         else if (decision === "local_is_deleted_thus_also_delete_remote") {
-          await remoteFsTarget.rm(node.key);
-          // Omit from successfulCommits — clears baseline
+          if (
+            localPathStillExistsFunc !== undefined &&
+            (await localPathStillExistsFunc(node.key))
+          ) {
+            // The path is still on disk even though Obsidian's index dropped
+            // it: a dangling symlink stats to nothing yet still exists. That
+            // is not a deletion, so keep the remote copy and the baseline row.
+            console.warn(
+              `[BYOC] Not deleting ${node.key} remotely: the path still exists on disk (a broken symlink can cause this).`
+            );
+            if (node.prevSync !== undefined) {
+              successfulCommits.push({ ...node.prevSync });
+            }
+          } else {
+            await remoteFsTarget.rm(node.key);
+            // Omit from successfulCommits — clears baseline
+          }
         }
         // ── Rename handlers ──────────────────────────────────────────────────
         else if (decision === "rename_local_to_remote" && node.renameFrom) {

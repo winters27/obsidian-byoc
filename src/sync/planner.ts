@@ -1,4 +1,4 @@
-import type { Entity, MixedEntity, ConflictActionType, DecisionTypeForMixedEntity } from "../baseTypes";
+import type { Entity, MixedEntity, ConflictActionType, DecisionTypeForMixedEntity, SyncDirectionType } from "../baseTypes";
 
 // Two timestamps are considered equal if within 2 seconds of each other.
 // Necessary because providers and local FS have different mtime precision.
@@ -60,6 +60,17 @@ const largerSide = (
  */
 export const determineSyncDecision = (
   node: MixedEntity,
+  conflictAction: ConflictActionType,
+  syncDirection: SyncDirectionType = "bidirectional"
+): DecisionTypeForMixedEntity => {
+  return applySyncDirection(
+    determineBidirectionalDecision(node, conflictAction),
+    syncDirection
+  );
+};
+
+const determineBidirectionalDecision = (
+  node: MixedEntity,
   conflictAction: ConflictActionType
 ): DecisionTypeForMixedEntity => {
   const { local, remote, prevSync } = node;
@@ -84,6 +95,36 @@ export const determineSyncDecision = (
 
   // ── Both present, no history → created independently on both sides ───────
   if (hasLocal && hasRemote && !hasPrev) {
+    // A folder carries no content; present on both sides means there is
+    // nothing to transfer, same as the with-history branch below.
+    if (node.key.endsWith("/")) return "equal";
+
+    // Two sides that already agree are not a conflict. Without this, a fresh
+    // device or a cleared sync cache re-transfers the entire vault (and under
+    // the default conflict action, every file counts as an overwrite, so the
+    // protection threshold aborts the whole sync) (#11). "equal" makes the
+    // executor adopt the pair as the baseline.
+    //
+    // For an encrypted remote the sizes are plaintext vs ciphertext and not
+    // comparable, so equality needs a real client-mtime match on both sides.
+    // Unencrypted sizes compare directly; the mtime term is inert when a
+    // provider cannot round-trip a client mtime, the same trust the
+    // with-history branch gives those providers.
+    if (remote.sizeEnc !== undefined) {
+      if (
+        local.mtimeCli !== undefined &&
+        remote.mtimeCli !== undefined &&
+        !mtimeChanged(local.mtimeCli, remote.mtimeCli)
+      ) {
+        return "equal";
+      }
+    } else if (
+      local.sizeRaw === remote.sizeRaw &&
+      !mtimeChanged(local.mtimeCli, remote.mtimeCli)
+    ) {
+      return "equal";
+    }
+
     return resolveCreatedConflict(conflictAction, local, remote);
   }
 
@@ -210,4 +251,97 @@ const resolveModifiedConflict = (
       : "conflict_modified_then_keep_remote";
   }
   return "conflict_modified_then_smart_conflict";
+};
+
+/**
+ * applySyncDirection constrains a bidirectional decision to the configured
+ * one-way mode. Push modes treat local as the source of truth: nothing is ever
+ * downloaded or deleted locally, conflicts resolve to the local copy, and a
+ * remote-side deletion is answered by re-uploading the local file. Pull modes
+ * mirror that with remote as the source of truth. The plain "only" modes do
+ * not propagate deletions at all; the "and delete" modes propagate deletions
+ * in their own direction only.
+ *
+ * "conflict_created_then_do_nothing" preserves the node's baseline row without
+ * any I/O (the executor commits prevSync as-is), so a suppressed operation
+ * stays suppressed on every following sync instead of churning the baseline.
+ *
+ * Any value outside the four one-way modes (including an unrecognized string
+ * from an imported config) behaves as bidirectional, which is the pre-existing
+ * behavior for every stored value.
+ */
+export const applySyncDirection = (
+  decision: DecisionTypeForMixedEntity,
+  direction: SyncDirectionType
+): DecisionTypeForMixedEntity => {
+  const isPush =
+    direction === "incremental_push_only" ||
+    direction === "incremental_push_and_delete_only";
+  const isPull =
+    direction === "incremental_pull_only" ||
+    direction === "incremental_pull_and_delete_only";
+
+  if (isPush) {
+    if (
+      decision === "remote_is_created_then_pull" ||
+      decision === "remote_is_modified_then_pull"
+    ) {
+      return "conflict_created_then_do_nothing";
+    }
+    if (decision === "remote_is_deleted_thus_also_delete_local") {
+      return "conflict_modified_then_keep_local";
+    }
+    if (
+      decision === "local_is_deleted_thus_also_delete_remote" &&
+      direction === "incremental_push_only"
+    ) {
+      return "conflict_created_then_do_nothing";
+    }
+    if (
+      decision === "conflict_created_then_keep_remote" ||
+      decision === "conflict_created_then_smart_conflict"
+    ) {
+      return "conflict_created_then_keep_local";
+    }
+    if (
+      decision === "conflict_modified_then_keep_remote" ||
+      decision === "conflict_modified_then_smart_conflict"
+    ) {
+      return "conflict_modified_then_keep_local";
+    }
+    return decision;
+  }
+
+  if (isPull) {
+    if (
+      decision === "local_is_created_then_push" ||
+      decision === "local_is_modified_then_push"
+    ) {
+      return "conflict_created_then_do_nothing";
+    }
+    if (decision === "local_is_deleted_thus_also_delete_remote") {
+      return "conflict_modified_then_keep_remote";
+    }
+    if (
+      decision === "remote_is_deleted_thus_also_delete_local" &&
+      direction === "incremental_pull_only"
+    ) {
+      return "conflict_created_then_do_nothing";
+    }
+    if (
+      decision === "conflict_created_then_keep_local" ||
+      decision === "conflict_created_then_smart_conflict"
+    ) {
+      return "conflict_created_then_keep_remote";
+    }
+    if (
+      decision === "conflict_modified_then_keep_local" ||
+      decision === "conflict_modified_then_smart_conflict"
+    ) {
+      return "conflict_modified_then_keep_remote";
+    }
+    return decision;
+  }
+
+  return decision;
 };

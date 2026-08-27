@@ -100,11 +100,35 @@ All settings are in Obsidian → Settings → **Bring Your Own Cloud**.
 | **Auto Sync Interval** | Sync every N milliseconds (−1 to disable) |
 | **Sync on Save** | Sync N ms after the last file change |
 | **Conflict Action** | `keep_newer`, `keep_larger`, or `smart_conflict` |
+| **Sync Direction** | Bidirectional (default), or one-way push/pull modes that never touch the other side |
 | **Protect Modify %** | Abort if more than N% of files would be changed |
 | **Sync Config Dir** | Whether to sync `.obsidian/` settings |
 | **Delete To** | Move deleted files to system trash or Obsidian trash |
+| **Paths To Ignore** | Patterns (glob or regex) that are never synced |
+| **Paths To Allow** | If set, only matching paths are synced |
 
 ---
+
+## Known limitations
+
+### Symlinks
+
+Obsidian only exposes its resolved file index, so BYOC cannot tell a symlink
+from a regular file. Symlinked files upload like copies, a directory symlink
+uploads its contents under the vault path, and a broken symlink disappears
+from the index entirely. Since 1.0.16 a broken symlink no longer crashes the
+sync, and on desktop BYOC checks the real disk before treating an
+index-absent path as deleted, so the remote copy of a dangling link is kept.
+
+Symlinks are still not synced as links. The reliable setup is to exclude them
+with **Paths To Ignore**, one pattern per link. A regex must match the link
+itself, not only its children:
+
+```text
+^path/to/link($|/)
+```
+
+The equivalent glob pair also works: `path/to/link` plus `path/to/link/**`.
 
 ## Migrating from Remotely Save
 
