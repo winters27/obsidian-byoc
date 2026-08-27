@@ -113,6 +113,51 @@ describe("Sync Direction — planner override", () => {
     }
   });
 
+  it("exhaustive sweep: invariants hold for every mode, shape, and conflict action", () => {
+    const allShapes: Array<[string, MixedEntity]> = [
+      ...shapes,
+      ["no-prev identical", node({ sizeRaw: 5, mtimeCli: T }, { sizeRaw: 5, mtimeCli: T, mtimeSvr: T })],
+      ["no-prev different", node({ sizeRaw: 5, mtimeCli: T }, { sizeRaw: 9, mtimeCli: T + D, mtimeSvr: T + D })],
+      ["only history", node(undefined, undefined, { sizeRaw: 5, mtimeCli: T })],
+      [
+        "local deleted, remote changed",
+        node(undefined, { sizeRaw: 9, mtimeSvr: T + D }, { sizeRaw: 5, mtimeSvr: T }),
+      ],
+      [
+        "remote deleted, local changed",
+        node({ sizeRaw: 9, mtimeCli: T + D }, undefined, { sizeRaw: 5, mtimeCli: T }),
+      ],
+    ];
+    const actions = ["smart_conflict", "keep_newer", "keep_larger"] as const;
+
+    for (const action of actions) {
+      for (const [label, n] of allShapes) {
+        const base = determineSyncDecision(n, action);
+        assert.equal(
+          determineSyncDecision(n, action, "bidirectional"),
+          base,
+          `bidirectional identity: ${action} ${label}`
+        );
+        for (const direction of PUSH_MODES) {
+          const d = determineSyncDecision(n, action, direction);
+          for (const banned of ["pull", "delete_local", "keep_remote", "smart_conflict"]) {
+            assert.ok(!d.includes(banned), `${direction} ${action} ${label}: ${d}`);
+          }
+        }
+        for (const direction of PULL_MODES) {
+          const d = determineSyncDecision(n, action, direction);
+          for (const banned of ["push", "delete_remote", "keep_local", "smart_conflict"]) {
+            assert.ok(!d.includes(banned), `${direction} ${action} ${label}: ${d}`);
+          }
+        }
+        for (const direction of ["incremental_push_only", "incremental_pull_only"] as const) {
+          const d = determineSyncDecision(n, action, direction);
+          assert.ok(!d.includes("delete"), `${direction} ${action} ${label}: ${d}`);
+        }
+      }
+    }
+  });
+
   it("push maps the individual decisions per the table", () => {
     const remoteCreated = shapes[0][1];
     const remoteModified = shapes[2][1];

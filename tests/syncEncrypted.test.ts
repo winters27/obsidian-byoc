@@ -406,3 +406,54 @@ describe("Encrypted sync end-to-end (openssl-base64)", () => {
     assert.deepEqual(local.fileKeys(), [], "deletion applies on the subsequent sync");
   });
 });
+
+describe("Encrypted fresh device onto a populated remote (#11)", () => {
+  before(function () {
+    (global as any).window = { crypto: require("crypto").webcrypto };
+    (global as any).activeWindow = (global as any).window;
+  });
+
+  it("adopts the matching state through the real encryption layer without transferring", async () => {
+    const deviceA = new MemFs("local");
+    const remote = new MemFs("remote");
+    const dbA = makeDb();
+    deviceA.put("a.md", "alpha", 1000);
+    deviceA.put("b.md", "bravo bravo", 2000);
+    await runSyncEnc(deviceA, remote, dbA, "hunter2"); // uploads ciphertext
+
+    // Second device: identical vault contents and mtimes, no local baseline.
+    const deviceB = new MemFs("local");
+    deviceB.put("a.md", "alpha", 1000);
+    deviceB.put("b.md", "bravo bravo", 2000);
+    const dbB = makeDb();
+    const remoteWritesBefore = remote.writeCount;
+
+    const notices = await runSyncEnc(deviceB, remote, dbB, "hunter2");
+
+    assert.equal(deviceB.writeCount, 0, "nothing downloaded onto the new device");
+    assert.equal(remote.writeCount, remoteWritesBefore, "nothing re-uploaded");
+    assert.equal(deviceB.rmCount + remote.rmCount, 0, "nothing deleted");
+    assert.deepEqual(deviceB.fileKeys(), ["a.md", "b.md"], "no conflict copies");
+    assert.deepEqual(notices, [], "no protection abort");
+
+    // And the adopted baseline is complete: the next sync is also a no-op.
+    await runSyncEnc(deviceB, remote, dbB, "hunter2");
+    assert.equal(deviceB.writeCount, 0);
+    assert.equal(remote.writeCount, remoteWritesBefore);
+  });
+
+  it("a file whose mtime genuinely differs still resolves as a conflict", async () => {
+    const deviceA = new MemFs("local");
+    const remote = new MemFs("remote");
+    await runSyncEnc(deviceA, remote, makeDb(), "hunter2");
+    deviceA.put("d.md", "device A version", 1000);
+    await runSyncEnc(deviceA, remote, makeDb(), "hunter2");
+
+    const deviceB = new MemFs("local");
+    deviceB.put("d.md", "device B version", 5_000_000);
+    await runSyncEnc(deviceB, remote, makeDb(), "hunter2");
+
+    const extras = deviceB.fileKeys().filter((k) => k !== "d.md");
+    assert.equal(extras.length, 1, "one conflict copy for the genuinely divergent file");
+  });
+});
