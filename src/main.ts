@@ -419,6 +419,7 @@ export default class BYOCPlugin extends Plugin {
       }
       // Plain-language buckets; raw planner decision names stay out of notices.
       const bucketOf = (d: string) => {
+        if (d === "conflict_created_then_do_nothing") return "skipped";
         if (d.includes("conflict") || d.includes("keep_")) return "conflicts resolved";
         if (d === "remote_is_deleted_thus_also_delete_local") return "local deletes";
         if (d === "local_is_deleted_thus_also_delete_remote") return "remote deletes";

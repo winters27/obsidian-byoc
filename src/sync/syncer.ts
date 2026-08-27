@@ -318,7 +318,11 @@ export async function syncer(
 
     // Phase 2: Planner
     const unsortedActions = Array.from(nodes.values()).map(node => {
-      node.decision = determineSyncDecision(node, settings.conflictAction || "smart_conflict");
+      node.decision = determineSyncDecision(
+        node,
+        settings.conflictAction || "smart_conflict",
+        settings.syncDirection ?? "bidirectional"
+      );
       return node;
     });
 
@@ -506,6 +510,18 @@ export async function syncer(
           sizeEnc: node.remote.sizeEnc ?? node.prevSync?.sizeEnc,
         };
         successfulCommits.push(commitEntity);
+        continue;
+      }
+
+      if (decision === "conflict_created_then_do_nothing") {
+        // A one-way sync direction suppressed this operation, or the node's
+        // local state could not be read. Carry the baseline row forward
+        // untouched: merging either live side here would fabricate a state
+        // that was never synced, and dropping the row would re-plan the same
+        // suppressed operation on every following sync.
+        if (node.prevSync !== undefined) {
+          successfulCommits.push({ ...node.prevSync });
+        }
         continue;
       }
 
