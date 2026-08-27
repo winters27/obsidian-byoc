@@ -392,6 +392,26 @@ export async function syncer(
     const canRename = remoteFsTarget.supportsRename();
     syncActions = detectRenames(syncActions, canRename);
 
+    // A remote that reports no files at all while sync history says it held
+    // some is far more likely a misconfigured, changed, or brand-new remote
+    // location than a genuine mass deletion. Planning local deletions from
+    // that state would erase the vault, and the percentage threshold is the
+    // only thing that would catch it, so refuse outright and explain (#11).
+    // Deleting the last file or two of a tiny vault is indistinguishable from
+    // that and legitimate, so only a sweep of three or more is refused; the
+    // percentage threshold still covers the small cases.
+    if (
+      !remoteWalk.some((e) => !e.keyRaw.endsWith("/")) &&
+      prevSyncItems.some((e) => !e.keyRaw.endsWith("/")) &&
+      syncActions.filter(
+        (a) => a.decision === "remote_is_deleted_thus_also_delete_local"
+      ).length >= 3
+    ) {
+      throw Error(
+        "Sync aborted: the remote returned no files, but this vault has sync history with it, so deleting the local copies is almost certainly wrong. If you changed the remote folder, endpoint, or account, point it back. If this new empty remote is intended, use Reset Local Internal Cache/Databases in the settings and sync again to upload everything fresh. No local files were changed."
+      );
+    }
+
     // M2: Protection — count operations that destroy or overwrite local content.
     // Rename decisions are explicitly skipped — a rename is a path change, not destruction.
     const allFileCount = nodes.size;
