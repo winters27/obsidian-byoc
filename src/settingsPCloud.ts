@@ -1,6 +1,11 @@
 ﻿import { SVG_PCLOUD } from './icons';
 import cloneDeep from "lodash/cloneDeep";
 import { setSvgTitle } from "./misc";
+import { PCLOUD_CLIENT_ID, PCLOUD_CLIENT_SECRET } from "./baseTypes";
+import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { getClient } from "./fsGetter";
 import type { TransItemType } from "./i18n";
@@ -39,10 +44,20 @@ class PCloudAuthModal extends Modal {
     const { contentEl } = this;
     const t = this.t;
 
+    const missing = findMissingCredentials({ PCLOUD_CLIENT_ID, PCLOUD_CLIENT_SECRET });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(contentEl, "pCloud", missing);
+      return;
+    }
+
     const { authUrl } = generateAuthUrl(true);
     const div2 = contentEl.createDiv();
     t("modal_pcloudauth_tutorial").split("\n").forEach((val) => { div2.createEl("p", { text: val }); });
     contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
+
+    // activeWindow.open does not reliably launch a browser on mobile; a plain
+    // link always does, so every auth modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
 
 }
 

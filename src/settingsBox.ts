@@ -1,5 +1,10 @@
 import { SVG_BOX } from './icons';
 import { setSvgTitle } from "./misc";
+import { BOX_CLIENT_ID, BOX_CLIENT_SECRET } from "./baseTypes";
+import {
+  findMissingCredentials,
+  renderUnconfiguredProvider,
+} from "./oauthProvisioning";
 import cloneDeep from "lodash/cloneDeep";
 import { type App, Modal, Notice, Setting } from "obsidian";
 import { generateAuthUrl, DEFAULT_BOX_CONFIG } from "./fsBox";
@@ -38,6 +43,12 @@ class BoxAuthModal extends Modal {
     this.modalEl.addClass("byoc-auth-modal");
     const { contentEl } = this;
 
+    const missing = findMissingCredentials({ BOX_CLIENT_ID, BOX_CLIENT_SECRET });
+    if (missing.length > 0) {
+      renderUnconfiguredProvider(contentEl, "Box", missing);
+      return;
+    }
+
     const authUrl = generateAuthUrl();
 
     const div2 = contentEl.createDiv();
@@ -46,6 +57,10 @@ class BoxAuthModal extends Modal {
     div2.createEl("p", { text: "3. If prompted, please allow the browser to open Obsidian." });
     const btn = contentEl.createEl("button", { text: "Open authorization in browser" }, (el) => { el.onclick = () => activeWindow.open(authUrl); });
     btn.addClass("mod-cta");
+
+    // activeWindow.open does not reliably launch a browser on mobile; a plain
+    // link always does, so every auth modal offers both.
+    contentEl.createEl("p").createEl("a", { href: authUrl, text: authUrl });
 
 }
 
