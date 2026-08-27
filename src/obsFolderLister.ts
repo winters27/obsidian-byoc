@@ -35,7 +35,8 @@ export const listFilesInObsFolder = async (
   configDir: string,
   vault: Vault,
   pluginId: string,
-  bookmarksOnly: boolean
+  bookmarksOnly: boolean,
+  problematicKeys?: string[]
 ): Promise<Entity[]> => {
   const q = new Queue([configDir]);
   const CHUNK_SIZE = 10;
@@ -51,47 +52,68 @@ export const listFilesInObsFolder = async (
 
     const itemsToFetchChunks = chunk(itemsToFetch, CHUNK_SIZE);
     for (const singleChunk of itemsToFetchChunks) {
-      const r = singleChunk.map(async (x) => {
-        const statRes = await statFix(vault, x);
+      const r = singleChunk.map(async (x): Promise<{
+        itself: Entity | undefined;
+        children: ListedFiles | undefined;
+      }> => {
+        try {
+          const statRes = await statFix(vault, x);
 
-        if (statRes === undefined || statRes === null) {
-          throw Error("something goes wrong while listing hidden folder");
-        }
-        const isFolder = statRes.type === "folder";
-        let children: ListedFiles | undefined = undefined;
-        if (isFolder) {
-          children = await vault.adapter.list(x);
-        }
+          if (statRes === undefined || statRes === null) {
+            throw Error("something goes wrong while listing hidden folder");
+          }
+          const isFolder = statRes.type === "folder";
+          let children: ListedFiles | undefined = undefined;
+          if (isFolder) {
+            children = await vault.adapter.list(x);
+          }
 
-        if (
-          !isFolder &&
-          (statRes.mtime === undefined ||
-            statRes.mtime === null ||
-            statRes.mtime === 0)
-        ) {
-          throw Error(
-            `File in Obsidian ${configDir} has last modified time 0: ${x}, don't know how to deal with it.`
+          if (
+            !isFolder &&
+            (statRes.mtime === undefined ||
+              statRes.mtime === null ||
+              statRes.mtime === 0)
+          ) {
+            throw Error(
+              `File in Obsidian ${configDir} has last modified time 0: ${x}, don't know how to deal with it.`
+            );
+          }
+
+          return {
+            itself: {
+              key: isFolder ? `${x}/` : x, // local always unencrypted
+              keyRaw: isFolder ? `${x}/` : x,
+              mtimeCli: statRes.mtime,
+              // No mtimeSvr: see fsLocal.walk. A local entity must not claim a
+              // server timestamp it cannot know.
+              size: statRes.size, // local always unencrypted
+              sizeRaw: statRes.size,
+            },
+            children: children,
+          };
+        } catch (e) {
+          // One unreadable entry (a broken symlink, an unreadable stat) must
+          // not kill the whole walk. Record it so the syncer holds every
+          // decision on this key instead of misreading it as deleted.
+          problematicKeys?.push(x);
+          console.warn(
+            `[BYOC] Skipping ${x} in ${configDir}: its state could not be read (a broken symlink can cause this). It will not be synced or deleted.`,
+            e
           );
+          return { itself: undefined, children: undefined };
         }
-
-        return {
-          itself: {
-            key: isFolder ? `${x}/` : x, // local always unencrypted
-            keyRaw: isFolder ? `${x}/` : x,
-            mtimeCli: statRes.mtime,
-            // No mtimeSvr: see fsLocal.walk. A local entity must not claim a
-            // server timestamp it cannot know.
-            size: statRes.size, // local always unencrypted
-            sizeRaw: statRes.size,
-          },
-          children: children,
-        };
       });
       const r2 = flatten(await Promise.all(r));
 
       for (const iter of r2) {
+        if (iter.itself === undefined) {
+          continue;
+        }
         contents.push(iter.itself);
-        const isInsideSelfPlugin = isPluginDirItself(iter.itself.key, pluginId);
+        const isInsideSelfPlugin = isPluginDirItself(
+          iter.itself.key ?? iter.itself.keyRaw,
+          pluginId
+        );
         if (iter.children !== undefined) {
           for (const iter2 of iter.children.folders) {
             if (

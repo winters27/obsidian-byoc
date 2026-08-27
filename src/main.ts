@@ -440,6 +440,34 @@ export default class BYOCPlugin extends Plugin {
       return Promise.resolve();
     };
 
+    // Desktop only: check the real disk before treating an index-absent path
+    // as deleted. Obsidian's index resolves symlinks, so a dangling symlink
+    // vanishes from it while the link itself still exists on disk; deleting
+    // the remote copy in that state destroys data. Requires Electron's node
+    // require, which mobile does not have; the bundler must not see a static
+    // fs import, hence window.require.
+    const adapter = this.app.vault.adapter;
+    const nodeRequire = (window as unknown as { require?: (m: string) => unknown }).require;
+    const localPathStillExistsFunc =
+      adapter instanceof FileSystemAdapter && typeof nodeRequire === "function"
+        ? async (key: string): Promise<boolean> => {
+            try {
+              const fs = nodeRequire("fs") as {
+                promises: { lstat: (p: string) => Promise<unknown> };
+              };
+              const rel = key.endsWith("/") ? key.slice(0, -1) : key;
+              await fs.promises.lstat(`${adapter.getBasePath()}/${rel}`);
+              return true;
+            } catch (e) {
+              if ((e as { code?: string })?.code === "ENOENT") {
+                return false;
+              }
+              // Unknown state must not turn into a remote deletion.
+              return true;
+            }
+          }
+        : undefined;
+
     await syncer(
       fsLocal,
       fsRemote,
@@ -460,7 +488,8 @@ export default class BYOCPlugin extends Plugin {
       ribbonFunc,
       statusBarFunc,
       callbackSyncProcess,
-      dryRunSummaryFunc
+      dryRunSummaryFunc,
+      localPathStillExistsFunc
     );
 
     void fsEncrypt.closeResources();

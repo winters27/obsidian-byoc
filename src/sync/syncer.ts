@@ -230,7 +230,8 @@ export async function syncer(
   dryRunSummaryFunc?: (
     byDecision: Record<string, number>,
     totalPlanned: number
-  ) => Promise<void>
+  ) => Promise<void>,
+  localPathStillExistsFunc?: (key: string) => Promise<boolean>
 ): Promise<void> {
   await markIsSyncingFunc(true);
   try {
@@ -378,6 +379,32 @@ export async function syncer(
           triggerSource,
           Error(
             `First encrypted sync after update: kept ${held} local ${held === 1 ? "file" : "files"} instead of deleting, as a one-time safety check. Re-run sync to apply any intended deletions.`
+          )
+        );
+      }
+    }
+
+    // Hold every decision on keys the local walk saw but could not read
+    // (broken symlinks and the like). The node state for those keys is
+    // unreliable in both directions: absence must not read as a local
+    // deletion, and the remote copy must not overwrite a local file that
+    // exists but was not indexable. The do-nothing decision carries the
+    // baseline row forward untouched, so the hold repeats cleanly until the
+    // entry becomes readable again.
+    const problematicLocalKeys = new Set(fsLocal.problematicKeys ?? []);
+    if (problematicLocalKeys.size > 0) {
+      let held = 0;
+      for (const action of unsortedActions) {
+        if (problematicLocalKeys.has(action.key)) {
+          action.decision = "conflict_created_then_do_nothing";
+          held++;
+        }
+      }
+      if (held > 0) {
+        await errNotifyFunc(
+          triggerSource,
+          Error(
+            `${problematicLocalKeys.size} local ${problematicLocalKeys.size === 1 ? "entry" : "entries"} could not be read (a broken symlink can cause this); held ${held} sync ${held === 1 ? "operation" : "operations"} to prevent data loss. See the developer console for the paths.`
           )
         );
       }
@@ -573,8 +600,23 @@ export async function syncer(
           // Omit from successfulCommits — clears baseline so next sync won't re-examine
         }
         else if (decision === "local_is_deleted_thus_also_delete_remote") {
-          await remoteFsTarget.rm(node.key);
-          // Omit from successfulCommits — clears baseline
+          if (
+            localPathStillExistsFunc !== undefined &&
+            (await localPathStillExistsFunc(node.key))
+          ) {
+            // The path is still on disk even though Obsidian's index dropped
+            // it: a dangling symlink stats to nothing yet still exists. That
+            // is not a deletion, so keep the remote copy and the baseline row.
+            console.warn(
+              `[BYOC] Not deleting ${node.key} remotely: the path still exists on disk (a broken symlink can cause this).`
+            );
+            if (node.prevSync !== undefined) {
+              successfulCommits.push({ ...node.prevSync });
+            }
+          } else {
+            await remoteFsTarget.rm(node.key);
+            // Omit from successfulCommits — clears baseline
+          }
         }
         // ── Rename handlers ──────────────────────────────────────────────────
         else if (decision === "rename_local_to_remote" && node.renameFrom) {

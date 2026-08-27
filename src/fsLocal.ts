@@ -15,6 +15,11 @@ export class FakeFsLocal extends FakeFs {
   profiler: Profiler | undefined;
   deleteToWhere: "obsidian" | "system";
   kind: "local";
+  // Keys seen during walk whose state could not be read (for example a
+  // symlink Obsidian resolves to nothing, reported with modified time 0).
+  // The syncer must not trust the walk about these: they are neither
+  // reliably present nor reliably deleted.
+  problematicKeys: string[] = [];
   constructor(
     vault: Vault,
     syncConfigDir: boolean,
@@ -40,6 +45,7 @@ export class FakeFsLocal extends FakeFs {
     this.profiler?.addIndent();
     this.profiler?.insert("enter walk for local");
     const local: Entity[] = [];
+    this.problematicKeys = [];
 
     const localTAbstractFiles = this.vault.getAllLoadedFiles();
     this.profiler?.insert("finish getting walk for local");
@@ -64,9 +70,16 @@ export class FakeFsLocal extends FakeFs {
           mtimeLocal = undefined;
         }
         if (mtimeLocal === undefined) {
-          throw Error(
-            `Your file has last modified time 0: ${key}, don't know how to deal with it`
+          // One unreadable entry must not kill the whole sync, and its
+          // absence from the walk must not read as a deletion either; the
+          // syncer holds every decision on these keys. Symlinks are the
+          // usual cause: Obsidian indexes the resolved target, so a broken
+          // link stats to nothing.
+          this.problematicKeys.push(key);
+          console.warn(
+            `[BYOC] Skipping ${key}: it has no readable modified time (a broken symlink can cause this). It will not be synced or deleted.`
           );
+          continue;
         }
         r = {
           key: key, // local always unencrypted
@@ -109,7 +122,8 @@ export class FakeFsLocal extends FakeFs {
         this.configDir,
         this.vault,
         this.pluginID,
-        bookmarksOnly
+        bookmarksOnly,
+        this.problematicKeys
       );
       // console.debug(`syncFiles in obs: ${JSON.stringify(syncFiles, null, 2)}`);
       for (const f of syncFiles) {
