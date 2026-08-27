@@ -95,6 +95,36 @@ const determineBidirectionalDecision = (
 
   // ── Both present, no history → created independently on both sides ───────
   if (hasLocal && hasRemote && !hasPrev) {
+    // A folder carries no content; present on both sides means there is
+    // nothing to transfer, same as the with-history branch below.
+    if (node.key.endsWith("/")) return "equal";
+
+    // Two sides that already agree are not a conflict. Without this, a fresh
+    // device or a cleared sync cache re-transfers the entire vault (and under
+    // the default conflict action, every file counts as an overwrite, so the
+    // protection threshold aborts the whole sync) (#11). "equal" makes the
+    // executor adopt the pair as the baseline.
+    //
+    // For an encrypted remote the sizes are plaintext vs ciphertext and not
+    // comparable, so equality needs a real client-mtime match on both sides.
+    // Unencrypted sizes compare directly; the mtime term is inert when a
+    // provider cannot round-trip a client mtime, the same trust the
+    // with-history branch gives those providers.
+    if (remote.sizeEnc !== undefined) {
+      if (
+        local.mtimeCli !== undefined &&
+        remote.mtimeCli !== undefined &&
+        !mtimeChanged(local.mtimeCli, remote.mtimeCli)
+      ) {
+        return "equal";
+      }
+    } else if (
+      local.sizeRaw === remote.sizeRaw &&
+      !mtimeChanged(local.mtimeCli, remote.mtimeCli)
+    ) {
+      return "equal";
+    }
+
     return resolveCreatedConflict(conflictAction, local, remote);
   }
 

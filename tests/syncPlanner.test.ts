@@ -186,6 +186,80 @@ describe("Sync Planner — 3-Way Merge Decision Matrix", () => {
     );
   });
 
+  // ── No baseline, both sides already identical (#11) ──────────────────────
+  it("no baseline: identical size and mtime → equal, not a conflict", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T }, { sizeRaw: 10, mtimeCli: T + S, mtimeSvr: T + D }),
+        "smart_conflict"
+      ),
+      "equal"
+    );
+  });
+
+  it("no baseline: one byte of size difference still conflicts", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T }, { sizeRaw: 11, mtimeCli: T, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_created_then_smart_conflict"
+    );
+  });
+
+  it("no baseline: same size but clearly different mtime still conflicts", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T }, { sizeRaw: 10, mtimeCli: T + D, mtimeSvr: T + D }),
+        "smart_conflict"
+      ),
+      "conflict_created_then_smart_conflict"
+    );
+  });
+
+  it("no baseline: lossy-mtime provider matches on size alone", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T }, { sizeRaw: 10, mtimeSvr: T + D }),
+        "smart_conflict"
+      ),
+      "equal"
+    );
+  });
+
+  it("no baseline, encrypted: matching client mtimes → equal despite ciphertext size", () => {
+    assert.equal(
+      determineSyncDecision(
+        node(
+          { sizeRaw: 10, mtimeCli: T },
+          { sizeRaw: 58, sizeEnc: 58, mtimeCli: T + S, mtimeSvr: T + D }
+        ),
+        "smart_conflict"
+      ),
+      "equal"
+    );
+  });
+
+  it("no baseline, encrypted: no client mtime on the remote still conflicts", () => {
+    assert.equal(
+      determineSyncDecision(
+        node({ sizeRaw: 10, mtimeCli: T }, { sizeRaw: 58, sizeEnc: 58, mtimeSvr: T }),
+        "smart_conflict"
+      ),
+      "conflict_created_then_smart_conflict"
+    );
+  });
+
+  it("no baseline: a folder present on both sides is equal", () => {
+    const folderNode: MixedEntity = {
+      key: "docs/",
+      local: makeEntity({ keyRaw: "docs/", sizeRaw: 0 }),
+      remote: makeEntity({ keyRaw: "docs/", sizeRaw: 0, mtimeSvr: T }),
+      prevSync: undefined,
+    };
+    assert.equal(determineSyncDecision(folderNode, "smart_conflict"), "equal");
+  });
+
   // ── keep_newer ───────────────────────────────────────────────────────────
   it("keep_newer: local is newer → keep_local", () => {
     assert.equal(
