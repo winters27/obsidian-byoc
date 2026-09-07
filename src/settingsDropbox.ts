@@ -67,6 +67,20 @@ class DropboxAuthModal extends Modal {
       return;
     }
 
+    // The shared app has a user cap, and Dropbox reports hitting it only on its own
+    // page, after this dialog. Say where the escape hatch is before that happens.
+    if (!this.plugin.settings.dropbox.clientID) {
+      contentEl.createEl("p", {
+        cls: "byoc-auth-note",
+        text:
+          "This connects through BYOC's shared Dropbox app. If Dropbox answers " +
+          "\"This app has reached its user limit\", create your own app at " +
+          "dropbox.com/developers (App folder access, redirect URI " +
+          "obsidian://bring-your-own-cloud-cb-dropbox), paste its app key in the " +
+          "Dropbox settings, and open this dialog again.",
+      });
+    }
+
     const { authUrl, verifier } = await getAuthUrlAndVerifier(
       effectiveAppKey,
       needManualPaste
