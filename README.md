@@ -111,6 +111,14 @@ All settings are in Obsidian → Settings → **Bring Your Own Cloud**.
 
 ## Known limitations
 
+### Large files on mobile
+
+Transfers go through Obsidian's own network layer, which buffers a whole file
+in memory. On Android and iOS that layer cannot move very large files (from
+roughly 20 to 50 MB depending on the device); such files sync fine from
+desktop. Box joined that path in 1.0.17, because Box refuses browser
+requests from Obsidian's origin.
+
 ### Symlinks
 
 Obsidian only exposes its resolved file index, so BYOC cannot tell a symlink

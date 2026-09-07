@@ -32,6 +32,24 @@ describe("multipart body for byte transports", () => {
     assert.deepEqual([...fileBytes], [0, 255, 13, 10, 45, 45, 7]);
   });
 
+  it("is accepted by an independent multipart parser with the parts intact", async () => {
+    // Node's WHATWG Response.formData() is a separate implementation from the
+    // builder under test; if it recovers every part byte for byte, a server's
+    // parser will too.
+    const bytes = new Uint8Array([0, 255, 13, 10, 45, 45, 7, 128]).buffer;
+    const { body, contentType } = buildMultipartBody([
+      { name: "attributes", value: '{"name":"ü.md","parent":{"id":"11"}}' },
+      { name: "file", value: bytes, filename: "ü.md" },
+    ]);
+    const form = await new Response(body, { headers: { "content-type": contentType } }).formData();
+    assert.equal(form.get("attributes"), '{"name":"ü.md","parent":{"id":"11"}}');
+    const file = form.get("file");
+    assert.ok(file instanceof File, "file part parses as a File");
+    assert.equal((file as File).name, "ü.md");
+    assert.equal((file as File).type, "application/octet-stream");
+    assert.deepEqual([...new Uint8Array(await (file as File).arrayBuffer())], [0, 255, 13, 10, 45, 45, 7, 128]);
+  });
+
   it("retries a 429 with backoff and returns any other status as is", async () => {
     const statuses = [429, 403];
     const calls: string[] = [];

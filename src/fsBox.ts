@@ -665,7 +665,7 @@ export class FakeFsBox extends FakeFs {
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found for read`);
 
     const token = await this.ensureToken();
-    const resp = await retryRequestUrl(
+    let resp = await retryRequestUrl(
       this.transport.bytes,
       {
         url: `${BOX_API}/files/${match.id}/content`,
@@ -674,6 +674,18 @@ export class FakeFsBox extends FakeFs {
       },
       "box download"
     );
+    // Box answers the content URL with a redirect to a signed download link.
+    // Whether the app layer follows redirects differs by platform, so follow
+    // it here when it comes back unfollowed. The signed link carries its own
+    // authorisation; the bearer token must not travel to that host.
+    const location = resp.headers["location"] ?? resp.headers["Location"];
+    if ([301, 302, 303, 307, 308].includes(resp.status) && location) {
+      resp = await retryRequestUrl(
+        this.transport.bytes,
+        { url: location, method: "GET" },
+        "box download"
+      );
+    }
     if (resp.status < 200 || resp.status >= 300) {
       throw Error(`[BYOC] Box: readFile failed: ${resp.status}`);
     }

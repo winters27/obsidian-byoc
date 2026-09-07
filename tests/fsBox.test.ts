@@ -85,6 +85,31 @@ describe("Box transfers travel on the app network layer", () => {
     assert.equal(bytes[1].method, "DELETE");
   });
 
+  it("follows Box's signed download redirect without forwarding the bearer token", async () => {
+    const calls: ByteTransportRequest[] = [];
+    const transport: BoxTransport = {
+      text: async () => JSON.stringify({
+        entries: [{ id: "11", name: "Vault", type: "folder" }, { id: "55", name: "a.md", type: "file" }],
+      }),
+      bytes: async (req) => {
+        calls.push(req);
+        if (req.url.startsWith("https://api.box.com/2.0/files/55/content"))
+          return { status: 302, headers: { location: "https://dl.boxcloud.com/d/1/signed" },
+            arrayBuffer: new ArrayBuffer(0), text: "" };
+        return { status: 200, headers: {}, arrayBuffer: new Uint8Array([4, 2]).buffer, text: "" };
+      },
+    };
+    const fs = new FakeFsBox(
+      { ...DEFAULT_BOX_CONFIG, accessToken: "tok", refreshToken: "ref",
+        accessTokenExpiresAtTimeMs: Date.now() + 3_600_000, remoteBaseDir: "Vault" },
+      "Vault", async () => {}, transport);
+    const content = await fs.readFile("a.md");
+    assert.deepEqual([...new Uint8Array(content)], [4, 2]);
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1].url, "https://dl.boxcloud.com/d/1/signed");
+    assert.equal(calls[1].headers, undefined);
+  });
+
   it("names the failing operation and status instead of a bare exception", async () => {
     const { fs } = fakeBox(false);
     const forbidden: BoxTransport = {
