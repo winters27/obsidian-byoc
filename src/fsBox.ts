@@ -4,7 +4,7 @@
  * OAuth2 authorization code flow with silent token refresh.
  */
 
-import { request } from "obsidian";
+import { request, requestUrl } from "obsidian";
 import {
   BOX_CLIENT_ID,
   BOX_CLIENT_SECRET,
@@ -12,7 +12,46 @@ import {
   type Entity,
 } from "./baseTypes";
 import { FakeFs } from "./fsAll";
-import { parseJsonOrThrow, retryFetch } from "./misc";
+import {
+  buildMultipartBody,
+  parseJsonOrThrow,
+  retryRequestUrl,
+  type ByteTransport,
+} from "./misc";
+
+/**
+ * Every Box call goes through Obsidian's own network layer, never the
+ * browser's fetch. Box checks the Origin header of browser requests against
+ * the app's CORS domain list and answers 403 for any origin it does not list;
+ * Obsidian's WebView origin is not something a user can add. The app layer
+ * sends no Origin, so the gate never applies. This was the "folders create
+ * fine, every upload fails with 403" report: metadata calls already used the
+ * app layer, the transfers did not.
+ */
+export interface BoxTransport {
+  text: typeof request;
+  bytes: ByteTransport;
+}
+
+const obsidianTransport: BoxTransport = {
+  text: request,
+  bytes: async (req) => {
+    const resp = await requestUrl({
+      url: req.url,
+      method: req.method,
+      headers: req.headers,
+      contentType: req.contentType,
+      body: req.body,
+      throw: false,
+    });
+    return {
+      status: resp.status,
+      headers: resp.headers,
+      arrayBuffer: resp.arrayBuffer,
+      text: resp.text,
+    };
+  },
+};
 
 const BOX_API = "https://api.box.com/2.0";
 const BOX_UPLOAD_API = "https://upload.box.com/api/2.0";
@@ -264,11 +303,13 @@ export class FakeFsBox extends FakeFs {
   private saveFunc: () => Promise<void>;
   private pathResolver: BoxPathResolver;
   private remoteBaseDir: string;
+  private transport: BoxTransport;
 
   constructor(
     config: BoxConfig,
     vaultName: string,
-    saveFunc: () => Promise<void>
+    saveFunc: () => Promise<void>,
+    transport: BoxTransport = obsidianTransport
   ) {
     super();
     this.config = config;
@@ -276,6 +317,7 @@ export class FakeFsBox extends FakeFs {
     this.saveFunc = saveFunc;
     this.pathResolver = new BoxPathResolver();
     this.remoteBaseDir = config.remoteBaseDir || vaultName || "";
+    this.transport = transport;
   }
 
   private async ensureToken(): Promise<string> {
@@ -305,7 +347,7 @@ export class FakeFsBox extends FakeFs {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return parseJsonOrThrow<T>(
-      await request({
+      await this.transport.text({
         url: fullUrl,
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
@@ -318,7 +360,7 @@ export class FakeFsBox extends FakeFs {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return parseJsonOrThrow<T>(
-      await request({
+      await this.transport.text({
         url: fullUrl,
         method: "POST",
         contentType: "application/json",
@@ -333,7 +375,7 @@ export class FakeFsBox extends FakeFs {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
     return parseJsonOrThrow<T>(
-      await request({
+      await this.transport.text({
         url: fullUrl,
         method: "PUT",
         contentType: "application/json",
@@ -347,10 +389,15 @@ export class FakeFsBox extends FakeFs {
   private async _delete(url: string): Promise<void> {
     const token = await this.ensureToken();
     const fullUrl = url.startsWith("http") ? url : `${BOX_API}${url}`;
-    await retryFetch(fullUrl, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const resp = await retryRequestUrl(
+      this.transport.bytes,
+      { url: fullUrl, method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+      "box delete"
+    );
+    // 404 is "already gone", which is what a delete wanted.
+    if (resp.status >= 400 && resp.status !== 404) {
+      throw Error(`[BYOC] Box: delete failed: ${resp.status}`);
+    }
   }
 
   private async getBaseFolderId(): Promise<string> {
@@ -547,37 +594,44 @@ export class FakeFsBox extends FakeFs {
       // ignore
     }
 
-    if (existingFileId) {
-      // Upload new version
-      const formData = new FormData();
-      formData.append("file", new Blob([content]), fileName);
-      const resp = await retryFetch(
-        `${BOX_UPLOAD_API}/files/${existingFileId}/content`,
+    // Box's upload host reads a multipart form; built by hand so it can travel
+    // through the app's network layer (see BoxTransport).
+    const upload = async (url: string, parts: Parameters<typeof buildMultipartBody>[0], what: string) => {
+      const { body, contentType } = buildMultipartBody(parts);
+      const resp = await retryRequestUrl(
+        this.transport.bytes,
         {
+          url,
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
-          body: formData,
-        }
+          contentType,
+          body,
+        },
+        "box upload"
       );
-      if (!resp.ok) {
-        throw Error(`[BYOC] Box: upload new version failed: ${resp.status}`);
+      if (resp.status < 200 || resp.status >= 300) {
+        throw Error(`[BYOC] Box: ${what} failed: ${resp.status}`);
       }
+    };
+
+    if (existingFileId) {
+      await upload(
+        `${BOX_UPLOAD_API}/files/${existingFileId}/content`,
+        [{ name: "file", value: content, filename: fileName }],
+        "upload new version"
+      );
     } else {
-      // Upload new file
-      const formData = new FormData();
-      formData.append(
-        "attributes",
-        JSON.stringify({ name: fileName, parent: { id: parentFolderId } })
+      await upload(
+        `${BOX_UPLOAD_API}/files/content`,
+        [
+          {
+            name: "attributes",
+            value: JSON.stringify({ name: fileName, parent: { id: parentFolderId } }),
+          },
+          { name: "file", value: content, filename: fileName },
+        ],
+        "upload new file"
       );
-      formData.append("file", new Blob([content]), fileName);
-      const resp = await retryFetch(`${BOX_UPLOAD_API}/files/content`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!resp.ok) {
-        throw Error(`[BYOC] Box: upload new file failed: ${resp.status}`);
-      }
     }
 
     return {
@@ -611,14 +665,19 @@ export class FakeFsBox extends FakeFs {
     if (!match) throw Error(`[BYOC] Box: file '${key}' not found for read`);
 
     const token = await this.ensureToken();
-    const resp = await retryFetch(`${BOX_API}/files/${match.id}/content`, {
-      headers: { Authorization: `Bearer ${token}` },
-      redirect: "follow",
-    });
-    if (!resp.ok) {
+    const resp = await retryRequestUrl(
+      this.transport.bytes,
+      {
+        url: `${BOX_API}/files/${match.id}/content`,
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+      "box download"
+    );
+    if (resp.status < 200 || resp.status >= 300) {
       throw Error(`[BYOC] Box: readFile failed: ${resp.status}`);
     }
-    return resp.arrayBuffer();
+    return resp.arrayBuffer;
   }
 
   async rename(key1: string, key2: string): Promise<void> {

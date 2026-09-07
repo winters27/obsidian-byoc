@@ -847,6 +847,123 @@ export const checkValidName = (x: string) => {
 };
 
 /**
+ * One part of a multipart/form-data body: a text field, or a file with a name.
+ */
+export interface MultipartPart {
+  name: string;
+  value: string | ArrayBuffer;
+  filename?: string;
+  contentType?: string;
+}
+
+/**
+ * Builds a multipart/form-data body by hand, for transports that take bytes
+ * rather than a FormData object. Obsidian's requestUrl is one: it sends from
+ * the app's network layer with no Origin header, so a provider's CORS gate
+ * (Box's upload host answers 403 to origins it does not list) never sees it.
+ * The browser fetch that FormData needs is exactly what those gates block.
+ */
+export function buildMultipartBody(
+  parts: MultipartPart[],
+  boundary = `----byoc${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+): { body: ArrayBuffer; contentType: string } {
+  const encoder = new TextEncoder();
+  const chunks: Uint8Array[] = [];
+  for (const part of parts) {
+    const disposition =
+      `Content-Disposition: form-data; name="${part.name}"` +
+      (part.filename !== undefined
+        ? `; filename="${part.filename.replace(/"/g, "%22")}"`
+        : "");
+    const type =
+      part.contentType ??
+      (typeof part.value === "string" ? undefined : "application/octet-stream");
+    chunks.push(
+      encoder.encode(
+        `--${boundary}\r\n${disposition}\r\n` +
+          (type ? `Content-Type: ${type}\r\n` : "") +
+          "\r\n"
+      )
+    );
+    chunks.push(
+      typeof part.value === "string"
+        ? encoder.encode(part.value)
+        : new Uint8Array(part.value)
+    );
+    chunks.push(encoder.encode("\r\n"));
+  }
+  chunks.push(encoder.encode(`--${boundary}--\r\n`));
+  const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return {
+    body: body.buffer,
+    contentType: `multipart/form-data; boundary=${boundary}`,
+  };
+}
+
+/**
+ * The minimum a transport must offer to carry a transfer: the shape of
+ * Obsidian's requestUrl, so the real one drops in and a test can hand over a
+ * fake. `throw` is always false here; callers read the status.
+ */
+export interface ByteTransportRequest {
+  url: string;
+  method?: string;
+  headers?: Record<string, string>;
+  contentType?: string;
+  body?: string | ArrayBuffer;
+  throw?: boolean;
+}
+
+export interface ByteTransportResponse {
+  status: number;
+  headers: Record<string, string>;
+  arrayBuffer: ArrayBuffer;
+  text: string;
+}
+
+export type ByteTransport = (
+  req: ByteTransportRequest
+) => Promise<ByteTransportResponse>;
+
+/**
+ * requestUrl with the same 429 backoff as retryFetch. Non-2xx statuses are
+ * returned, not thrown, so a caller can name the operation in its own error.
+ */
+export const retryRequestUrl = async (
+  transport: ByteTransport,
+  req: ByteTransportRequest,
+  extraHint = ""
+): Promise<ByteTransportResponse> => {
+  const waitSeconds = [1, 2, 4, 8];
+  const prefix = extraHint ? `${extraHint}: ` : "";
+  for (let idx = 0; idx < waitSeconds.length; idx++) {
+    if (idx !== 0) {
+      console.warn(`${prefix}retry attempt ${idx + 1} at ${Date.now()}`);
+    }
+    const resp = await transport({ ...req, throw: false });
+    if (resp.status !== 429) return resp;
+    if (idx === waitSeconds.length - 1) {
+      throw new Error(`${prefix}429 too many requests after ${idx + 1} retries`);
+    }
+    const svrSec =
+      Number.parseInt(resp.headers["retry-after"] ?? resp.headers["Retry-After"] ?? "0") || 0;
+    const secMin = Math.max(svrSec, waitSeconds[idx]);
+    const secMax = Math.max(secMin * 1.8, 2);
+    console.warn(
+      `${prefix}429 on attempt ${idx + 1}, waiting ${secMin}–${secMax}s before retry`
+    );
+    await delay(secMin * 1000 + Math.random() * (secMax - secMin) * 1000);
+  }
+  throw new Error(`${prefix}retryRequestUrl exhausted all retries`);
+};
+
+/**
  * Drop-in replacement for `fetch()` with exponential backoff on HTTP 429.
  * Respects the server's `Retry-After` header when present.
  */
