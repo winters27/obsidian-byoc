@@ -1,6 +1,6 @@
 {
   "name": "byoc",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "A clean, self-hosted, un-paywalled synchronization tool for Obsidian.",
   "scripts": {
     "dev2": "node esbuild.config.mjs --watch",
