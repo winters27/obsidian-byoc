@@ -112,21 +112,33 @@ class MemFs extends FakeFs {
 
 // A prev-sync table that honours its keys, unlike the single-slot fakes in the
 // other suites: this bug is entirely about which key a vault reads.
-function makeKeyedDb(seed: Record<string, any[]> = {}) {
-  const store = new Map<string, any[]>(Object.entries(seed));
+function makeKeyedDb(seed: Record<string, any> = {}, withPlans = false) {
+  const store = new Map<string, any>(Object.entries(seed));
+  const plans = new Map<string, any>();
   return {
     store,
+    plans,
     prevSyncRecordsTbl: {
       async getItem(k: string) {
         return store.has(k) ? store.get(k) : null;
       },
-      async setItem(k: string, v: any[]) {
+      async setItem(k: string, v: any) {
         store.set(k, v);
       },
       async removeItem(k: string) {
         store.delete(k);
       },
+      async keys() {
+        return [...store.keys()];
+      },
     },
+    syncPlansTbl: withPlans
+      ? {
+          async setItem(k: string, v: any) {
+            plans.set(k, v);
+          },
+        }
+      : undefined,
   };
 }
 
@@ -266,5 +278,138 @@ describe("Baseline is per vault, not per provider profile", () => {
     const got = await loadPrevSyncRecords(db.prevSyncRecordsTbl, "v", PROFILE, ["docs/"]);
     assert.deepEqual(got, []);
     assert.ok(db.store.has(PROFILE));
+  });
+});
+
+// Remotely Save keeps one row per file under "<vault>\t<profile>\t<key>", in
+// the same database, holding the remote entity with the local mtime filled in.
+function seedRemotelySaveRows(db: ReturnType<typeof makeKeyedDb>, vaultID: string, rows: any[]) {
+  for (const r of rows) db.store.set(`${vaultID}\t${PROFILE}\t${r.keyRaw}`, r);
+}
+
+describe("Remotely Save history is inherited", () => {
+  it("a vault switching over keeps its baseline: nothing transfers and a deletion propagates", async () => {
+    // Build a genuine baseline by syncing once, then present it the way
+    // Remotely Save would have left it and forget BYOC's own row.
+    const seedDb = makeKeyedDb();
+    const remote = new MemFs("remote");
+    const vaultA = new MemFs("A");
+    seedVault(vaultA);
+    await runSync(vaultA, remote, seedDb, "vault-A");
+    const rows = seedDb.store.get(prevSyncRecordsKey("vault-A", PROFILE))!;
+
+    const db = makeKeyedDb();
+    seedRemotelySaveRows(db, "vault-A", rows);
+
+    // A note deleted locally between the last Remotely Save sync and the first
+    // BYOC sync. Only a baseline can tell "deleted here" from "new on the
+    // remote": with the inherited rows the remote copy goes, without them the
+    // note would be pulled straight back.
+    vaultA.files.delete("b.md");
+    const writesBefore = { local: vaultA.writeCount, remote: remote.writeCount };
+    await runSync(vaultA, remote, db, "vault-A");
+    assert.deepEqual(remote.fileKeys(), ["c.md", "docs/a.md"], "the deletion reached the remote");
+    assert.deepEqual(vaultA.fileKeys(), ["c.md", "docs/a.md"], "the note was not pulled back");
+    assert.equal(vaultA.writeCount, writesBefore.local, "nothing else transferred");
+    assert.equal(remote.writeCount, writesBefore.remote);
+    assert.ok(db.store.has(prevSyncRecordsKey("vault-A", PROFILE)), "copied into BYOC's own row");
+    for (const r of rows) {
+      assert.ok(db.store.has(`vault-A\t${PROFILE}\t${r.keyRaw}`), "Remotely Save's rows are left in place");
+    }
+  });
+
+  it("rows for a different vault id or profile are never read", async () => {
+    const seedDb = makeKeyedDb();
+    const remote = new MemFs("remote");
+    const vaultA = new MemFs("A");
+    seedVault(vaultA);
+    await runSync(vaultA, remote, seedDb, "vault-A");
+    const rows = seedDb.store.get(prevSyncRecordsKey("vault-A", PROFILE))!;
+
+    const db = makeKeyedDb();
+    seedRemotelySaveRows(db, "vault-OTHER", rows);
+    for (const r of rows) db.store.set(`vault-A\tdropbox-default-1\t${r.keyRaw}`, r);
+
+    const got = await loadPrevSyncRecords(db.prevSyncRecordsTbl, "vault-A", PROFILE, vaultA.fileKeys());
+    assert.deepEqual(got, []);
+    assert.equal(db.store.has(prevSyncRecordsKey("vault-A", PROFILE)), false);
+  });
+
+  it("rows that describe files no longer here are left alone", async () => {
+    const seedDb = makeKeyedDb();
+    const remote = new MemFs("remote");
+    const vaultA = new MemFs("A");
+    seedVault(vaultA);
+    await runSync(vaultA, remote, seedDb, "vault-A");
+    const rows = seedDb.store.get(prevSyncRecordsKey("vault-A", PROFILE))!;
+
+    const db = makeKeyedDb();
+    seedRemotelySaveRows(db, "vault-A", rows);
+    const got = await loadPrevSyncRecords(db.prevSyncRecordsTbl, "vault-A", PROFILE, ["c.md"]);
+    assert.deepEqual(got, [], "one of three files present is below half");
+    assert.equal(db.store.has(prevSyncRecordsKey("vault-A", PROFILE)), false);
+  });
+
+  it("the pre-1.0.18 BYOC row outranks Remotely Save's rows", async () => {
+    const legacy = [{ key: "x.md", keyRaw: "x.md", sizeRaw: 1 }];
+    const rs = { key: "x.md", keyRaw: "x.md", sizeRaw: 99 };
+    const db = makeKeyedDb({ [PROFILE]: legacy, [`v\t${PROFILE}\tx.md`]: rs });
+    const got = await loadPrevSyncRecords(db.prevSyncRecordsTbl, "v", PROFILE, ["x.md"]);
+    assert.deepEqual(got, legacy);
+    assert.equal(db.store.has(PROFILE), false, "adopted and removed");
+    assert.ok(db.store.has(`v\t${PROFILE}\tx.md`), "Remotely Save row untouched");
+  });
+
+  it("a table that cannot list keys simply has no history to inherit", async () => {
+    const tbl = {
+      async getItem() {
+        return null;
+      },
+      async setItem() {},
+      async removeItem() {},
+    };
+    const got = await loadPrevSyncRecords(tbl, "v", PROFILE, ["x.md"]);
+    assert.deepEqual(got, []);
+  });
+});
+
+describe("Sync plan history is recorded for the exporter", () => {
+  it("every sync stores one plan under the vault key, with a change flag per entry", async () => {
+    const db = makeKeyedDb({}, true);
+    const remote = new MemFs("remote");
+    const vaultA = new MemFs("A");
+    seedVault(vaultA);
+    await runSync(vaultA, remote, db, "vault-A");
+    await runSync(vaultA, remote, db, "vault-A");
+
+    const keys = [...db.plans.keys()];
+    assert.equal(keys.length, 2, "one record per sync");
+    assert.ok(keys.every((k) => k.startsWith("vault-A\t")), "keyed by vault, the prefix the exporter filters on");
+
+    const records = keys.map((k) => db.plans.get(k)).sort((a, b) => a.ts - b.ts);
+    for (const rec of records) {
+      assert.equal(rec.vaultRandomID, "vault-A");
+      assert.equal(typeof rec.syncPlan, "string");
+    }
+    const first = JSON.parse(records[0].syncPlan);
+    const second = JSON.parse(records[1].syncPlan);
+    assert.equal(first["/$@meta"].triggerSource, "manual");
+    assert.equal(first["b.md"].decision, "local_is_created_then_push");
+    assert.equal(first["b.md"].change, true);
+    assert.equal(second["b.md"].decision, "equal");
+    assert.equal(second["b.md"].change, false);
+    // What the exporter's "change part" view would keep from each plan.
+    const changed = (p: any) => Object.entries(p).filter(([k, v]: any) => k !== "/$@meta" && v.change === true).length;
+    assert.equal(changed(first), 4);
+    assert.equal(changed(second), 0);
+  });
+
+  it("a sync without a plans table still runs", async () => {
+    const db = makeKeyedDb();
+    const remote = new MemFs("remote");
+    const vaultA = new MemFs("A");
+    seedVault(vaultA);
+    await runSync(vaultA, remote, db, "vault-A");
+    assert.deepEqual(remote.fileKeys(), ["b.md", "c.md", "docs/a.md"]);
   });
 });

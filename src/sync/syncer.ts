@@ -12,6 +12,7 @@ import type {
 } from "../baseTypes";
 import { determineSyncDecision } from "./planner";
 import { loadPrevSyncRecords, savePrevSyncRecords } from "./baseline";
+import { buildSyncPlan, recordSyncPlan } from "./planHistory";
 import { generateConflictFileName } from "./conflict";
 import { copyFileOrFolder } from "../copyLogic";
 import { shouldSyncPath } from "./pathFilter";
@@ -425,6 +426,19 @@ export async function syncer(
     // and BEFORE the protection check (renames are not destructive).
     const canRename = remoteFsTarget.supportsRename();
     syncActions = detectRenames(syncActions, canRename);
+
+    // Keep the plan for "Export Sync Plans" before any guard can abort, so an
+    // aborted or dry run is still readable afterwards.
+    await recordSyncPlan(
+      db.syncPlansTbl,
+      vaultRandomID,
+      buildSyncPlan(syncActions, {
+        triggerSource,
+        remoteType: settings.serviceType ?? "unknown",
+        syncDirection: settings.syncDirection ?? "bidirectional",
+        conflictAction: settings.conflictAction || "smart_conflict",
+      })
+    );
 
     // A remote that reports no files at all while sync history says it held
     // some is far more likely a misconfigured, changed, or brand-new remote
