@@ -3,7 +3,21 @@ import { JSDOM } from "jsdom";
 import {
   findMissingCredentials,
   renderUnconfiguredProvider,
+  usesBuiltInApp,
 } from "../src/oauthProvisioning";
+
+describe("OAuth provisioning: shared-app detection", () => {
+  it("treats an empty id as the built-in app", () => {
+    assert.equal(usesBuiltInApp("", "builtin"), true);
+    assert.equal(usesBuiltInApp(undefined, "builtin"), true);
+  });
+  it("treats the backfilled built-in key as the built-in app", () => {
+    assert.equal(usesBuiltInApp("builtin", "builtin"), true);
+  });
+  it("recognises a user-supplied key", () => {
+    assert.equal(usesBuiltInApp("mine", "builtin"), false);
+  });
+});
 
 describe("OAuth provisioning: missing credentials", () => {
   it("reports nothing when every credential has a value", () => {

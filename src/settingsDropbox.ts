@@ -3,6 +3,7 @@ import { setSvgTitle } from "./misc";
 import {
   findMissingCredentials,
   renderUnconfiguredProvider,
+  usesBuiltInApp,
 } from "./oauthProvisioning";
 import { DROPBOX_APP_KEY } from './baseTypes';
 import cloneDeep from "lodash/cloneDeep";
@@ -69,7 +70,7 @@ class DropboxAuthModal extends Modal {
 
     // The shared app has a user cap, and Dropbox reports hitting it only on its own
     // page, after this dialog. Say where the escape hatch is before that happens.
-    if (!this.plugin.settings.dropbox.clientID) {
+    if (usesBuiltInApp(this.plugin.settings.dropbox.clientID, DROPBOX_APP_KEY)) {
       contentEl.createEl("p", {
         cls: "byoc-auth-note",
         text:

@@ -52,3 +52,16 @@ export function renderUnconfiguredProvider(
     cls: "external-link",
   });
 }
+
+/**
+ * True when the stored client id is empty or is the key baked into the build,
+ * i.e. the user is on the shared app. The settings layer backfills an empty id
+ * with the built-in key, so an emptiness check alone never fires.
+ */
+export function usesBuiltInApp(
+  storedClientId: string | undefined,
+  builtInKey: string
+): boolean {
+  const stored = (storedClientId ?? "").trim();
+  return stored === "" || stored === builtInKey;
+}
