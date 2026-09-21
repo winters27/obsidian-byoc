@@ -11,6 +11,7 @@ import type {
   SyncTriggerSourceType,
 } from "../baseTypes";
 import { determineSyncDecision } from "./planner";
+import { loadPrevSyncRecords, savePrevSyncRecords } from "./baseline";
 import { generateConflictFileName } from "./conflict";
 import { copyFileOrFolder } from "../copyLogic";
 import { shouldSyncPath } from "./pathFilter";
@@ -239,13 +240,19 @@ export async function syncer(
     await statusBarFunc(triggerSource, 1, true); // Prepare
     const remoteFsTarget = settings.password !== "" ? fsEncrypt : fsRemote;
 
-    const [localWalk, remoteWalk, prevSyncItemsRaw] = await Promise.all([
+    const [localWalk, remoteWalk] = await Promise.all([
       fsLocal.walk(),
       remoteFsTarget.walk(),
-      db.prevSyncRecordsTbl.getItem<Entity[]>(profileID)
     ]);
 
-    const prevSyncItems = prevSyncItemsRaw || [];
+    // The baseline is per vault and per profile; the local walk lets a
+    // pre-1.0.18 machine-wide row be claimed only by the vault it describes.
+    const prevSyncItems = await loadPrevSyncRecords(
+      db.prevSyncRecordsTbl,
+      vaultRandomID,
+      profileID,
+      localWalk.map((e) => e.keyRaw)
+    );
 
     // One-time heal. Releases up to 1.0.13 wrote the LOCAL mtime into
     // baseline.mtimeSvr on every unchanged sync, which makes the next sync
@@ -716,7 +723,7 @@ export async function syncer(
       // Intentionally do NOT write to prevSyncRecordsTbl
     } else if (!hadErrors) {
       // Clean run — commit the full successful set
-      await db.prevSyncRecordsTbl.setItem(profileID, successfulCommits);
+      await savePrevSyncRecords(db.prevSyncRecordsTbl, vaultRandomID, profileID, successfulCommits);
     } else {
       // Partial failure on a subsequent sync — merge: successful commits
       // take priority; failed files retain their previous baseline entry.
@@ -725,7 +732,7 @@ export async function syncer(
         ...successfulCommits,
         ...prevSyncItems.filter(e => !committedKeys.has(e.keyRaw))
       ];
-      await db.prevSyncRecordsTbl.setItem(profileID, merged);
+      await savePrevSyncRecords(db.prevSyncRecordsTbl, vaultRandomID, profileID, merged);
     }
 
     // Mark the one-time encryption-fix safety net as satisfied after a clean run.
